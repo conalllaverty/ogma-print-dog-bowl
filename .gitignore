@@ -1,0 +1,14 @@
+.DS_Store
+.env
+.venv/
+**/__pycache__/
+**/*.pyc
+node_modules/
+.next/
+data/jobs/*
+!data/jobs/.gitkeep
+backend/generator/cooper_dog_bowl/
+*.egg-info/
+dist/
+web/out/
+.cursor/
