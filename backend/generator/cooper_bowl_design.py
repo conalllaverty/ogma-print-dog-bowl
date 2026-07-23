@@ -27,10 +27,20 @@ NAME = "COOPER"
 MAX_NAME_LEN = 8
 MAX_RAIL_OUTER_DEG = 45.0  # packing beyond this is rejected as too wide
 _FONTS = ROOT.parent / "assets" / "fonts"
+# Print-oriented faces: SemiBold reads sharper than Black/Rounded at FDM scale.
 FONT_STYLES = {
-    "bold": _FONTS / "Arial-Bold.ttf",
-    "rounded": _FONTS / "Arial-Rounded-Bold.ttf",
-    "condensed": _FONTS / "Oswald-Bold.ttf",
+    "bold": _FONTS / "Overpass-Variable.ttf",  # default — physically tested for FDM
+    "clean": _FONTS / "SourceSans3-Semibold.ttf",
+    "serif": _FONTS / "Lora-MediumItalic.ttf",  # original Named Bowl treatment
+    "slab": _FONTS / "RobotoSlab-Variable.ttf",
+    "rounded": _FONTS / "Fredoka-Variable.ttf",
+    "playful": _FONTS / "Baloo2-SemiBold.ttf",
+    "condensed": _FONTS / "BarlowCondensed-SemiBold.ttf",
+}
+FONT_VARIATIONS = {
+    "bold": "Bold",
+    "slab": "Bold",
+    "rounded": "SemiBold",
 }
 FONT_STYLE = "bold"
 FONT_PATH = str(FONT_STYLES["bold"])
@@ -62,9 +72,9 @@ PAW_PAINT_R_MID = WALL_OUTER_R
 PAW_PAINT_SEAM_DEG = -90.0  # unwrap seam through the plaque arc (pad-free)
 # Name-rail plaque face. Letters seat in shallow glyph-shaped pockets — no pins.
 NAME_RAIL_OUTER_R = 86.0
-LETTER_POCKET_DEPTH = 0.9  # how far the letter sits into the plaque
-LETTER_POCKET_CLEARANCE = 0.18  # outline oversize so pockets accept the letter
-LETTER_POCKET_FLOOR_GAP = 0.08  # tiny glue gap under the curved letter back
+LETTER_POCKET_DEPTH = 0.85  # seats the thinner letter without a deep trench
+LETTER_POCKET_CLEARANCE = 0.10  # tighter outline so less grey halo shows
+LETTER_POCKET_FLOOR_GAP = 0.06  # tiny glue gap under the curved letter back
 BOWL_RIM_OD = 140.0
 BOWL_BODY_OD = 130.0
 BOWL_BASE_OD = 100.0
@@ -79,8 +89,8 @@ TOP_JOINT_PIN_RADIUS = 1.50
 TOP_JOINT_HOLE_RADIUS = 1.75
 TOP_JOINT_RADIUS = 79.6
 TOP_JOINT_PIN_HEIGHT = 3.0
-LETTER_HEIGHT = 18.0
-LETTER_THICKNESS = 2.4  # proud height above the rail face
+LETTER_HEIGHT = 15.0  # slightly smaller → finer look at 0.4 mm nozzle
+LETTER_THICKNESS = 1.4  # proud height above the rail (less “sticker”)
 # Vertically centred on the name-rail flat face (z 29–52 → mid 40.5).
 LETTER_CENTER_Z = 40.5
 # Outer letter face sits LETTER_THICKNESS outside the rail; curved back seats
@@ -88,6 +98,11 @@ LETTER_CENTER_Z = 40.5
 LETTER_FACE_R = NAME_RAIL_OUTER_R + LETTER_THICKNESS
 LETTER_GAP = 1.2  # clear tangential gap between adjacent letter bounds
 LETTER_END_MARGIN = 2.5  # clear space from first/last letter to rail bevel
+# Glyph raster → polygon: finer grid keeps C/O curves from looking hexagonal.
+GLYPH_PIXEL_MM = 0.12
+GLYPH_FONT_PX = 520
+GLYPH_SMOOTH_MM = 0.035  # light open/close; avoid heavy round-off
+GLYPH_SIMPLIFY_MM = 0.02
 # Filled by build_letters() after measuring glyph widths.
 NAME_RAIL_FLAT_DEG = 30.5
 NAME_RAIL_OUTER_DEG = 32.0
@@ -335,31 +350,40 @@ def normalize_name(name: str) -> str:
 
 
 def glyph_polygon(letter: str, target_height: float = LETTER_HEIGHT):
-    """Rasterize a glyph and convert its occupied cells to a printable polygon."""
-    font = ImageFont.truetype(FONT_PATH, 240)
+    """Rasterize a glyph at high resolution for smooth printable outlines."""
+    font = ImageFont.truetype(FONT_PATH, GLYPH_FONT_PX)
+    variation = FONT_VARIATIONS.get(FONT_STYLE)
+    if variation is not None:
+        font.set_variation_by_name(variation.encode())
     bbox = font.getbbox(letter, stroke_width=0)
-    width = bbox[2] - bbox[0] + 8
-    height = bbox[3] - bbox[1] + 8
+    width = bbox[2] - bbox[0] + 16
+    height = bbox[3] - bbox[1] + 16
     image = Image.new("L", (width, height), 0)
     draw = ImageDraw.Draw(image)
-    draw.text((4 - bbox[0], 4 - bbox[1]), letter, font=font, fill=255)
+    draw.text((8 - bbox[0], 8 - bbox[1]), letter, font=font, fill=255)
     occupied = np.asarray(image) > 96
     ys, xs = np.nonzero(occupied)
     occupied = occupied[ys.min() : ys.max() + 1, xs.min() : xs.max() + 1]
 
-    pixel = 0.30
+    pixel = GLYPH_PIXEL_MM
     target_rows = max(1, round(target_height / pixel))
     target_cols = max(1, round(occupied.shape[1] * target_rows / occupied.shape[0]))
     resized = Image.fromarray((occupied * 255).astype(np.uint8)).resize(
         (target_cols, target_rows), Image.Resampling.LANCZOS
     )
-    mask = np.asarray(resized) > 112
+    mask = np.asarray(resized) > 128
     cells = []
     for row, col in zip(*np.nonzero(mask)):
         x0 = (col - target_cols / 2) * pixel
         y0 = (target_rows - row - 1 - target_rows / 2) * pixel
         cells.append(box(x0, y0, x0 + pixel, y0 + pixel))
-    polygon = union_all(cells).buffer(0.10).buffer(-0.10).simplify(0.08)
+    # Mild morphological smooth only — heavy buffer/simplify made letters chunky.
+    polygon = (
+        union_all(cells)
+        .buffer(GLYPH_SMOOTH_MM)
+        .buffer(-GLYPH_SMOOTH_MM)
+        .simplify(GLYPH_SIMPLIFY_MM, preserve_topology=True)
+    )
     return polygon, mask, pixel
 
 

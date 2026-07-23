@@ -2,21 +2,27 @@
 
 **Repo:** https://github.com/conalllaverty/ogma-print-dog-bowl  
 **Local path:** `/Users/conalllaverty/Documents/GitHub/ogma-print-dog-bowl`  
-**Last updated:** 2026-07-22  
-**Status:** Local MVP scaffold — generator + API + web UI working; Railway deploy not yet done
+**Last updated:** 2026-07-23
+**Status:** Local MVP — Cooper, Wave, and solid Honeycomb styles generating
 
 ---
 
 ## What this product is
 
-A configurator for the **paw-lattice dog bowl stand** (Bambu Lab P2S):
+A configurator for elevated dog-bowl stands (Bambu Lab P2S) that all seat the **same Cooper metal bowl** (Ø140 rim family):
 
 1. User enters a dog name (2–8 letters A–Z)
-2. Picks letter style + two **Bambu Lab PLA Matte** colours
-3. Generates a 4-plate print-ready `.3mf` (base, panel, top ring, letters)
+2. Picks **stand style** (paw lattice · wave · honeycomb) + letter style + Matte colours
+3. Generates a print-ready `.3mf`
 4. Downloads and prints / assembles
 
-Geometry comes from the parametric Python pipeline (recessed paw pads, letter **pockets** with curved backs, fuzzy-skin paint on the panel with smooth paws + name rail).
+| Style    | Status               | 3MF                                              |
+| -------- | -------------------- | ------------------------------------------------ |
+| `cooper` | **Live**             | 4 plates — base · paw panel · top ring · letters |
+| `wave`   | **Live (first cut)** | 3 plates — lower · upper (invert) · letters      |
+| `hex`    | **Live (first cut)** | 2 plates — solid honeycomb body · letters        |
+
+Bowl size is locked to Cooper’s insert — no multi-rim presets for now.
 
 Companion / design origin lived in `Documents/Ogma Print Files` (`cooper_bowl_design.py` lineage). This repo is the productised app.
 
@@ -26,28 +32,32 @@ Related product: [`ogma-print-core`](https://github.com/conalllaverty/ogma-print
 
 ## Phase tracker
 
-| Phase | Status | Notes |
-|-------|--------|-------|
-| 0 — Parameterised generator | **Done** | `name`, `font_style`, Matte IDs, fit gate (±45°), fuzzy on/off |
-| 1 — Local FastAPI + Next.js | **Done** | Generate → poll → download 3MF verified (`MAX`, `REX`) |
-| 1b — Hybrid GLB preview | Not started | Client mock only in UI today |
-| 2 — Railway deploy | Not started | Dockerfiles present; need services + volume for jobs |
-| 2b — Filament stock / allow-lists | Not started | Optional; core already has this |
-| 3 — Commerce / checkout | Not started | Deferred auth pattern from core if needed |
+| Phase                             | Status      | Notes                                                          |
+| --------------------------------- | ----------- | -------------------------------------------------------------- |
+| 0 — Parameterised generator       | **Done**    | `name`, `font_style`, Matte IDs, fit gate (±45°), fuzzy on/off |
+| 1 — Local FastAPI + Next.js       | **Done**    | Generate → poll → download 3MF verified (`MAX`, `REX`)         |
+| 1b — Hybrid GLB preview           | Not started | Client mock only in UI today                                   |
+| 2 — Railway deploy                | Not started | Dockerfiles present; need services + volume for jobs           |
+| 2b — Filament stock / allow-lists | Not started | Optional; core already has this                                |
+| 3 — Commerce / checkout           | Not started | Deferred auth pattern from core if needed                      |
 
 ---
 
 ## Locked product decisions
 
-| Topic | Decision |
-|-------|----------|
-| Max name | **8** characters + packing fit gate |
-| Colours | **Bambu PLA Matte only** (`backend/data/filament_palette.json`) |
-| Letter styles | `bold` (Arial Bold), `rounded` (Arial Rounded), `condensed` (Oswald Bold) |
-| Letter mount | Shallow **glyph pockets** + concave cylindrical backs (no pins) |
-| Fuzzy | Default on; paws + name-rail plaque unpainted |
-| Hosting | Railway (same dual local/prod contract as core) |
-| Auth | Anonymous for MVP |
+| Topic               | Decision                                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------- |
+| Max name            | **8** characters + packing fit gate                                                               |
+| Colours             | **Bambu PLA Matte only** (`backend/data/filament_palette.json`)                                   |
+| Letter styles       | `bold` = **Overpass Bold** (default), `clean`, `serif`, `slab`, `rounded`, `playful`, `condensed` |
+| Letter size         | Height **15 mm**, proud **1.4 mm**, pocket clearance **0.10 mm**                                  |
+| Letter print        | **0.10 mm** layers, slower outer walls                                                            |
+| Letter mount        | Shallow **glyph pockets**, no pins; Wave mounts directly to its cone with matching conical backs  |
+| Fuzzy               | Default on; paws + name-rail plaque unpainted                                                     |
+| Honeycomb structure | 4 mm hollow wall; 1 mm grooves leave ≥3 mm web; ≤45° inner seat ramp                              |
+| Wave collar         | Hollow 2.4 mm annulus at R74; 0.5 mm/side clearance; revised-radius coupon pending                |
+| Hosting             | Railway (same dual local/prod contract as core)                                                   |
+| Auth                | Anonymous for MVP                                                                                 |
 
 ---
 
@@ -58,7 +68,7 @@ backend/
   app/                 FastAPI (health, filaments, generate, jobs, download)
   generator/           cooper_bowl_design + build_bambu_project + paint + pipeline
   data/filament_palette.json
-  assets/fonts/        bold / rounded / condensed TTFs
+  assets/fonts/        bundled open-license production fonts + license texts
   Dockerfile + railway.json
 web/                   Next.js configurator (proxies /api/v1 → PIPELINE_API_URL)
 data/jobs/             Job output (gitignored contents)
@@ -74,26 +84,73 @@ AGENTS.md              ← instructions for future AI/human sessions
 ## Verified working
 
 - CLI: `pipeline.py --name MAX …` → `MAX_Paw_Lattice_P2S.3mf`
+- Wave CLI: `--style wave` → 3-plate lower / upper / letters project
+- Honeycomb CLI: `--style hex` → 2-plate solid body / letters project
 - API: `POST /api/v1/bowl/generate` → job succeeds → `download.3mf`
 - Matte palette: 25 filaments exposed via `GET /api/v1/filaments`
+
+Honeycomb generated outputs were topology-checked for `MAX`, `LUNA`, and wide
+8-letter `WILLIAMS`. The wall is continuous: 1.0 mm recessed grooves leave
+proud hex tiles around a whole-cell smooth letter area. The 208-row /
+1056-section surface removes the old stair-stepped groove edges, while complete
+boundary cells replace the former 12 mm field of broken ghost hexagons. Its
+hollow shell remains 4.0 mm thick with a 3.0 mm minimum groove web and a 43.49°
+internal seat ramp. Every radial/Z profile is now checked for intersections.
+Five-millimetre pattern-free edge bands, shallow border rings, and 0.45 mm
+external edge bevels give the drum deliberate top and bottom terminations.
+
+The production font set now uses physically tested Overpass Bold as the default,
+with Source Sans (`clean`), Lora italic (`serif`), Roboto Slab Bold (`slab`),
+Fredoka SemiBold (`rounded`), Baloo 2 SemiBold (`playful`), and Barlow Condensed
+SemiBold (`condensed`). All seven pass the eight-letter curved packing gate.
+
+Cursive analysis selects Pacifico: at 15 mm it retains a 1.34 mm P20 stroke,
+98.2% average connected-word area, and a 59.6 mm `Williams` width. It is not
+live yet because it requires a title-case whole-word mesh, ligatures, and
+deliberate bridges or keyed pockets for detached `i` dots.
+
+Wave `LUNA` and `WILLIAMS` outputs use the 2.4 mm annular collar. The constrained
+R74 rebuild has a 156,868 mm³ lower and 124,647 mm³ lettered upper, versus
+976,604 mm³ for the defective early solid-collar prototype.
+
+The Wave halves now use one continuous 256-column wrapped profile each. This
+replaces the old per-sector boolean slabs, which were watertight but left deep
+vertical grooves that appeared as holes in Bambu Studio. Revised `LUNA` and
+`WILLIAMS` 3MFs have single-shell halves and smooth rendered exteriors.
+
+Every Wave radial/Z profile is now checked as a simple positive-area polygon
+before wrapping. This exposed and removed crossings in both the old lower inner
+wall and upper bowl-support path. The upper has a separate 2.2 mm sleeve,
+non-intersecting support bridge, and ≥4 mm wall through the lettering zone.
+
+Wave lettering now follows the original concept: Lora Medium Italic is
+available as `serif`, glyph pockets are cut directly into the smooth upper
+cone, and the separate proud name plaque has been removed. Letter backs and
+pocket floors match the cone taper instead of using Cooper's cylindrical fit.
+
+Wave fit gate: `data/jobs/wave-collar-fit/Wave_Collar_Fit_Test_P2S.3mf`
+contains the revised R74 lower collar and R74.5 upper sleeve on two plates.
+The 0.5 mm/side clearance passed physically at the previous R78.6 radius, but
+the revised radius coupon still needs a quick confirmation before a full print.
 
 ---
 
 ## Known gaps / risks
 
-1. **Preview** is a CSS mock, not real GLB geometry  
-2. **Arial fonts** in `assets/fonts` are not OFL — Docker falls back toward Liberation; prefer shipping only OFL fonts long-term  
-3. **Job storage** is local disk / in-process threads — fine locally; Railway needs a volume or object storage + possibly a worker  
-4. **No automated tests** yet  
-5. Condensed style helps long names; packing still rejects if rail > ±45°  
+1. **Preview** is a CSS mock, not real GLB geometry
+2. **Cursive is research-only** — Pacifico needs a title-case whole-word mesh path and physical coupon
+3. **Job storage** is local disk / in-process threads — fine locally; Railway needs a volume or object storage + possibly a worker
+4. **No automated tests** yet
+5. Condensed style helps long names; packing still rejects if rail > ±45°
 6. Original design assets / print notes also live under `Ogma Print Files/cooper_dog_bowl/`
 
 ---
 
 ## Immediate next steps (priority)
 
-1. Confirm fonts + `.gitignore` are acceptable for a public GitHub repo  
-2. Add `preview.glb` export from generator; show in web viewer  
-3. Deploy backend + web on Railway; set `PIPELINE_API_URL`, `JOBS_ROOT`, CORS  
-4. Smoke-test a generated 3MF in Bambu Studio (pockets, fuzzy paint, filament colours)  
-5. Optional: share filament palette / stock API with `ogma-print-core`
+1. Reopen revised `LUNA_Wave_P2S.3mf` in Studio; confirm the upper band/holes are gone and the direct pockets are clean
+2. Print the revised R74 Wave collar-fit coupon before committing to the full Wave
+3. Open Honeycomb 3MF in Bambu Studio; inspect wall paths, grooves, smooth name area, pockets, colours
+4. Confirm fonts + `.gitignore` are acceptable for a public GitHub repo
+5. Add `preview.glb` export from generator; show in web viewer
+6. Deploy backend + web on Railway; set `PIPELINE_API_URL`, `JOBS_ROOT`, CORS

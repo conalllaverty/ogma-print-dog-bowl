@@ -31,20 +31,75 @@ Or: `bash scripts/dev.sh`
 ```bash
 .venv/bin/python backend/generator/pipeline.py \
   --name MAX \
+  --style cooper \
   --font-style bold \
   --stand matte-caramel \
   --letters matte-ivory-white \
   --out data/jobs/cli-max
 ```
 
+### Letter-fit test (cropped rail + letters only)
+
+```bash
+.venv/bin/python backend/generator/letter_test.py \
+  --name COOPER \
+  --stand matte-ash-gray \
+  --letters matte-ivory-white \
+  --out data/jobs/letter-test
+```
+
+Output: `*_Letter_Test_P2S.3mf` (plate 1 = rail coupon, plate 2 = letters).
+
+### Wave collar-fit test
+
+Print the production-radius R74 collar and R74.5 sleeve before committing to a
+full Wave:
+
+```bash
+.venv/bin/python backend/generator/wave_fit_test.py \
+  --stand matte-caramel \
+  --out data/jobs/wave-collar-fit
+```
+
+Output: `Wave_Collar_Fit_Test_P2S.3mf` (lower collar and upper sleeve on
+separate plates, 0.16 mm layers). Accept when the sleeve starts by hand, seats
+without tools or rocking, and can still be separated before gluing.
+
 ## Options
 
-| Control | Values |
-|---------|--------|
-| Name | 2–8 letters A–Z |
-| Letter style | `bold` · `rounded` · `condensed` |
-| Stand / letter colour | Bambu PLA Matte palette (`backend/data/filament_palette.json`) |
-| Fuzzy wall | on/off (paws + name rail stay smooth when on) |
+| Control               | Values                                                                    |
+| --------------------- | ------------------------------------------------------------------------- |
+| Name                  | 2–8 letters A–Z                                                           |
+| Stand style           | `cooper` · `wave` · `hex` (solid recessed honeycomb)                      |
+| Letter style          | `bold` · `clean` · `serif` · `slab` · `rounded` · `playful` · `condensed` |
+| Stand / letter colour | Bambu PLA Matte palette (`backend/data/filament_palette.json`)            |
+| Fuzzy wall            | on/off (paws + name rail stay smooth when on)                             |
+
+## Style concept sheets
+
+Multi-angle SVGs for design review before geometry changes:
+
+- `design/style-previews/cooper-paw-multi-angle.svg`
+- `design/style-previews/wave-multi-angle.svg`
+- `design/style-previews/honeycomb-multi-angle.svg`
+
+Regenerate them with `python3 scripts/generate_bowl_style_svgs.py`.
+
+Wave uses direct glyph pockets in the upper cone rather than a name plaque.
+The `serif` option is the original concept's Lora Medium Italic treatment;
+Wave letter backs are conical so they seat flush against the tapered wall.
+Both halves use validated, non-self-intersecting wrapped profiles. The upper
+keeps at least 4 mm of wall through the lettering zone.
+
+Honeycomb uses a 4 mm hollow drum with 1 mm recessed grooves. Its name area
+suppresses complete honeycomb cells, leaving a deliberate smooth centre without
+clipped or fading groove fragments. Pattern-free edge bands and shallow border
+rings give the top and bottom a clean finish.
+
+`bold` is Overpass Bold, selected from physical FDM font testing. `rounded`
+uses Fredoka SemiBold, `playful` uses Baloo 2 SemiBold, `condensed` uses Barlow
+Condensed SemiBold, and `slab` uses Roboto Slab Bold. `clean` retains the
+previous Source Sans treatment.
 
 ## API
 

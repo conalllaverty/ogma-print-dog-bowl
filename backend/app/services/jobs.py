@@ -20,6 +20,17 @@ if str(GENERATOR_DIR) not in sys.path:
 
 from pipeline import FONT_STYLES, generate  # noqa: E402
 from cooper_bowl_design import NameFitError  # noqa: E402
+from geometry_config import STYLE_COOPER, STYLE_META, STYLES  # noqa: E402
+
+STYLE_CATALOG = [
+    {
+        "id": sid,
+        "name": STYLE_META[sid]["name"],
+        "description": STYLE_META[sid]["description"],
+        "available": STYLE_META[sid]["available"],
+    }
+    for sid in STYLES
+]
 
 
 class JobStatus(str, Enum):
@@ -37,6 +48,7 @@ class Job:
     font_style: str
     stand_filament_id: str
     letter_filament_id: str
+    style: str = STYLE_COOPER
     fuzzy_enabled: bool = True
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -64,9 +76,15 @@ def create_job(
     stand_filament_id: str,
     letter_filament_id: str,
     fuzzy_enabled: bool = True,
+    style: str = STYLE_COOPER,
 ) -> Job:
     if font_style not in FONT_STYLES:
         raise ValueError(f"font_style must be one of {list(FONT_STYLES)}")
+    style = style.lower().strip()
+    if style not in STYLES:
+        raise ValueError(f"style must be one of {list(STYLES)}")
+    if not STYLE_META[style]["available"]:
+        raise ValueError(f"Style '{style}' is not available yet")
     job = Job(
         id=uuid.uuid4().hex[:12],
         status=JobStatus.queued,
@@ -74,6 +92,7 @@ def create_job(
         font_style=font_style,
         stand_filament_id=stand_filament_id,
         letter_filament_id=letter_filament_id,
+        style=style,
         fuzzy_enabled=fuzzy_enabled,
     )
     with _lock:
@@ -93,6 +112,8 @@ def get_job(job_id: str) -> Job | None:
     if not status_path.is_file():
         return None
     data = json.loads(status_path.read_text())
+    # Older status.json files may omit style.
+    data.setdefault("style", STYLE_COOPER)
     job = Job(**{**data, "status": JobStatus(data["status"])})
     with _lock:
         _jobs[job_id] = job
@@ -109,6 +130,7 @@ def _run_job(job_id: str) -> None:
         result = generate(
             job.name,
             job.dir,
+            style=job.style,
             font_style=job.font_style,
             stand_filament_id=job.stand_filament_id,
             letter_filament_id=job.letter_filament_id,

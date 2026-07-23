@@ -8,13 +8,14 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
-from app.services.jobs import create_job, get_job
+from app.services.jobs import STYLE_CATALOG, create_job, get_job
 
 router = APIRouter(prefix="/api/v1")
 
 
 class GenerateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=8)
+    style: str = "cooper"
     font_style: str = "bold"
     stand_filament_id: str = "matte-caramel"
     letter_filament_id: str = "matte-ivory-white"
@@ -36,10 +37,43 @@ def filaments():
             {"id": f["id"], "name": f["name"], "hex": f["hex"], "material": f.get("material")}
             for f in data["filaments"]
         ],
+        "styles": STYLE_CATALOG,
         "font_styles": [
-            {"id": "bold", "name": "Bold Sans", "description": "Thick even strokes — default"},
-            {"id": "rounded", "name": "Rounded Bold", "description": "Softer corners"},
-            {"id": "condensed", "name": "Condensed Bold", "description": "Narrower — better for long names"},
+            {
+                "id": "bold",
+                "name": "Print-Safe Sans",
+                "description": "Overpass Bold — physically tested FDM default",
+            },
+            {
+                "id": "clean",
+                "name": "Clean Sans",
+                "description": "Source Sans 3 SemiBold — neutral legacy option",
+            },
+            {
+                "id": "serif",
+                "name": "Elegant Serif",
+                "description": "Lora Medium Italic — original Wave styling",
+            },
+            {
+                "id": "slab",
+                "name": "Robust Slab",
+                "description": "Roboto Slab Bold — print-safe serif",
+            },
+            {
+                "id": "rounded",
+                "name": "Friendly Rounded",
+                "description": "Fredoka SemiBold — playful with thick strokes",
+            },
+            {
+                "id": "playful",
+                "name": "Soft Rounded",
+                "description": "Baloo 2 SemiBold — original rounded example",
+            },
+            {
+                "id": "condensed",
+                "name": "Condensed",
+                "description": "Barlow Condensed SemiBold — best for long names",
+            },
         ],
         "constraints": {"min_letters": 2, "max_letters": 8, "alphabet": "A–Z"},
     }
@@ -50,6 +84,7 @@ def bowl_generate(body: GenerateRequest):
     try:
         job = create_job(
             name=body.name,
+            style=body.style,
             font_style=body.font_style,
             stand_filament_id=body.stand_filament_id,
             letter_filament_id=body.letter_filament_id,
@@ -69,6 +104,7 @@ def bowl_job(job_id: str):
         "job_id": job.id,
         "status": job.status,
         "name": job.name,
+        "style": job.style,
         "font_style": job.font_style,
         "stand_filament_id": job.stand_filament_id,
         "letter_filament_id": job.letter_filament_id,

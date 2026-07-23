@@ -16,11 +16,29 @@ if str(GENERATOR_DIR) not in sys.path:
 
 import cooper_bowl_design as design  # noqa: E402
 import build_bambu_project as bambu  # noqa: E402
+import hex_bowl_design as hex_design  # noqa: E402
+import wave_bowl_design as wave_design  # noqa: E402
+from geometry_config import (  # noqa: E402
+    STYLE_COOPER,
+    STYLE_HEX,
+    STYLE_META,
+    STYLE_WAVE,
+    STYLES,
+)
 
 
-FONT_STYLES = ("bold", "rounded", "condensed")
+FONT_STYLES = (
+    "bold",
+    "clean",
+    "serif",
+    "slab",
+    "rounded",
+    "playful",
+    "condensed",
+)
 DEFAULT_STAND = "matte-caramel"
 DEFAULT_LETTERS = "matte-ivory-white"
+DEFAULT_STYLE = STYLE_COOPER
 PALETTE_PATH = BACKEND_DIR / "data" / "filament_palette.json"
 
 
@@ -50,6 +68,7 @@ def resolve_filament(filament_id: str, palette: dict[str, Filament] | None = Non
 class GenerateResult:
     name: str
     font_style: str
+    style: str
     stand: Filament
     letters: Filament
     job_dir: Path
@@ -62,12 +81,21 @@ def generate(
     name: str,
     job_dir: Path,
     *,
+    style: str = DEFAULT_STYLE,
     font_style: str = "bold",
     stand_filament_id: str = DEFAULT_STAND,
     letter_filament_id: str = DEFAULT_LETTERS,
     fuzzy_enabled: bool = True,
 ) -> GenerateResult:
-    """Generate printable meshes and a 4-plate Bambu 3MF into job_dir."""
+    """Generate printable meshes and a Bambu 3MF into job_dir."""
+    style = style.lower().strip()
+    if style not in STYLES:
+        raise ValueError(f"Unknown style '{style}'. Choose from {list(STYLES)}")
+    if not STYLE_META[style].get("generator_available", STYLE_META[style]["available"]):
+        raise ValueError(
+            f"Style '{style}' is not available yet ({STYLE_META[style]['description']})."
+        )
+
     job_dir = Path(job_dir)
     job_dir.mkdir(parents=True, exist_ok=True)
     meshes = job_dir / "meshes"
@@ -78,38 +106,73 @@ def generate(
     stand = resolve_filament(stand_filament_id, palette)
     letters = resolve_filament(letter_filament_id, palette)
 
-    design.configure_output(job_dir, name=name, font_style=font_style)
-    cleaned = design.NAME
-    design.main()
+    work = GENERATOR_DIR / "bambu_work"
+
+    if style == STYLE_WAVE:
+        report = wave_design.generate_wave_meshes(job_dir, name=name, font_style=font_style)
+        cleaned = design.NAME
+        rail_outer = float(report["letters"]["name_rail_outer_deg"])
+        output = job_dir / f"{cleaned}_Wave_P2S.3mf"
+        bambu.build_wave_project(
+            mesh_dir=meshes,
+            output_path=output,
+            name=cleaned,
+            stand_hex=stand.hex,
+            letter_hex=letters.hex,
+            stand_name=stand.name,
+            letter_name=letters.name,
+            work_dir=work,
+            template_path=GENERATOR_DIR / "blank_project.3mf",
+        )
+    elif style == STYLE_HEX:
+        report = hex_design.generate_hex_meshes(job_dir, name=name, font_style=font_style)
+        cleaned = design.NAME
+        rail_outer = float(report["letters"]["name_rail_outer_deg"])
+        output = job_dir / f"{cleaned}_Honeycomb_P2S.3mf"
+        bambu.build_hex_project(
+            mesh_dir=meshes,
+            output_path=output,
+            name=cleaned,
+            stand_hex=stand.hex,
+            letter_hex=letters.hex,
+            stand_name=stand.name,
+            letter_name=letters.name,
+            work_dir=work,
+            template_path=GENERATOR_DIR / "blank_project.3mf",
+        )
+    else:
+        # STYLE_COOPER
+        design.configure_output(job_dir, name=name, font_style=font_style)
+        cleaned = design.NAME
+        design.main()
+        dims_path = job_dir / "dimensions_and_validation.json"
+        dims = json.loads(dims_path.read_text())
+        rail_outer = float(dims["letters"]["name_rail_outer_deg"])
+        output = job_dir / f"{cleaned}_Paw_Lattice_P2S.3mf"
+        bambu.build_project(
+            mesh_dir=meshes,
+            output_path=output,
+            name=cleaned,
+            stand_hex=stand.hex,
+            letter_hex=letters.hex,
+            stand_name=stand.name,
+            letter_name=letters.name,
+            work_dir=work,
+            template_path=GENERATOR_DIR / "blank_project.3mf",
+            dims_root=job_dir,
+            fuzzy_enabled=fuzzy_enabled,
+        )
 
     dims_path = job_dir / "dimensions_and_validation.json"
-    dims = json.loads(dims_path.read_text())
-    rail_outer = float(dims["letters"]["name_rail_outer_deg"])
-
-    work = GENERATOR_DIR / "bambu_work"
-    output = job_dir / f"{cleaned}_Paw_Lattice_P2S.3mf"
-    bambu.build_project(
-        mesh_dir=meshes,
-        output_path=output,
-        name=cleaned,
-        stand_hex=stand.hex,
-        letter_hex=letters.hex,
-        stand_name=stand.name,
-        letter_name=letters.name,
-        work_dir=work,
-        template_path=GENERATOR_DIR / "blank_project.3mf",
-        dims_root=job_dir,
-        fuzzy_enabled=fuzzy_enabled,
-    )
-
     meta = {
         "name": cleaned,
+        "style": style,
         "font_style": font_style,
         "stand_filament_id": stand.id,
         "letter_filament_id": letters.id,
         "stand_hex": stand.hex,
         "letter_hex": letters.hex,
-        "fuzzy_enabled": fuzzy_enabled,
+        "fuzzy_enabled": fuzzy_enabled if style == STYLE_COOPER else False,
         "threemf": output.name,
         "rail_outer_deg": rail_outer,
     }
@@ -118,6 +181,7 @@ def generate(
     return GenerateResult(
         name=cleaned,
         font_style=font_style,
+        style=style,
         stand=stand,
         letters=letters,
         job_dir=job_dir,
@@ -130,8 +194,9 @@ def generate(
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Generate a custom paw-lattice bowl 3MF")
+    parser = argparse.ArgumentParser(description="Generate a custom bowl 3MF")
     parser.add_argument("--name", required=True)
+    parser.add_argument("--style", default=DEFAULT_STYLE, choices=STYLES)
     parser.add_argument("--font-style", default="bold", choices=FONT_STYLES)
     parser.add_argument("--stand", default=DEFAULT_STAND)
     parser.add_argument("--letters", default=DEFAULT_LETTERS)
@@ -141,6 +206,7 @@ if __name__ == "__main__":
     result = generate(
         args.name,
         args.out,
+        style=args.style,
         font_style=args.font_style,
         stand_filament_id=args.stand,
         letter_filament_id=args.letters,

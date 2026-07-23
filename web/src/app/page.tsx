@@ -4,13 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 
 type Filament = { id: string; name: string; hex: string; material?: string };
 type FontStyle = { id: string; name: string; description: string };
+type BowlStyle = { id: string; name: string; description: string; available: boolean };
 
 const MAX = 8;
 
 export default function HomePage() {
   const [filaments, setFilaments] = useState<Filament[]>([]);
   const [fontStyles, setFontStyles] = useState<FontStyle[]>([]);
+  const [styles, setStyles] = useState<BowlStyle[]>([]);
   const [name, setName] = useState("MAX");
+  const [style, setStyle] = useState("cooper");
   const [fontStyle, setFontStyle] = useState("bold");
   const [standId, setStandId] = useState("matte-caramel");
   const [letterId, setLetterId] = useState("matte-ivory-white");
@@ -26,6 +29,7 @@ export default function HomePage() {
       .then((data) => {
         setFilaments(data.filaments || []);
         setFontStyles(data.font_styles || []);
+        setStyles(data.styles || []);
       })
       .catch(() => setError("Could not load filament palette. Is the API running?"));
   }, []);
@@ -33,6 +37,7 @@ export default function HomePage() {
   const stand = useMemo(() => filaments.find((f) => f.id === standId), [filaments, standId]);
   const letter = useMemo(() => filaments.find((f) => f.id === letterId), [filaments, letterId]);
   const cleanName = name.toUpperCase().replace(/[^A-Z]/g, "").slice(0, MAX);
+  const showFuzzy = style === "cooper";
 
   async function onGenerate() {
     setBusy(true);
@@ -45,10 +50,11 @@ export default function HomePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: cleanName,
+          style,
           font_style: fontStyle,
           stand_filament_id: standId,
           letter_filament_id: letterId,
-          fuzzy_enabled: fuzzy,
+          fuzzy_enabled: showFuzzy ? fuzzy : false,
         }),
       });
       const data = await res.json();
@@ -79,9 +85,10 @@ export default function HomePage() {
     <main className="page">
       <section className="hero">
         <p className="eyebrow">Ogma Print</p>
-        <h1>Paw-lattice bowl</h1>
+        <h1>Named bowl stand</h1>
         <p className="lede">
-          Enter a name, pick Bambu Lab Matte PLA colours, and download a print-ready P2S project.
+          Enter a name, pick a style and Bambu Lab Matte PLA colours, then download a print-ready
+          P2S project.
         </p>
 
         <div className="preview" aria-hidden>
@@ -111,6 +118,24 @@ export default function HomePage() {
         </label>
 
         <fieldset>
+          <legend>Stand style</legend>
+          <div className="styles">
+            {styles.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className={style === s.id ? "chip on" : "chip"}
+                disabled={!s.available}
+                onClick={() => s.available && setStyle(s.id)}
+              >
+                <strong>{s.name}</strong>
+                <span>{s.available ? s.description : `${s.description} (soon)`}</span>
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset>
           <legend>Letter style</legend>
           <div className="styles">
             {fontStyles.map((fs) => (
@@ -130,10 +155,12 @@ export default function HomePage() {
         <SwatchRow label="Stand colour" value={standId} options={filaments} onChange={setStandId} />
         <SwatchRow label="Letter colour" value={letterId} options={filaments} onChange={setLetterId} />
 
-        <label className="check">
-          <input type="checkbox" checked={fuzzy} onChange={(e) => setFuzzy(e.target.checked)} />
-          Fuzzy outer wall (paws + name rail stay smooth)
-        </label>
+        {showFuzzy && (
+          <label className="check">
+            <input type="checkbox" checked={fuzzy} onChange={(e) => setFuzzy(e.target.checked)} />
+            Fuzzy outer wall (paws + name rail stay smooth)
+          </label>
+        )}
 
         <button type="button" className="cta" disabled={busy || cleanName.length < 2} onClick={onGenerate}>
           {busy ? "Generating…" : "Generate 3MF"}
@@ -143,7 +170,7 @@ export default function HomePage() {
         {error && <p className="error">{error}</p>}
         {downloadUrl && (
           <a className="download" href={downloadUrl}>
-            Download {cleanName}_Paw_Lattice_P2S.3mf
+            Download 3MF
           </a>
         )}
       </section>
@@ -277,6 +304,10 @@ export default function HomePage() {
         .chip.on {
           border-color: var(--accent);
           background: rgba(174, 131, 91, 0.15);
+        }
+        .chip:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
         }
         .check {
           display: flex;

@@ -8,11 +8,11 @@ Custom **paw-lattice dog bowl stand** configurator: name + Bambu Matte PLA colou
 
 ## Canonical docs
 
-| File | Use |
-|------|-----|
+| File                                     | Use                                        |
+| ---------------------------------------- | ------------------------------------------ |
 | [PROJECT_STATUS.md](./PROJECT_STATUS.md) | Phase tracker, decisions, gaps, next steps |
-| [README.md](./README.md) | Local run + API overview |
-| [.env.example](./.env.example) | Env contract (local + Railway) |
+| [README.md](./README.md)                 | Local run + API overview                   |
+| [.env.example](./.env.example)           | Env contract (local + Railway)             |
 
 Sibling design sandbox (not this repo): `Documents/Ogma Print Files` — original Cooper meshes / print experiments.
 
@@ -20,10 +20,10 @@ Sibling product for Railway/filament patterns: `ogma-print-core`.
 
 ## Architecture (do not invent a parallel stack)
 
-- **Local-first + Railway** — same codepaths; config via env only  
-- **FastAPI** (`backend/app`) — jobs on disk under `data/jobs/`  
-- **Generator** (`backend/generator/pipeline.py`) — calls design → STLs → `build_project` → painted 3MF  
-- **Next.js** (`web`) — rewrites `/api/v1/*` to `PIPELINE_API_URL`  
+- **Local-first + Railway** — same codepaths; config via env only
+- **FastAPI** (`backend/app`) — jobs on disk under `data/jobs/`
+- **Generator** (`backend/generator/pipeline.py`) — calls design → STLs → `build_project` → painted 3MF
+- **Next.js** (`web`) — rewrites `/api/v1/*` to `PIPELINE_API_URL`
 
 Do **not** rewrite geometry in JavaScript. Do **not** add free hex colour pickers — Matte palette IDs only.
 
@@ -32,6 +32,9 @@ Do **not** rewrite geometry in JavaScript. Do **not** add free hex colour picker
 ```text
 backend/generator/pipeline.py          # generate(name, job_dir, font_style, stand/letter filament ids)
 backend/generator/cooper_bowl_design.py
+backend/generator/wave_bowl_design.py
+backend/generator/hex_bowl_design.py
+backend/generator/wave_fit_test.py
 backend/generator/build_bambu_project.py
 backend/generator/paint_fuzzy_skin.py
 backend/app/api/bowl.py
@@ -61,29 +64,41 @@ Or `bash scripts/dev.sh`.
 
 ## Constraints to respect
 
-- Name: 2–8 letters A–Z; packing must stay within `MAX_RAIL_OUTER_DEG` (45°)  
-- Letter styles: `bold` | `rounded` | `condensed` only  
-- Filaments: IDs from `filament_palette.json` (Matte)  
-- Panel fuzzy paint: outer wall fuzzy; **exclude** paw silhouettes and name-rail plaque  
-- Letters: pocket fit + curved backs — no pin/socket regression  
-- Object id hygiene in 3MF: `object_N.model` ↔ local id `N` only  
+- Name: 2–8 letters A–Z; packing must stay within `MAX_RAIL_OUTER_DEG` (45°)
+- Letter styles: `bold` (Overpass) | `clean` (Source Sans) | `serif` (Lora) | `slab` (Roboto Slab) | `rounded` (Fredoka) | `playful` (Baloo 2) | `condensed` (Barlow Condensed)
+- Filaments: IDs from `filament_palette.json` (Matte)
+- Panel fuzzy paint: outer wall fuzzy; **exclude** paw silhouettes and name-rail plaque
+- Letters: pocket fit + curved backs — no pin/socket regression
+- Object id hygiene in 3MF: `object_N.model` ↔ local id `N` only
+- Hex means the solid recessed-honeycomb drum; do not restore the open lattice or foot ring
+- Honeycomb: keep the 4 mm hollow wall, 1 mm groove depth, ≥3 mm remaining web, and ≤45° seat ramp
+- Honeycomb uses whole-cell suppression around the name; do not restore the long fade that produced ghost hexagons
+- Honeycomb radial/Z profiles must be simple positive-area polygons before wrapping
+- Honeycomb keeps 5 mm pattern-free edge bands with shallow border rings and 0.45 mm external bevels
+- Wave: collar is a hollow 2.4 mm annulus rooted to the bed — never a solid cylinder
+- Wave collar outer radius is 74 mm; sleeve inner radius is 74.5 mm and wall is 2.2 mm
+- Wave sleeve clearance remains 0.5 mm/side; it passed at the prior R78.6 size, but the revised R74 coupon needs confirmation
+- Wave halves must use continuous wrapped profiles; per-sector boolean slabs create vertical wall grooves
+- Reject any Wave radial/Z profile that is not a simple positive-area polygon
+- Wave upper keeps ≥4 mm wall through the lettering zone; do not let its support bridge cross the exterior
+- Wave has no name plaque: cut glyph pockets directly into the upper cone and use matching conical letter backs
 
 ## When changing the design
 
-1. Edit `cooper_bowl_design.py` / paint / build  
-2. Run CLI generate for a short name (`MAX`) and a wide/long case  
-3. Open 3MF in Bambu Studio — check pockets, fuzzy, filaments  
-4. Update `PROJECT_STATUS.md` if a phase or decision changed  
+1. Edit `cooper_bowl_design.py` / paint / build
+2. Run CLI generate for a short name (`MAX`) and a wide/long case
+3. Open 3MF in Bambu Studio — check pockets, fuzzy, filaments
+4. Update `PROJECT_STATUS.md` if a phase or decision changed
 
 ## Railway notes (from ogma-print-core lessons)
 
-- Backend listens on `$PORT` (often 8080)  
-- Web must not hardcode `localhost` for downloads — use proxy / `PIPELINE_API_URL`  
-- Services do not share filesystem — plan volume or S3 for `JOBS_ROOT`  
-- Prefer Dockerfile builds over Nixpacks for the storefront  
+- Backend listens on `$PORT` (often 8080)
+- Web must not hardcode `localhost` for downloads — use proxy / `PIPELINE_API_URL`
+- Services do not share filesystem — plan volume or S3 for `JOBS_ROOT`
+- Prefer Dockerfile builds over Nixpacks for the storefront
 
 ## What not to do
 
-- Don’t commit `.env`, `.venv`, `node_modules`, or `data/jobs/*` outputs  
-- Don’t reintroduce letter pins or modifier-based fuzzy blockers  
+- Don’t commit `.env`, `.venv`, `node_modules`, or `data/jobs/*` outputs
+- Don’t reintroduce letter pins or modifier-based fuzzy blockers
 - Don’t expand scope to checkout until MVP generate/download is solid on Railway

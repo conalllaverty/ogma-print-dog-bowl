@@ -36,7 +36,7 @@ BAMBU = "http://schemas.bambulab.com/package/2021"
 
 
 def configure_objects(mesh_dir: Path, name: str) -> None:
-    """Build OBJECTS + BUILD_POSITIONS for a variable-length name."""
+    """Build OBJECTS + BUILD_POSITIONS for the Cooper paw-lattice layout."""
     global OBJECTS, BUILD_POSITIONS, MESH_DIR
     MESH_DIR = Path(mesh_dir)
     objects: list[tuple[str, Path, int]] = [
@@ -58,6 +58,57 @@ def configure_objects(mesh_dir: Path, name: str) -> None:
         (128.0, -184.0, 0.0),
     ]
     x0, y0 = 405.0, -196.0
+    cols = 4
+    for i in range(len(name)):
+        positions.append((x0 + (i % cols) * 24.0, y0 + (i // cols) * 32.0, 0.0))
+    BUILD_POSITIONS = positions
+
+
+def configure_wave_objects(mesh_dir: Path, name: str) -> None:
+    """Build OBJECTS + BUILD_POSITIONS for the two-piece wave layout."""
+    global OBJECTS, BUILD_POSITIONS, MESH_DIR
+    MESH_DIR = Path(mesh_dir)
+    objects: list[tuple[str, Path, int]] = [
+        (f"{name} wave lower", MESH_DIR / "wave_lower.ply", 1),
+        (f"{name} wave upper — print inverted", MESH_DIR / "wave_upper.ply", 1),
+    ]
+    seen: dict[str, int] = {}
+    for index, ch in enumerate(name, start=1):
+        seen[ch] = seen.get(ch, 0) + 1
+        label = f"Letter {ch}" if seen[ch] == 1 else f"Letter {ch} {seen[ch]}"
+        objects.append((label, MESH_DIR / f"letter_{index}_{ch}.stl", 2))
+    OBJECTS = objects
+
+    positions: list[tuple[float, float, float]] = [
+        (128.0, 128.0, 0.0),
+        (440.0, 128.0, 0.0),
+    ]
+    # Plate 3 sits on the next row of the 312 mm grid.
+    x0, y0 = 80.0, -220.0
+    cols = 4
+    for i in range(len(name)):
+        positions.append((x0 + (i % cols) * 24.0, y0 + (i // cols) * 32.0, 0.0))
+    BUILD_POSITIONS = positions
+
+
+def configure_hex_objects(mesh_dir: Path, name: str) -> None:
+    """Build OBJECTS + BUILD_POSITIONS for the solid honeycomb layout."""
+    global OBJECTS, BUILD_POSITIONS, MESH_DIR
+    MESH_DIR = Path(mesh_dir)
+    objects: list[tuple[str, Path, int]] = [
+        (f"{name} honeycomb body", MESH_DIR / "honeycomb_body.ply", 1),
+    ]
+    seen: dict[str, int] = {}
+    for index, ch in enumerate(name, start=1):
+        seen[ch] = seen.get(ch, 0) + 1
+        label = f"Letter {ch}" if seen[ch] == 1 else f"Letter {ch} {seen[ch]}"
+        objects.append((label, MESH_DIR / f"letter_{index}_{ch}.stl", 2))
+    OBJECTS = objects
+
+    positions: list[tuple[float, float, float]] = [
+        (128.0, 128.0, 0.0),
+    ]
+    x0, y0 = 392.0, 96.0
     cols = 4
     for i in range(len(name)):
         positions.append((x0 + (i % cols) * 24.0, y0 + (i // cols) * 32.0, 0.0))
@@ -147,12 +198,46 @@ def top_model() -> bytes:
 
 
 def model_settings(meshes: list[trimesh.Trimesh]) -> bytes:
+    wave_mode = "wave lower" in OBJECTS[0][0].lower()
+    hex_mode = "honeycomb body" in OBJECTS[0][0].lower()
     lines = ['<?xml version="1.0" encoding="UTF-8"?>', "<config>"]
     for index, ((name, source, extruder), mesh) in enumerate(zip(OBJECTS, meshes), start=1):
         top_id = 99 + index
         # Object overrides prioritise steady layer time + solid outer skin:
         # 4 walls (hides infill telegraphing / protects letter sockets), gyroid.
-        if index == 1:
+        if wave_mode or hex_mode:
+            body_object = index <= 2 if wave_mode else index == 1
+            if body_object:
+                body_layer = "0.16" if hex_mode else "0.20"
+                overrides = {
+                    "layer_height": body_layer if index == 1 else "0.16",
+                    "wall_loops": "4",
+                    "sparse_infill_density": "15%",
+                    "sparse_infill_pattern": "gyroid",
+                    "outer_wall_speed": "100",
+                    "inner_wall_speed": "200",
+                    "small_perimeter_speed": "100%",
+                    "top_shell_layers": "5",
+                    "bottom_surface_pattern": "monotonic",
+                    "top_surface_pattern": "monotonicline",
+                    "seam_position": "back",
+                    "fuzzy_skin": "none",
+                }
+            else:
+                overrides = {
+                    "layer_height": "0.10",
+                    "wall_loops": "4",
+                    "sparse_infill_density": "15%",
+                    "sparse_infill_pattern": "gyroid",
+                    "outer_wall_speed": "50",
+                    "inner_wall_speed": "100",
+                    "small_perimeter_speed": "50%",
+                    "top_shell_layers": "6",
+                    "bottom_shell_layers": "5",
+                    "seam_position": "back",
+                    "fuzzy_skin": "none",
+                }
+        elif index == 1:
             overrides = {
                 "layer_height": "0.20",
                 "wall_loops": "4",
@@ -204,15 +289,17 @@ def model_settings(meshes: list[trimesh.Trimesh]) -> bytes:
                 "fuzzy_skin": "none",
             }
         else:
+            # Letters: fine layers for edges/curves; slower walls for outline quality.
             overrides = {
-                "layer_height": "0.16",
+                "layer_height": "0.10",
                 "wall_loops": "4",
-                "sparse_infill_density": "100%",
+                "sparse_infill_density": "15%",
                 "sparse_infill_pattern": "gyroid",
-                "outer_wall_speed": "80",
-                "inner_wall_speed": "150",
-                "small_perimeter_speed": "100%",
-                "top_shell_layers": "5",
+                "outer_wall_speed": "50",
+                "inner_wall_speed": "100",
+                "small_perimeter_speed": "50%",
+                "top_shell_layers": "6",
+                "bottom_shell_layers": "5",
                 "seam_position": "back",
                 "fuzzy_skin": "none",
             }
@@ -266,12 +353,22 @@ def model_settings(meshes: list[trimesh.Trimesh]) -> bytes:
         result.append("  </plate>")
         return result
 
-    lines.extend(plate(1, "Base", [1]))
-    lines.extend(plate(2, "Paw panel — print upright", [2]))
-    lines.extend(plate(3, "Top seat ring — print upright", [3]))
     pet = OBJECTS[0][0].split()[0]
-    letter_indices = list(range(4, len(OBJECTS) + 1))
-    lines.extend(plate(4, f"{pet} letters", letter_indices))
+    if wave_mode:
+        lines.extend(plate(1, "Wave lower", [1]))
+        lines.extend(plate(2, "Wave upper — print inverted", [2]))
+        letter_indices = list(range(3, len(OBJECTS) + 1))
+        lines.extend(plate(3, f"{pet} letters", letter_indices))
+    elif hex_mode:
+        lines.extend(plate(1, "Solid honeycomb body", [1]))
+        letter_indices = list(range(2, len(OBJECTS) + 1))
+        lines.extend(plate(2, f"{pet} letters", letter_indices))
+    else:
+        lines.extend(plate(1, "Base", [1]))
+        lines.extend(plate(2, "Paw panel — print upright", [2]))
+        lines.extend(plate(3, "Top seat ring — print upright", [3]))
+        letter_indices = list(range(4, len(OBJECTS) + 1))
+        lines.extend(plate(4, f"{pet} letters", letter_indices))
     lines.append("  <assemble>")
     for index in range(1, len(OBJECTS) + 1):
         lines.append(
@@ -462,6 +559,180 @@ def build_project(
             )
 
     print(f"{OUTPUT}  (name={name}, stand={stand_hex}, letters={letter_hex})")
+    return OUTPUT
+
+
+def build_wave_project(
+    *,
+    mesh_dir: Path,
+    output_path: Path,
+    name: str,
+    stand_hex: str,
+    letter_hex: str,
+    stand_name: str = "Stand",
+    letter_name: str = "Letters",
+    work_dir: Path | None = None,
+    template_path: Path | None = None,
+) -> Path:
+    """Package wave lower/upper + letters into a 3-plate Bambu 3MF."""
+    global OUTPUT, WORK, TEMPLATE
+    mesh_dir = Path(mesh_dir)
+    output_path = Path(output_path)
+    work_dir = Path(work_dir or WORK)
+    template_path = Path(template_path or TEMPLATE)
+    OUTPUT = output_path
+    WORK = work_dir
+    TEMPLATE = template_path
+
+    configure_wave_objects(mesh_dir, name.upper())
+
+    meshes = []
+    for _, path, _ in OBJECTS:
+        # Wave sector unions keep topology better without process=True.
+        # Letters are simple extrusions and expect the usual cleanup.
+        process = path.suffix.lower() != ".ply"
+        mesh = trimesh.load_mesh(path, process=process)
+        if not mesh.is_watertight or not mesh.is_volume:
+            raise ValueError(f"Non-manifold printable mesh: {path}")
+        meshes.append(mesh)
+
+    with (
+        zipfile.ZipFile(TEMPLATE) as template,
+        zipfile.ZipFile(WORK / "cooper_base_plate.3mf") as base_preview,
+        zipfile.ZipFile(WORK / "cooper_panel_plate.3mf") as panel_preview,
+        zipfile.ZipFile(WORK / "cooper_letters_plate.3mf") as letter_preview,
+        zipfile.ZipFile(OUTPUT, "w", zipfile.ZIP_DEFLATED, compresslevel=7) as output,
+    ):
+        output.writestr("[Content_Types].xml", template.read("[Content_Types].xml"))
+        output.writestr("_rels/.rels", template.read("_rels/.rels"))
+        output.writestr("3D/3dmodel.model", top_model())
+        output.writestr("3D/_rels/3dmodel.model.rels", relationships())
+        for index, mesh in enumerate(meshes, start=1):
+            output.writestr(
+                f"3D/Objects/object_{index}.model",
+                mesh_model(mesh, index, paint_fuzzy=None),
+            )
+        output.writestr("Metadata/model_settings.config", model_settings(meshes))
+
+        settings = json.loads(template.read("Metadata/project_settings.config"))
+        settings["wall_loops"] = "4"
+        settings["sparse_infill_density"] = "15%"
+        settings["sparse_infill_pattern"] = "gyroid"
+        settings["enable_support"] = "0"
+        settings["seam_position"] = "back"
+        settings["fuzzy_skin"] = "none"
+        settings["filament_colour"] = [stand_hex, letter_hex]
+        settings["default_filament_colour"] = ["", ""]
+        settings["filament_settings_id"] = [
+            f"Bambu PLA Matte @Ogma {stand_name}",
+            f"Bambu PLA Matte @Ogma {letter_name}",
+        ]
+        output.writestr(
+            "Metadata/project_settings.config",
+            json.dumps(settings, indent=4, ensure_ascii=False).encode(),
+        )
+        for filename in ("Metadata/slice_info.config", "Metadata/filament_sequence.json"):
+            output.writestr(filename, template.read(filename))
+
+        previews = (base_preview, panel_preview, letter_preview)
+        for plate_number, preview in enumerate(previews, start=1):
+            for stem in ("plate", "plate_no_light", "top", "pick"):
+                output.writestr(
+                    f"Metadata/{stem}_{plate_number}.png",
+                    preview.read(f"Metadata/{stem}_1.png"),
+                )
+
+    with zipfile.ZipFile(OUTPUT) as packaged:
+        assert_object_id_hygiene(packaged)
+
+    print(f"{OUTPUT}  (style=wave, name={name}, stand={stand_hex}, letters={letter_hex})")
+    return OUTPUT
+
+
+def build_hex_project(
+    *,
+    mesh_dir: Path,
+    output_path: Path,
+    name: str,
+    stand_hex: str,
+    letter_hex: str,
+    stand_name: str = "Stand",
+    letter_name: str = "Letters",
+    work_dir: Path | None = None,
+    template_path: Path | None = None,
+) -> Path:
+    """Package the solid honeycomb body and letters into a 2-plate 3MF."""
+    global OUTPUT, WORK, TEMPLATE
+    mesh_dir = Path(mesh_dir)
+    output_path = Path(output_path)
+    work_dir = Path(work_dir or WORK)
+    template_path = Path(template_path or TEMPLATE)
+    OUTPUT = output_path
+    WORK = work_dir
+    TEMPLATE = template_path
+
+    configure_hex_objects(mesh_dir, name.upper())
+
+    meshes = []
+    for _, path, _ in OBJECTS:
+        process = path.suffix.lower() != ".ply"
+        mesh = trimesh.load_mesh(path, process=process)
+        if not mesh.is_watertight or not mesh.is_volume:
+            raise ValueError(f"Non-manifold printable mesh: {path}")
+        meshes.append(mesh)
+
+    with (
+        zipfile.ZipFile(TEMPLATE) as template,
+        zipfile.ZipFile(WORK / "cooper_panel_plate.3mf") as body_preview,
+        zipfile.ZipFile(WORK / "cooper_letters_plate.3mf") as letter_preview,
+        zipfile.ZipFile(OUTPUT, "w", zipfile.ZIP_DEFLATED, compresslevel=7) as output,
+    ):
+        output.writestr("[Content_Types].xml", template.read("[Content_Types].xml"))
+        output.writestr("_rels/.rels", template.read("_rels/.rels"))
+        output.writestr("3D/3dmodel.model", top_model())
+        output.writestr("3D/_rels/3dmodel.model.rels", relationships())
+        for index, mesh in enumerate(meshes, start=1):
+            output.writestr(
+                f"3D/Objects/object_{index}.model",
+                mesh_model(mesh, index, paint_fuzzy=None),
+            )
+        output.writestr("Metadata/model_settings.config", model_settings(meshes))
+
+        settings = json.loads(template.read("Metadata/project_settings.config"))
+        settings["wall_loops"] = "4"
+        settings["sparse_infill_density"] = "15%"
+        settings["sparse_infill_pattern"] = "gyroid"
+        settings["enable_support"] = "0"
+        settings["seam_position"] = "back"
+        settings["fuzzy_skin"] = "none"
+        settings["filament_colour"] = [stand_hex, letter_hex]
+        settings["default_filament_colour"] = ["", ""]
+        settings["filament_settings_id"] = [
+            f"Bambu PLA Matte @Ogma {stand_name}",
+            f"Bambu PLA Matte @Ogma {letter_name}",
+        ]
+        output.writestr(
+            "Metadata/project_settings.config",
+            json.dumps(settings, indent=4, ensure_ascii=False).encode(),
+        )
+        for filename in ("Metadata/slice_info.config", "Metadata/filament_sequence.json"):
+            output.writestr(filename, template.read(filename))
+
+        previews = (body_preview, letter_preview)
+        for plate_number, preview in enumerate(previews, start=1):
+            for stem in ("plate", "plate_no_light", "top", "pick"):
+                output.writestr(
+                    f"Metadata/{stem}_{plate_number}.png",
+                    preview.read(f"Metadata/{stem}_1.png"),
+                )
+
+    with zipfile.ZipFile(OUTPUT) as packaged:
+        assert_object_id_hygiene(packaged)
+
+    print(
+        f"{OUTPUT}  (style=hex-honeycomb, name={name}, "
+        f"stand={stand_hex}, letters={letter_hex})"
+    )
     return OUTPUT
 
 
