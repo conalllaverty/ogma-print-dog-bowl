@@ -78,15 +78,17 @@ def build_letter_test_project(
     letter_hex: str,
     stand_name: str,
     letter_name: str,
+    coupon_filename: str = "letter_test_rail_coupon.stl",
+    coupon_label: str = "letter-test rail",
 ) -> Path:
     """Two-plate 3MF: rail coupon + letters."""
     mesh_dir = Path(mesh_dir)
     output_path = Path(output_path)
     name = name.upper()
 
-    coupon_path = mesh_dir / "letter_test_rail_coupon.stl"
+    coupon_path = mesh_dir / coupon_filename
     objects: list[tuple[str, Path, int]] = [
-        (f"{name} letter-test rail", coupon_path, 1),
+        (f"{name} {coupon_label}", coupon_path, 1),
     ]
     seen: dict[str, int] = {}
     for index, ch in enumerate(name, start=1):
@@ -207,7 +209,7 @@ def build_letter_test_project(
             result.append("  </plate>")
             return result
 
-        lines.extend(plate(1, f"{name} letter-test rail", [1]))
+        lines.extend(plate(1, f"{name} {coupon_label}", [1]))
         lines.extend(plate(2, f"{name} letters", list(range(2, len(objects) + 1))))
         lines.append("  <assemble>")
         for index in range(1, len(objects) + 1):

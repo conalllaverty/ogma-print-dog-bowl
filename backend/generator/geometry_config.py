@@ -32,8 +32,8 @@ STYLE_META = {
         "available": True,
     },
     STYLE_WAVE: {
-        "name": "Two-piece wave",
-        "description": "Sine seam · collar joint · glue-in letters",
+        "name": "Split wave",
+        "description": "Sine seam · separate bowl seat · glue-in letters",
         "available": True,
     },
     STYLE_HEX: {
@@ -59,7 +59,7 @@ COOPER = CooperEnvelope()
 
 @dataclass(frozen=True)
 class WaveParams:
-    """Two-piece wave at Cooper bowl size / Cooper height family."""
+    """Split wave stand at Cooper bowl size / Cooper height family."""
 
     h: float = 78.0
     amp: float = 8.0
@@ -73,13 +73,18 @@ class WaveParams:
     collar_outer_r: float = 74.0
     sleeve_wall: float = 2.2
     min_upper_wall: float = 4.0
+    seat_insert_clearance: float = 0.3
+    seat_flange_edge_inset: float = 0.3
     shadow_chamfer: float = 0.6
     seam_gap: float = 0.7  # lower stops this far below the sine
     sectors: int = 64
-    # Name rail on the upper piece (above the seam).
-    letter_center_z: float = 56.0
-    rail_z0: float = 47.0
-    rail_z1: float = 68.0
+    # Letters sit on a large (low-seam) lobe. azimuth = π/2 maps packing
+    # center arc=0 onto +X, where the sine seam is at its lowest.
+    letter_azimuth: float = 1.5707963267948966  # π/2 — large +X lobe
+    # Vertically centred on that large upper face (seam_low+gap → shell top).
+    letter_center_z: float = 52.0
+    rail_z0: float = 42.5
+    rail_z1: float = 61.5
     rail_proud: float = 4.0
 
 

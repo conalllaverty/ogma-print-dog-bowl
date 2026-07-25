@@ -65,12 +65,13 @@ def configure_objects(mesh_dir: Path, name: str) -> None:
 
 
 def configure_wave_objects(mesh_dir: Path, name: str) -> None:
-    """Build OBJECTS + BUILD_POSITIONS for the two-piece wave layout."""
+    """Build OBJECTS + BUILD_POSITIONS for the split wave layout."""
     global OBJECTS, BUILD_POSITIONS, MESH_DIR
     MESH_DIR = Path(mesh_dir)
     objects: list[tuple[str, Path, int]] = [
         (f"{name} wave lower", MESH_DIR / "wave_lower.ply", 1),
-        (f"{name} wave upper — print inverted", MESH_DIR / "wave_upper.ply", 1),
+        (f"{name} wave upper shell — print inverted", MESH_DIR / "wave_upper.ply", 1),
+        (f"{name} bowl-seat insert — print inverted", MESH_DIR / "wave_seat_insert.ply", 1),
     ]
     seen: dict[str, int] = {}
     for index, ch in enumerate(name, start=1):
@@ -82,9 +83,10 @@ def configure_wave_objects(mesh_dir: Path, name: str) -> None:
     positions: list[tuple[float, float, float]] = [
         (128.0, 128.0, 0.0),
         (440.0, 128.0, 0.0),
+        (128.0, -184.0, 0.0),
     ]
-    # Plate 3 sits on the next row of the 312 mm grid.
-    x0, y0 = 80.0, -220.0
+    # Letters occupy plate 4 on the second row of the 312 mm grid.
+    x0, y0 = 392.0, -220.0
     cols = 4
     for i in range(len(name)):
         positions.append((x0 + (i % cols) * 24.0, y0 + (i // cols) * 32.0, 0.0))
@@ -206,7 +208,7 @@ def model_settings(meshes: list[trimesh.Trimesh]) -> bytes:
         # Object overrides prioritise steady layer time + solid outer skin:
         # 4 walls (hides infill telegraphing / protects letter sockets), gyroid.
         if wave_mode or hex_mode:
-            body_object = index <= 2 if wave_mode else index == 1
+            body_object = index <= 3 if wave_mode else index == 1
             if body_object:
                 body_layer = "0.16" if hex_mode else "0.20"
                 overrides = {
@@ -223,6 +225,18 @@ def model_settings(meshes: list[trimesh.Trimesh]) -> bytes:
                     "seam_position": "back",
                     "fuzzy_skin": "none",
                 }
+                if wave_mode and index == 2:
+                    overrides.update(
+                        {
+                            "enable_support": "1",
+                            "support_type": "normal(auto)",
+                            "support_style": "default",
+                            "support_critical_regions_only": "1",
+                            "support_on_build_plate_only": "0",
+                            "support_interface_top_layers": "2",
+                            "support_top_z_distance": "0.20",
+                        }
+                    )
             else:
                 overrides = {
                     "layer_height": "0.10",
@@ -356,9 +370,10 @@ def model_settings(meshes: list[trimesh.Trimesh]) -> bytes:
     pet = OBJECTS[0][0].split()[0]
     if wave_mode:
         lines.extend(plate(1, "Wave lower", [1]))
-        lines.extend(plate(2, "Wave upper — print inverted", [2]))
-        letter_indices = list(range(3, len(OBJECTS) + 1))
-        lines.extend(plate(3, f"{pet} letters", letter_indices))
+        lines.extend(plate(2, "Wave upper shell — print inverted", [2]))
+        lines.extend(plate(3, "Bowl-seat insert — print inverted", [3]))
+        letter_indices = list(range(4, len(OBJECTS) + 1))
+        lines.extend(plate(4, f"{pet} letters", letter_indices))
     elif hex_mode:
         lines.extend(plate(1, "Solid honeycomb body", [1]))
         letter_indices = list(range(2, len(OBJECTS) + 1))
@@ -574,7 +589,7 @@ def build_wave_project(
     work_dir: Path | None = None,
     template_path: Path | None = None,
 ) -> Path:
-    """Package wave lower/upper + letters into a 3-plate Bambu 3MF."""
+    """Package wave lower/shell/seat insert + letters into a 4-plate 3MF."""
     global OUTPUT, WORK, TEMPLATE
     mesh_dir = Path(mesh_dir)
     output_path = Path(output_path)
@@ -600,6 +615,7 @@ def build_wave_project(
         zipfile.ZipFile(TEMPLATE) as template,
         zipfile.ZipFile(WORK / "cooper_base_plate.3mf") as base_preview,
         zipfile.ZipFile(WORK / "cooper_panel_plate.3mf") as panel_preview,
+        zipfile.ZipFile(WORK / "cooper_top_ring_plate.3mf") as seat_preview,
         zipfile.ZipFile(WORK / "cooper_letters_plate.3mf") as letter_preview,
         zipfile.ZipFile(OUTPUT, "w", zipfile.ZIP_DEFLATED, compresslevel=7) as output,
     ):
@@ -620,6 +636,18 @@ def build_wave_project(
         settings["sparse_infill_pattern"] = "gyroid"
         settings["enable_support"] = "0"
         settings["seam_position"] = "back"
+        # Keep travel within printed regions where possible. A zero max detour
+        # means unlimited detour length in Bambu Studio, not disabled detours.
+        settings["reduce_crossing_wall"] = "1"
+        settings["max_travel_detour_distance"] = "0"
+        settings["retract_when_changing_layer"] = ["1", "1"]
+        settings["retraction_length"] = ["0.8", "0.8"]
+        settings["retraction_speed"] = ["30", "30"]
+        settings["deretraction_speed"] = ["30", "30"]
+        settings["retraction_minimum_travel"] = ["1", "1"]
+        settings["retract_before_wipe"] = ["70%", "70%"]
+        settings["wipe"] = ["1", "1"]
+        settings["wipe_distance"] = ["2", "2"]
         settings["fuzzy_skin"] = "none"
         settings["filament_colour"] = [stand_hex, letter_hex]
         settings["default_filament_colour"] = ["", ""]
@@ -634,7 +662,7 @@ def build_wave_project(
         for filename in ("Metadata/slice_info.config", "Metadata/filament_sequence.json"):
             output.writestr(filename, template.read(filename))
 
-        previews = (base_preview, panel_preview, letter_preview)
+        previews = (base_preview, panel_preview, seat_preview, letter_preview)
         for plate_number, preview in enumerate(previews, start=1):
             for stem in ("plate", "plate_no_light", "top", "pick"):
                 output.writestr(

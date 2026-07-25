@@ -8,15 +8,22 @@ Custom **paw-lattice dog bowl stand** configurator: name + Bambu Matte PLA colou
 
 ## Canonical docs
 
-| File                                     | Use                                        |
-| ---------------------------------------- | ------------------------------------------ |
-| [PROJECT_STATUS.md](./PROJECT_STATUS.md) | Phase tracker, decisions, gaps, next steps |
-| [README.md](./README.md)                 | Local run + API overview                   |
-| [.env.example](./.env.example)           | Env contract (local + Railway)             |
+| File                                                     | Use                                        |
+| -------------------------------------------------------- | ------------------------------------------ |
+| [PROJECT_STATUS.md](./PROJECT_STATUS.md)                 | Phase tracker, decisions, gaps, next steps |
+| [README.md](./README.md)                                 | Local run + API overview                   |
+| [.env.example](./.env.example)                           | Env contract (local + Railway)             |
+| [county-clickers/README.md](./county-clickers/README.md) | Standalone 32-county clicker package       |
 
 Sibling design sandbox (not this repo): `Documents/Ogma Print Files` — original Cooper meshes / print experiments.
 
 Sibling product for Railway/filament patterns: `ogma-print-core`.
+
+The standalone county-clicker side product is packaged under
+`county-clickers/`. Its production generator remains
+`backend/generator/county_clicker.py` so it can reuse the established MX and
+3MF utilities. County clickers are individual handheld pieces, not
+tessellating map tiles.
 
 ## Architecture (do not invent a parallel stack)
 
@@ -76,12 +83,17 @@ Or `bash scripts/dev.sh`.
 - Honeycomb radial/Z profiles must be simple positive-area polygons before wrapping
 - Honeycomb keeps 5 mm pattern-free edge bands with shallow border rings and 0.45 mm external bevels
 - Wave: collar is a hollow 2.4 mm annulus rooted to the bed — never a solid cylinder
-- Wave collar outer radius is 74 mm; sleeve inner radius is 74.5 mm and wall is 2.2 mm
-- Wave sleeve clearance remains 0.5 mm/side; it passed at the prior R78.6 size, but the revised R74 coupon needs confirmation
+- Wave collar outer radius is 74 mm; the continuous upper receiver inner radius is 74.5 mm
+- Wave sleeve clearance is locked at 0.5 mm/side after the revised R74/R74.5 coupon seated snugly with minimal wobble and easy hand separation
 - Wave halves must use continuous wrapped profiles; per-sector boolean slabs create vertical wall grooves
 - Reject any Wave radial/Z profile that is not a simple positive-area polygon
 - Wave upper keeps ≥4 mm wall through the lettering zone; do not let its support bridge cross the exterior
+- Wave bowl seat is a separate inverted-printing insert: R71.53 locator in the R71.83 shell opening, with its flange resting on the top rim
+- Wave 3MFs use avoid-crossing-wall travel, unlimited detours, 0.8 mm / 30 mm/s retraction, layer-change retraction, and 2 mm wipe
 - Wave has no name plaque: cut glyph pockets directly into the upper cone and use matching conical letter backs
+- Wave letters sit on a large (low-seam) lobe, vertically centred between that seam and the shell top
+- Wave upper uses critical-regions-only normal support for pocket-closing layers; remove it before fitting letters
+- Use `wave_letter_test.py` to validate real cone pockets and letter backs before a full Wave print
 
 ## When changing the design
 

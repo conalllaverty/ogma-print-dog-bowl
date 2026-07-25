@@ -6,6 +6,7 @@ Runs **fully locally** and deploys to **Railway** with the same env contract.
 
 - **Status / roadmap:** [PROJECT_STATUS.md](./PROJECT_STATUS.md)
 - **Future session guide:** [AGENTS.md](./AGENTS.md)
+- **Ireland county clickers:** [county-clickers/README.md](./county-clickers/README.md)
 
 ## Quick start (local)
 
@@ -64,6 +65,26 @@ full Wave:
 Output: `Wave_Collar_Fit_Test_P2S.3mf` (lower collar and upper sleeve on
 separate plates, 0.16 mm layers). Accept when the sleeve starts by hand, seats
 without tools or rocking, and can still be separated before gluing.
+The R74/R74.5 coupon physically passed this gate on a P2S on 2026-07-23.
+
+### Wave lettering-fit test
+
+Print the real conical wall pockets and matching cone-backed letters before the
+complete Wave:
+
+```bash
+.venv/bin/python backend/generator/wave_letter_test.py \
+  --name LUNA \
+  --font-style serif \
+  --stand matte-caramel \
+  --letters matte-ivory-white \
+  --out data/jobs/wave-letter-fit
+```
+
+Output: `LUNA_Wave_Letter_Fit_Test_P2S.3mf` (plate 1 = upright production-cone
+coupon, plate 2 = face-down letters). Accept when every letter starts by hand,
+seats without rocking, remains approximately 1.4 mm proud, and can be removed
+before gluing.
 
 ## Options
 
@@ -90,6 +111,16 @@ The `serif` option is the original concept's Lora Medium Italic treatment;
 Wave letter backs are conical so they seat flush against the tapered wall.
 Both halves use validated, non-self-intersecting wrapped profiles. The upper
 keeps at least 4 mm of wall through the lettering zone.
+
+Wave outputs four plates: lower, inverted cosmetic upper shell, inverted
+bowl-seat insert, and letters. Dry-fit the insert's locator into the top of the
+upper shell; its 0.3 mm radial clearance should let the broad flange settle
+flat onto the shell rim. Glue the flange to that rim only after the fit check.
+The Wave project enables avoid-crossing-wall travel with unlimited detours,
+0.8 mm retraction at 30 mm/s, layer-change retraction, and a 2 mm wipe. Nozzle
+temperature remains controlled by the selected Bambu PLA Matte filament profile.
+Plate 2 also enables critical-regions-only normal support for the pocket-closing
+layers; remove this small support before fitting the letters.
 
 Honeycomb uses a 4 mm hollow drum with 1 mm recessed grooves. Its name area
 suppresses complete honeycomb cells, leaving a deliberate smooth centre without

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Two-piece wave bowl stand — Cooper metal bowl size.
+"""Three-piece wave bowl stand — Cooper metal bowl size.
 
 Lower + upper halves join on a sine seam with a 0.5 mm/side collar sleeve.
-Letters use direct glyph pockets and cone-matched backs on the upper front.
+The bowl seat is a separate inverted-printing insert hung from the shell rim.
+Letters use recessed glyph pockets and cone-matched backs on the upper front.
 """
 
 from __future__ import annotations
@@ -51,13 +52,23 @@ def _seam_z(theta: float, p=WAVE, d=None) -> float:
     return d["seam_y"] - p.amp * math.cos(p.waves * (theta - math.pi / 2.0))
 
 
+def _wave_letter_center_z(p=WAVE) -> float:
+    """Vertical mid-point of the large (low-seam) upper face."""
+    d = wave_derived(p)
+    face_bottom = d["seam_y"] - p.amp + p.seam_gap
+    face_top = d["seat_z"]
+    return 0.5 * (face_bottom + face_top)
+
+
 def _configure_wave_letters() -> None:
-    """Point curved-back letters directly at the smooth Wave upper wall."""
+    """Point curved-back letters at a large Wave lobe, vertically centred."""
     p = WAVE
-    design.LETTER_CENTER_Z = p.letter_center_z
-    design.NAME_RAIL_FLAT_Z0 = p.rail_z0
-    design.NAME_RAIL_FLAT_Z1 = p.rail_z1
-    wall_r = _ro(p.letter_center_z)
+    center_z = _wave_letter_center_z(p)
+    half_h = 0.5 * design.LETTER_HEIGHT
+    design.LETTER_CENTER_Z = center_z
+    design.NAME_RAIL_FLAT_Z0 = center_z - half_h - 2.0
+    design.NAME_RAIL_FLAT_Z1 = center_z + half_h + 2.0
+    wall_r = _ro(center_z)
     design.NAME_RAIL_OUTER_R = wall_r
     design.LETTER_FACE_R = wall_r + design.LETTER_THICKNESS
 
@@ -83,7 +94,8 @@ def _wave_letter_transform(
     p=WAVE,
 ) -> np.ndarray:
     """Map print-space letters to a plane tangent to the Wave cone."""
-    theta = arc_center / design.LETTER_FACE_R
+    # Offset packing so the name sits on a large (low-seam) lobe, not a small one.
+    theta = arc_center / design.LETTER_FACE_R + p.letter_azimuth
     tangent = np.array([math.cos(theta), math.sin(theta), 0.0])
     radial = np.array([math.sin(theta), -math.cos(theta), 0.0])
     vertical = np.array([0.0, 0.0, 1.0])
@@ -91,14 +103,15 @@ def _wave_letter_transform(
     scale = math.sqrt(1.0 + slope * slope)
     surface_vertical = (vertical + slope * radial) / scale
     outward_normal = (radial - slope * vertical) / scale
+    center_z = design.LETTER_CENTER_Z
 
     transform = np.eye(4)
     transform[:3, :3] = np.column_stack(
         (-tangent, surface_vertical, -outward_normal)
     )
     surface_center = (
-        radial * _ro(p.letter_center_z, p)
-        + vertical * p.letter_center_z
+        radial * _ro(center_z, p)
+        + vertical * center_z
     )
     transform[:3, 3] = surface_center + outward_normal * normal_offset
     return transform
@@ -120,14 +133,12 @@ def _wave_letter_mesh(polygon, arc_center: float, p=WAVE) -> trimesh.Trimesh:
         p,
     )
     body.apply_transform(transform)
-    cone_scale = math.sqrt(
-        1.0 + ((p.rt_out - p.rb_out) / p.h) ** 2
-    )
     body = design.boolean_difference(
         body,
         [
             _wave_cone_core(
-                -design.LETTER_POCKET_DEPTH * cone_scale,
+                -design.LETTER_POCKET_DEPTH
+                * math.sqrt(1.0 + ((p.rt_out - p.rb_out) / p.h) ** 2),
                 p,
             )
         ],
@@ -287,23 +298,54 @@ def build_wave_lower(p=WAVE) -> trimesh.Trimesh:
     return body
 
 
-def build_wave_upper(letter_data, p=WAVE) -> trimesh.Trimesh:
-    """Upper half as one constrained, non-intersecting wrapped profile."""
+def _wave_upper_dimensions(p=WAVE) -> dict[str, float]:
+    """Shared shell/seat-insert interface dimensions."""
     d = wave_derived(p)
     seat_z = d["seat_z"]
     seat_r = BOWL_SEAT_D / 2.0
     bore_r = BOWL_OPENING_D / 2.0
     support_z = seat_z - (seat_r - bore_r)
+    shell_top_z = seat_z
+    shell_top_outer_r = _ro(shell_top_z, p)
+    shell_top_inner_r = shell_top_outer_r - p.min_upper_wall
+    insert_locator_outer_r = shell_top_inner_r - p.seat_insert_clearance
+    insert_flange_outer_r = shell_top_outer_r - p.seat_flange_edge_inset
     sleeve_inner = d["rc"] + p.collar_clearance
-    sleeve_outer = sleeve_inner + p.sleeve_wall
     sleeve_top_z = d["y2"] + 1.0
     support_bridge_z = d["y2"] + 6.0
     support_bridge_r = _ro(support_bridge_z, p) - p.min_upper_wall
 
-    if sleeve_outer >= _ro(sleeve_top_z, p):
-        raise ValueError("Wave sleeve does not fit inside the upper exterior")
+    if insert_locator_outer_r <= seat_r:
+        raise ValueError("Wave seat insert has no outer locating flange")
+    if insert_flange_outer_r <= shell_top_inner_r:
+        raise ValueError("Wave seat flange does not overlap the shell rim")
+    if insert_flange_outer_r >= shell_top_outer_r:
+        raise ValueError("Wave seat flange must remain inside the exterior rim")
+    if sleeve_inner >= _ro(sleeve_top_z, p) - p.min_upper_wall:
+        raise ValueError("Wave receiver wall violates the upper wall envelope")
     if support_bridge_r <= bore_r or support_bridge_r >= _ro(support_bridge_z, p):
         raise ValueError("Wave support bridge violates the upper wall envelope")
+    return {
+        "seat_z": seat_z,
+        "seat_r": seat_r,
+        "bore_r": bore_r,
+        "support_z": support_z,
+        "shell_top_z": shell_top_z,
+        "shell_top_outer_r": shell_top_outer_r,
+        "shell_top_inner_r": shell_top_inner_r,
+        "insert_locator_outer_r": insert_locator_outer_r,
+        "insert_flange_outer_r": insert_flange_outer_r,
+        "sleeve_inner": sleeve_inner,
+        "sleeve_top_z": sleeve_top_z,
+        "support_bridge_z": support_bridge_z,
+        "support_bridge_r": support_bridge_r,
+    }
+
+
+def build_wave_upper(letter_data, p=WAVE) -> trimesh.Trimesh:
+    """Cosmetic upper shell with no internal seat or floating ledge."""
+    d = wave_derived(p)
+    u = _wave_upper_dimensions(p)
 
     def profile(theta: float) -> list[list[float]]:
         seam = _seam_z(theta, p, d)
@@ -313,20 +355,18 @@ def build_wave_upper(letter_data, p=WAVE) -> trimesh.Trimesh:
         ]
         for row in range(1, 21):
             z = seam + p.seam_gap + (
-                p.h - seam - p.seam_gap
+                u["shell_top_z"] - seam - p.seam_gap
             ) * row / 20.0
             points.append([_ro(z, p), z])
 
-        # Locked Cooper bowl seat and a printable inner support cone.
+        # Keep the top open and the inverted print continuously supported. The
+        # separate seat insert hangs from the finished top rim.
         points.extend(
             [
-                [seat_r, p.h],
-                [seat_r, seat_z],
-                [bore_r, support_z],
-                [support_bridge_r, support_bridge_z],
-                [sleeve_outer, sleeve_top_z],
-                [sleeve_inner, sleeve_top_z],
-                [sleeve_inner, seam],
+                [u["shell_top_inner_r"], u["shell_top_z"]],
+                [u["support_bridge_r"], u["support_bridge_z"]],
+                [u["sleeve_inner"], u["sleeve_top_z"]],
+                [u["sleeve_inner"], seam],
             ]
         )
         return points
@@ -344,6 +384,26 @@ def build_wave_upper(letter_data, p=WAVE) -> trimesh.Trimesh:
     body = _largest_body(body)
     body.metadata["name"] = "Wave_Upper"
     return body
+
+
+def build_wave_seat_insert(p=WAVE) -> trimesh.Trimesh:
+    """Top-hanging bowl seat that prints inverted on its broad flange."""
+    u = _wave_upper_dimensions(p)
+
+    def profile(_theta: float) -> list[list[float]]:
+        return [
+            [u["insert_locator_outer_r"], u["support_z"]],
+            [u["insert_locator_outer_r"], u["seat_z"]],
+            [u["insert_flange_outer_r"], u["seat_z"]],
+            [u["insert_flange_outer_r"], p.h],
+            [u["seat_r"], p.h],
+            [u["seat_r"], u["seat_z"]],
+            [u["bore_r"], u["support_z"]],
+        ]
+
+    insert = _wrapped_profile_mesh(profile, sections=max(256, p.sectors * 4))
+    insert.metadata["name"] = "Wave_Bowl_Seat_Insert"
+    return insert
 
 
 def _export_print_ready(mesh: trimesh.Trimesh, path: Path, *, invert_y180: bool = False) -> None:
@@ -375,16 +435,25 @@ def generate_wave_meshes(out_dir: Path, name: str, font_style: str = "bold") -> 
 
     lower = build_wave_lower()
     upper = build_wave_upper(letters)
+    seat_insert = build_wave_seat_insert()
 
     if not lower.is_watertight or not lower.is_volume:
         raise RuntimeError("Wave lower mesh is not a watertight volume")
     if not upper.is_watertight or not upper.is_volume:
         raise RuntimeError("Wave upper mesh is not a watertight volume")
+    if not seat_insert.is_watertight or not seat_insert.is_volume:
+        raise RuntimeError("Wave bowl-seat insert is not a watertight volume")
 
     lower.export(mesh_dir / "assembly_wave_lower.stl")
     upper.export(mesh_dir / "assembly_wave_upper.stl")
+    seat_insert.export(mesh_dir / "assembly_wave_seat_insert.stl")
     _export_print_ready(lower, mesh_dir / "wave_lower.stl", invert_y180=False)
     _export_print_ready(upper, mesh_dir / "wave_upper.stl", invert_y180=True)
+    _export_print_ready(
+        seat_insert,
+        mesh_dir / "wave_seat_insert.stl",
+        invert_y180=True,
+    )
 
     for index, item in enumerate(letters, start=1):
         item["mesh"].export(mesh_dir / f"letter_{index}_{item['character']}.stl")
@@ -392,8 +461,9 @@ def generate_wave_meshes(out_dir: Path, name: str, font_style: str = "bold") -> 
         assembled.export(mesh_dir / f"assembly_letter_{index}_{item['character']}.stl")
 
     d = wave_derived()
+    u = _wave_upper_dimensions()
     report = {
-        "design": "Ogma Two-Piece Wave Bowl Stand",
+        "design": "Ogma Three-Piece Wave Bowl Stand",
         "style": "wave",
         "units": "mm",
         "bowl": {
@@ -411,25 +481,43 @@ def generate_wave_meshes(out_dir: Path, name: str, font_style: str = "bold") -> 
             "collar_clearance": WAVE.collar_clearance,
             "collar_outer_radius": d["rc"],
             "sleeve_inner_radius": d["rc"] + WAVE.collar_clearance,
-            "sleeve_outer_radius": (
-                d["rc"] + WAVE.collar_clearance + WAVE.sleeve_wall
+            "receiver_outer_radius_at_transition": _ro(
+                u["sleeve_top_z"],
+                WAVE,
             ),
+            "receiver_wall_at_transition": (
+                _ro(u["sleeve_top_z"], WAVE) - u["sleeve_inner"]
+            ),
+            "receiver_profile": "continuous taper; no horizontal shoulder",
             "minimum_upper_wall": WAVE.min_upper_wall,
             "rb_out": WAVE.rb_out,
             "rt_out": WAVE.rt_out,
             "surface_construction": "continuous_wrapped_profile",
             "surface_sections": max(256, WAVE.sectors * 4),
             "profile_validation": "all radial/Z cross-sections simple and positive-area",
+            "seat_insert_clearance": WAVE.seat_insert_clearance,
+            "seat_insert_locator_outer_radius": u["insert_locator_outer_r"],
+            "seat_insert_flange_outer_radius": u["insert_flange_outer_r"],
+            "seat_insert_flange_overlap": (
+                u["insert_flange_outer_r"] - u["shell_top_inner_r"]
+            ),
+            "seat_insert_flange_thickness": BOWL_RIM_RECESS,
         },
         "stand": {
             "lower_watertight": bool(lower.is_watertight),
             "upper_watertight": bool(upper.is_watertight),
+            "seat_insert_watertight": bool(seat_insert.is_watertight),
             "lower_volume_mm3": float(lower.volume),
             "upper_volume_mm3": float(upper.volume),
+            "seat_insert_volume_mm3": float(seat_insert.volume),
             "lower_triangles": int(len(lower.faces)),
             "upper_triangles": int(len(upper.faces)),
+            "seat_insert_triangles": int(len(seat_insert.faces)),
             "collar_wall_thickness": 2.4,
-            "assembly": "sine seam collar sleeve 0.5 mm/side + CA glue channel",
+            "assembly": (
+                "sine seam collar sleeve 0.5 mm/side + CA glue channel; "
+                "separate bowl-seat insert glued over upper-shell top rim"
+            ),
         },
         "letters": {
             "text": design.NAME,
@@ -443,6 +531,8 @@ def generate_wave_meshes(out_dir: Path, name: str, font_style: str = "bold") -> 
             # Retained for the shared pipeline's fit-gate report schema.
             "name_rail_outer_deg": design.NAME_RAIL_OUTER_DEG,
             "letter_center_z": design.LETTER_CENTER_Z,
+            "letter_azimuth_deg": math.degrees(WAVE.letter_azimuth),
+            "letter_face": "large low-seam lobe",
             "face_radius": design.LETTER_FACE_R,
             "arc_centers": [float(item["arc_center"]) for item in letters],
         },

@@ -2,7 +2,7 @@
 
 **Repo:** https://github.com/conalllaverty/ogma-print-dog-bowl  
 **Local path:** `/Users/conalllaverty/Documents/GitHub/ogma-print-dog-bowl`  
-**Last updated:** 2026-07-23
+**Last updated:** 2026-07-24
 **Status:** Local MVP — Cooper, Wave, and solid Honeycomb styles generating
 
 ---
@@ -19,7 +19,7 @@ A configurator for elevated dog-bowl stands (Bambu Lab P2S) that all seat the **
 | Style    | Status               | 3MF                                              |
 | -------- | -------------------- | ------------------------------------------------ |
 | `cooper` | **Live**             | 4 plates — base · paw panel · top ring · letters |
-| `wave`   | **Live (first cut)** | 3 plates — lower · upper (invert) · letters      |
+| `wave`   | **Live (first cut)** | 4 plates — lower · upper shell · seat · letters  |
 | `hex`    | **Live (first cut)** | 2 plates — solid honeycomb body · letters        |
 
 Bowl size is locked to Cooper’s insert — no multi-rim presets for now.
@@ -55,7 +55,7 @@ Related product: [`ogma-print-core`](https://github.com/conalllaverty/ogma-print
 | Letter mount        | Shallow **glyph pockets**, no pins; Wave mounts directly to its cone with matching conical backs  |
 | Fuzzy               | Default on; paws + name-rail plaque unpainted                                                     |
 | Honeycomb structure | 4 mm hollow wall; 1 mm grooves leave ≥3 mm web; ≤45° inner seat ramp                              |
-| Wave collar         | Hollow 2.4 mm annulus at R74; 0.5 mm/side clearance; revised-radius coupon pending                |
+| Wave collar         | Hollow 2.4 mm annulus at R74; **0.5 mm/side physically passed** on P2S, 2026-07-23                |
 | Hosting             | Railway (same dual local/prod contract as core)                                                   |
 | Auth                | Anonymous for MVP                                                                                 |
 
@@ -84,7 +84,7 @@ AGENTS.md              ← instructions for future AI/human sessions
 ## Verified working
 
 - CLI: `pipeline.py --name MAX …` → `MAX_Paw_Lattice_P2S.3mf`
-- Wave CLI: `--style wave` → 3-plate lower / upper / letters project
+- Wave CLI: `--style wave` → 4-plate lower / upper shell / seat insert / letters project
 - Honeycomb CLI: `--style hex` → 2-plate solid body / letters project
 - API: `POST /api/v1/bowl/generate` → job succeeds → `download.3mf`
 - Matte palette: 25 filaments exposed via `GET /api/v1/filaments`
@@ -120,18 +120,34 @@ vertical grooves that appeared as holes in Bambu Studio. Revised `LUNA` and
 
 Every Wave radial/Z profile is now checked as a simple positive-area polygon
 before wrapping. This exposed and removed crossings in both the old lower inner
-wall and upper bowl-support path. The upper has a separate 2.2 mm sleeve,
-non-intersecting support bridge, and ≥4 mm wall through the lettering zone.
+wall and upper bowl-support path. The upper has a continuous R74.5 receiver
+wall with no horizontal shoulder, plus ≥4 mm wall through the lettering zone.
+
+The bowl seat is now a separate 6.3 mm-high inverted-printing insert instead of
+part of the inverted upper. Its R71.53 locator enters the R71.83 shell opening
+(0.3 mm radial clearance), while its broad top flange rests on the shell rim.
+This removes both the upper's large integrated internal seat and the unsupported
+internal ledge from the first split attempt. Wave 3MFs also enable
+avoid-crossing-wall travel with unlimited detours, 0.8 mm retraction at 30 mm/s,
+layer-change retraction, and a 2 mm wipe.
 
 Wave lettering now follows the original concept: Lora Medium Italic is
 available as `serif`, glyph pockets are cut directly into the smooth upper
 cone, and the separate proud name plaque has been removed. Letter backs and
 pocket floors match the cone taper instead of using Cooper's cylindrical fit.
+Plate 2 enables critical-regions-only normal support for the pocket-closing
+layers; remove this support before fitting the letters.
 
 Wave fit gate: `data/jobs/wave-collar-fit/Wave_Collar_Fit_Test_P2S.3mf`
 contains the revised R74 lower collar and R74.5 upper sleeve on two plates.
-The 0.5 mm/side clearance passed physically at the previous R78.6 radius, but
-the revised radius coupon still needs a quick confirmation before a full print.
+The revised fit seated fully with a snug hand fit, minimal wobble, and easy
+hand separation. Keep these radii and the 0.5 mm/side clearance.
+
+Wave lettering gate:
+`data/jobs/wave-letter-fit/LUNA_Wave_Letter_Fit_Test_P2S.3mf` contains a
+71 × 14 × 23 mm crop of the real upper cone and its Lora letters. It uses the
+production pockets, pocket floor, cone-backed letters, materials, and print
+orientations. The LUNA pocket, seating, proudness, and removal checks passed.
 
 ---
 
@@ -148,8 +164,8 @@ the revised radius coupon still needs a quick confirmation before a full print.
 
 ## Immediate next steps (priority)
 
-1. Reopen revised `LUNA_Wave_P2S.3mf` in Studio; confirm the upper band/holes are gone and the direct pockets are clean
-2. Print the revised R74 Wave collar-fit coupon before committing to the full Wave
+1. Slice the four-plate Wave project and inspect upper-shell travel paths
+2. Dry-fit the separate Wave bowl-seat insert before gluing its flange to the upper rim
 3. Open Honeycomb 3MF in Bambu Studio; inspect wall paths, grooves, smooth name area, pockets, colours
 4. Confirm fonts + `.gitignore` are acceptable for a public GitHub repo
 5. Add `preview.glb` export from generator; show in web viewer
