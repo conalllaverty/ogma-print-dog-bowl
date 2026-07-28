@@ -46,6 +46,16 @@ class CouponParams:
     shaft_diameters: tuple[float, ...] = (6.20, 6.30, 6.40)
     running_clearances: tuple[float, ...] = (0.40, 0.50, 0.60)
     link_neck_multipliers: tuple[float, ...] = (1.00, 1.20, 1.30)
+    selected_housing_diameter: float = 12.75
+    selected_shaft_diameter: float = 6.40
+    selected_axial_clearance: float = 0.30
+    axial_clearances: tuple[float, ...] = (0.10, 0.20, 0.30)
+    pin_head_diameters: tuple[float, ...] = (2.35, 2.45, 2.55)
+    socket_diameters: tuple[float, ...] = (2.15, 2.20, 2.25)
+    experimental_pin_head_diameter: float = 2.35
+    experimental_socket_diameter: float = 2.20
+    experimental_socket_slit: float = 0.60
+    compliant_socket_slots: tuple[float, ...] = (0.60, 0.80, 1.00)
 
 
 R188 = R188Bearing()
@@ -108,8 +118,34 @@ PANEL_INNER_HALF_SPAN = (
     (45.0, 19.0),
     (58.0546, 19.0),
 )
-PANEL_SOCKET_CENTRES_XZ = ((-4.755, 2.150), (3.920, 17.250))
+PANEL_SOCKET_CENTRES_XZ = ((-4.75476, 2.15001), (3.920, 17.250))
 PANEL_SOCKET_DIAMETER = 2.20
+PANEL_LOWER_POCKET_MEASURED_DIAMETER = 2.19725
+PANEL_LOWER_POCKET_BOTTOM_Y = 4.00001
+PANEL_LOWER_POCKET_MOUTH_Y = (2.678, 2.919)
+PANEL_LOWER_POCKET_MIN_WALL = 0.480
+PANEL_UPPER_POCKET_AXIS_BOTTOM_Y = 3.84496
+PANEL_UPPER_POCKET_MOUTH_Y = 4.90
+PANEL_UPPER_POCKET_LOCAL_NORMAL = (0.326, 0.946, 0.0)
+SOURCE_LINK_PIN_CENTRES_XZ = ((-2.890, 1.393), (-2.890, 6.393))
+SOURCE_SECTOR_SECOND_PANEL_ANGLE_DEG = -106.5
+LINK_PIN_SWEEP_PROFILE = (
+    # (positive Y, X centre, equivalent radius)
+    (2.5500, -2.9080, 1.0020),
+    (2.6500, -2.9077, 1.0019),
+    (2.7500, -2.8967, 1.0019),
+    (3.0000, -2.8691, 1.0020),
+    (3.1000, -2.9018, 0.9749),
+    (3.2000, -2.9436, 0.9165),
+    (3.3000, -2.9268, 0.8175),
+    (3.4000, -2.9043, 0.7158),
+    (3.5000, -2.8820, 0.6142),
+    (3.6000, -2.8596, 0.5128),
+    (3.6500, -2.8485, 0.4621),
+    (3.7000, -2.9550, 0.3363),
+    (3.7200, -3.0410, 0.2409),
+    (3.7400, -3.1350, 0.1140),
+)
 
 # Central X/Z section of the four-millimetre link core, centred on its source
 # bounds. Snap pins are added separately along Y.
@@ -179,6 +215,12 @@ BASE_UPPER_ANNULUS_PROFILE_RZ = (
     (13.56, 7.50),
     (0.00, 7.50),
 )
+BASE_ARM_ANGLES_DEG = (30.0, 90.0, 150.0, 210.0, 270.0, 330.0)
+BASE_PEG_LOCAL_CENTRE = (14.76, 2.59, 4.00)
+BASE_PEG_LOCAL_AXIS = (-0.150, 0.989, 0.0)
+BASE_PEG_FULL_DIAMETER_LENGTH = 0.65
+BASE_PEG_RETENTION_DIAMETERS = (2.25, 2.30, 2.35)
+BASE_PEG_PROCESS_DIAMETERS = (2.20, 2.30, 2.40, 2.50)
 
 
 def _union(meshes: list[trimesh.Trimesh]) -> trimesh.Trimesh:
@@ -196,6 +238,16 @@ def _difference(
     cutters: list[trimesh.Trimesh],
 ) -> trimesh.Trimesh:
     result = trimesh.boolean.difference([mesh, *cutters], engine="manifold")
+    if isinstance(result, list):
+        result = trimesh.util.concatenate(result)
+    result.merge_vertices()
+    result.remove_unreferenced_vertices()
+    result.fix_normals()
+    return result
+
+
+def _intersection(meshes: list[trimesh.Trimesh]) -> trimesh.Trimesh:
+    result = trimesh.boolean.intersection(meshes, engine="manifold")
     if isinstance(result, list):
         result = trimesh.util.concatenate(result)
     result.merge_vertices()
@@ -598,6 +650,70 @@ def build_parametric_panel_baseline() -> trimesh.Trimesh:
     return mesh
 
 
+def build_source_envelope_panel(
+    source_link: trimesh.Trimesh,
+) -> trimesh.Trimesh:
+    """Panel shell cleared by the source link's two proven pivot envelopes.
+
+    The spherical body remains parameter-driven, but the functional joint is
+    cut from the exact cleaned source link in both validated configurations.
+    This preserves the blind-pocket/body clearance without pretending the
+    earlier through-ring reconstruction was source-equivalent.
+    """
+    shell = build_parametric_panel_shell()
+    rail_path = LineString(PANEL_SOCKET_CENTRES_XZ)
+    rail_profile = rail_path.buffer(
+        1.20,
+        cap_style="round",
+        join_style="round",
+        resolution=16,
+    )
+    rails = []
+    for y in (-4.0, 4.0):
+        rail = _extrude_xz(rail_profile, 1.20)
+        rail.apply_translation([0.0, y, 0.0])
+        rails.append(rail)
+    body = _union([shell, *rails])
+
+    panel_socket = np.asarray(
+        [PANEL_SOCKET_CENTRES_XZ[0][0], 0.0, PANEL_SOCKET_CENTRES_XZ[0][1]]
+    )
+    lower_pin = np.asarray(
+        [
+            SOURCE_LINK_PIN_CENTRES_XZ[0][0],
+            0.0,
+            SOURCE_LINK_PIN_CENTRES_XZ[0][1],
+        ]
+    )
+    upper_pin = np.asarray(
+        [
+            SOURCE_LINK_PIN_CENTRES_XZ[1][0],
+            0.0,
+            SOURCE_LINK_PIN_CENTRES_XZ[1][1],
+        ]
+    )
+
+    # Invert each validated panel placement to express the stationary source
+    # link as a cutter in panel-local coordinates.
+    upper_configuration = source_link.copy()
+    upper_configuration.apply_translation(panel_socket - upper_pin)
+
+    lower_configuration = source_link.copy()
+    lower_configuration.apply_translation(-lower_pin)
+    lower_configuration.apply_transform(
+        trimesh.transformations.rotation_matrix(
+            math.radians(-SOURCE_SECTOR_SECOND_PANEL_ANGLE_DEG),
+            [0.0, 1.0, 0.0],
+        )
+    )
+    lower_configuration.apply_translation(panel_socket)
+
+    swept_joint = _union([upper_configuration, lower_configuration])
+    panel = _difference(body, [swept_joint])
+    panel.metadata["name"] = "Source-envelope reconstructed panel"
+    return panel
+
+
 def build_parametric_link_baseline() -> trimesh.Trimesh:
     """Extrude the measured core and add four mirrored tapered snap pins."""
     profile = Polygon(LINK_CORE_PROFILE_XZ)
@@ -625,6 +741,82 @@ def build_parametric_link_baseline() -> trimesh.Trimesh:
     mesh = _union([core, root, *pins])
     mesh.metadata["name"] = "Parametric baseline link"
     return mesh
+
+
+def _measured_pin_sweep(
+    *,
+    centre_z: float,
+    side: float,
+    sections: int = 96,
+) -> trimesh.Trimesh:
+    """Build one measured tapered link pin along positive or negative Y."""
+    vertices: list[list[float]] = []
+    for y, centre_x, radius in LINK_PIN_SWEEP_PROFILE:
+        for angle in np.linspace(0.0, 2.0 * math.pi, sections, endpoint=False):
+            vertices.append(
+                [
+                    centre_x + radius * math.cos(float(angle)),
+                    side * y,
+                    centre_z + radius * math.sin(float(angle)),
+                ]
+            )
+
+    faces: list[list[int]] = []
+    ring_count = len(LINK_PIN_SWEEP_PROFILE)
+    for ring_index in range(ring_count - 1):
+        first = ring_index * sections
+        second = (ring_index + 1) * sections
+        for index in range(sections):
+            next_index = (index + 1) % sections
+            faces.extend(
+                [
+                    [first + index, first + next_index, second + next_index],
+                    [first + index, second + next_index, second + index],
+                ]
+            )
+
+    start_center_index = len(vertices)
+    start_y, start_x, _ = LINK_PIN_SWEEP_PROFILE[0]
+    vertices.append([start_x, side * start_y, centre_z])
+    end_center_index = len(vertices)
+    vertices.append([-3.15, side * 3.75098, centre_z])
+    last_ring = (ring_count - 1) * sections
+    for index in range(sections):
+        next_index = (index + 1) % sections
+        faces.append([start_center_index, next_index, index])
+        faces.append(
+            [
+                end_center_index,
+                last_ring + index,
+                last_ring + next_index,
+            ]
+        )
+
+    pin = trimesh.Trimesh(
+        vertices=np.asarray(vertices),
+        faces=np.asarray(faces),
+        process=True,
+    )
+    pin.merge_vertices()
+    pin.remove_unreferenced_vertices()
+    pin.fix_normals()
+    return pin
+
+
+def build_source_core_parametric_pin_link(
+    source_link: trimesh.Trimesh,
+) -> trimesh.Trimesh:
+    """Preserve the exact central body while replacing only four pin sweeps."""
+    core_clip = _box((20.0, 5.24, 20.0), (0.0, 0.0, 10.0))
+    core = _intersection([source_link, core_clip])
+    pins = [
+        _measured_pin_sweep(centre_z=centre_z, side=side)
+        for _, centre_z in SOURCE_LINK_PIN_CENTRES_XZ
+        for side in (-1.0, 1.0)
+    ]
+    link = _union([core, *pins])
+    link.metadata["name"] = "Source-core parametric-pin link"
+    return link
 
 
 def build_parametric_base_baseline() -> trimesh.Trimesh:
@@ -656,6 +848,259 @@ def build_parametric_base_baseline() -> trimesh.Trimesh:
     mesh = _difference(body, [bore])
     mesh.metadata["name"] = "Parametric baseline six-arm base"
     return mesh
+
+
+def build_selected_source_base(
+    source_base: trimesh.Trimesh,
+) -> trimesh.Trimesh:
+    """Preserve every source arm surface and enlarge only the R188 pocket.
+
+    The cutter begins at the existing 1.80 mm bearing shoulder, so all external
+    geometry, panel interfaces, and axial stack planes remain source-exact.
+    """
+    pocket_start = 1.80
+    pocket_height = 7.00
+    pocket = _cylinder(
+        COUPONS.selected_housing_diameter,
+        pocket_height,
+        (
+            0.0,
+            0.0,
+            pocket_start + pocket_height / 2,
+        ),
+        sections=192,
+    )
+    base = _difference(source_base.copy(), [pocket])
+    base.metadata["name"] = (
+        f"Source-arm base with {COUPONS.selected_housing_diameter:.2f} mm R188 pocket"
+    )
+    return base
+
+
+def build_base_retention_variants(
+    selected_source_base: trimesh.Trimesh,
+) -> list[tuple[str, trimesh.Trimesh]]:
+    """Add controlled diameter only to the six source arm-peg cylinders."""
+    output: list[tuple[str, trimesh.Trimesh]] = []
+    local_u, local_v, local_z = BASE_PEG_LOCAL_CENTRE
+    axis_u, axis_v, axis_z = BASE_PEG_LOCAL_AXIS
+
+    for variant_index, diameter in enumerate(
+        BASE_PEG_RETENTION_DIAMETERS,
+        start=1,
+    ):
+        reinforcements = []
+        for angle_deg in BASE_ARM_ANGLES_DEG:
+            angle = math.radians(angle_deg)
+            radial = np.asarray([math.cos(angle), math.sin(angle), 0.0])
+            tangential = np.asarray([-math.sin(angle), math.cos(angle), 0.0])
+            centre = (
+                local_u * radial
+                + local_v * tangential
+                + np.asarray([0.0, 0.0, local_z])
+            )
+            axis = axis_u * radial + axis_v * tangential
+            axis[2] = axis_z
+            axis = axis / np.linalg.norm(axis)
+            half_length = BASE_PEG_FULL_DIAMETER_LENGTH / 2
+            segment = np.asarray(
+                [
+                    centre - axis * half_length,
+                    centre + axis * half_length,
+                ]
+            )
+            reinforcements.append(
+                trimesh.creation.cylinder(
+                    radius=diameter / 2,
+                    segment=segment,
+                    sections=96,
+                )
+            )
+
+        variant = _union(
+            [
+                selected_source_base.copy(),
+                *reinforcements,
+                *_identifier_dots(
+                    count=variant_index,
+                    centre=(0.0, -10.8),
+                    z0=7.45,
+                ),
+            ]
+        )
+        variant.metadata["name"] = (
+            f"Base arm retention peg {diameter:.2f} mm — "
+            f"{variant_index} dot{'s' if variant_index > 1 else ''}"
+        )
+        label = f"{diameter:.2f}".replace(".", "_")
+        output.append((f"base_arm_retention_{label}", variant))
+    return output
+
+
+def build_base_peg_process_gauge(
+    selected_source_base: trimesh.Trimesh,
+) -> list[tuple[str, trimesh.Trimesh]]:
+    """Real-orientation single-arm coupons with slicer-visible diameter steps."""
+    output: list[tuple[str, trimesh.Trimesh]] = []
+    angle = math.radians(90.0)
+    radial = np.asarray([math.cos(angle), math.sin(angle), 0.0])
+    tangential = np.asarray([-math.sin(angle), math.cos(angle), 0.0])
+    local_u, local_v, local_z = BASE_PEG_LOCAL_CENTRE
+    axis_u, axis_v, axis_z = BASE_PEG_LOCAL_AXIS
+    centre = (
+        local_u * radial
+        + local_v * tangential
+        + np.asarray([0.0, 0.0, local_z])
+    )
+    axis = axis_u * radial + axis_v * tangential
+    axis[2] = axis_z
+    axis = axis / np.linalg.norm(axis)
+    half_length = BASE_PEG_FULL_DIAMETER_LENGTH / 2
+    segment = np.asarray(
+        [
+            centre - axis * half_length,
+            centre + axis * half_length,
+        ]
+    )
+
+    for index, diameter in enumerate(BASE_PEG_PROCESS_DIAMETERS, start=1):
+        working = selected_source_base.copy()
+        if diameter > 2.20:
+            enlarged_section = trimesh.creation.cylinder(
+                radius=diameter / 2,
+                segment=segment,
+                sections=128,
+            )
+            working = _union([working, enlarged_section])
+
+        crop = _box((12.0, 13.0, 10.0), (0.0, 13.0, 5.0))
+        arm = _intersection([working, crop])
+        foot = _box((12.0, 6.0, 1.20), (0.0, 8.50, 0.60))
+        coupon = _union(
+            [
+                arm,
+                foot,
+                *_identifier_dots(
+                    count=index,
+                    centre=(0.0, 7.0),
+                    z0=1.15,
+                    spacing=1.3,
+                ),
+            ]
+        )
+        xy_centre = (coupon.bounds[0, :2] + coupon.bounds[1, :2]) / 2
+        coupon.apply_translation(
+            [
+                -xy_centre[0],
+                -xy_centre[1],
+                -coupon.bounds[0, 2],
+            ]
+        )
+        coupon.metadata["name"] = (
+            f"Real-orientation base peg {diameter:.2f} mm — {index} dots"
+        )
+        label = f"{diameter:.2f}".replace(".", "_")
+        output.append((f"base_peg_process_{label}", coupon))
+    return output
+
+
+def _normalize_to_bed(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+    result = mesh.copy()
+    xy_centre = (result.bounds[0, :2] + result.bounds[1, :2]) / 2
+    result.apply_translation(
+        [
+            -xy_centre[0],
+            -xy_centre[1],
+            -result.bounds[0, 2],
+        ]
+    )
+    return result
+
+
+def build_keyed_connector_architecture_coupon(
+) -> list[tuple[str, trimesh.Trimesh]]:
+    """Matte receiver/tongue plus a keyed Tough+ clevis for a filament pin."""
+    # Panel-side surrogate: a one-ended dovetail channel prevents pull-out in
+    # Z while allowing assembly from the open Y end.
+    receiver = _rounded_prism(20.0, 12.0, 6.0, 2.0)
+    channel_profile = Polygon(
+        [
+            (-5.00, 1.20),
+            (5.00, 1.20),
+            (4.20, 6.50),
+            (-4.20, 6.50),
+        ]
+    )
+    channel = _extrude_xz(channel_profile, 11.0)
+    channel.apply_translation([0.0, 0.5, 0.0])
+    receiver = _difference(receiver, [channel])
+    receiver = _normalize_to_bed(receiver)
+    receiver.metadata["name"] = "Matte keyed panel receiver"
+
+    # Tough+ insert: 0.30 mm per-side dovetail clearance, bridge, and two ears
+    # around a 4.00 mm-wide base-arm surrogate.
+    key_profile = Polygon(
+        [
+            (-4.70, 1.40),
+            (4.70, 1.40),
+            (3.90, 5.80),
+            (-3.90, 5.80),
+        ]
+    )
+    key = _extrude_xz(key_profile, 11.0)
+    key.apply_translation([0.0, 0.5, 0.0])
+    bridge = _box((8.40, 3.00, 4.00), (0.0, 7.00, 6.00))
+    ears = [
+        _box((2.00, 10.00, 8.00), (side * 3.20, 13.00, 8.00))
+        for side in (-1.0, 1.0)
+    ]
+    insert = _union([key, bridge, *ears])
+    hinge_hole = trimesh.creation.cylinder(
+        radius=0.95,
+        segment=np.asarray(
+            [
+                [-5.0, 13.0, 8.0],
+                [5.0, 13.0, 8.0],
+            ]
+        ),
+        sections=64,
+    )
+    insert = _difference(insert, [hinge_hole])
+    insert = _normalize_to_bed(insert)
+    insert.metadata["name"] = "Tough+ keyed clevis insert"
+
+    # Base-arm surrogate: a rounded pivot boss and handle, both Matte PLA.
+    pivot_boss = trimesh.creation.cylinder(
+        radius=3.00,
+        segment=np.asarray(
+            [
+                [-2.0, 13.0, 8.0],
+                [2.0, 13.0, 8.0],
+            ]
+        ),
+        sections=96,
+    )
+    arm_handle = _box((4.00, 9.00, 4.00), (0.0, 17.00, 8.00))
+    tongue = _union([pivot_boss, arm_handle])
+    tongue_hole = trimesh.creation.cylinder(
+        radius=0.95,
+        segment=np.asarray(
+            [
+                [-3.0, 13.0, 8.0],
+                [3.0, 13.0, 8.0],
+            ]
+        ),
+        sections=64,
+    )
+    tongue = _difference(tongue, [tongue_hole])
+    tongue = _normalize_to_bed(tongue)
+    tongue.metadata["name"] = "Matte base-arm pivot surrogate"
+
+    return [
+        ("keyed_panel_receiver", receiver),
+        ("keyed_tough_clevis", insert),
+        ("keyed_base_tongue", tongue),
+    ]
 
 
 def compare_surfaces(
@@ -692,6 +1137,82 @@ def compare_surfaces(
             / abs(reference.volume),
             4,
         ),
+    }
+
+
+def validate_source_sector_assembly(
+    link: trimesh.Trimesh,
+    panel: trimesh.Trimesh,
+) -> dict:
+    """Validate the source one-link/two-panel pairing before packaging it.
+
+    Both panels use the lower blind-pocket end. Panel A connects to the upper
+    link pin pair at the neutral angle. Panel B connects to the lower pair
+    after the source-observed fold. The tiny Panel-B/link overlap is the
+    intended blind-pocket interference plus STL tessellation, not a body clash.
+    """
+
+    def placed_panel(
+        target_xz: tuple[float, float],
+        angle_deg: float,
+    ) -> trimesh.Trimesh:
+        result = panel.copy()
+        source_socket = np.asarray(
+            [PANEL_SOCKET_CENTRES_XZ[0][0], 0.0, PANEL_SOCKET_CENTRES_XZ[0][1]]
+        )
+        result.apply_translation(-source_socket)
+        result.apply_transform(
+            trimesh.transformations.rotation_matrix(
+                math.radians(angle_deg),
+                [0.0, 1.0, 0.0],
+            )
+        )
+        result.apply_translation([target_xz[0], 0.0, target_xz[1]])
+        return result
+
+    def intersection_volume(
+        first: trimesh.Trimesh,
+        second: trimesh.Trimesh,
+    ) -> float:
+        intersection = trimesh.boolean.intersection(
+            [first, second],
+            engine="manifold",
+        )
+        if intersection is None:
+            return 0.0
+        return abs(float(intersection.volume))
+
+    lower_pin, upper_pin = SOURCE_LINK_PIN_CENTRES_XZ
+    panel_a = placed_panel(upper_pin, 0.0)
+    panel_b = placed_panel(lower_pin, SOURCE_SECTOR_SECOND_PANEL_ANGLE_DEG)
+    collisions = {
+        "link_to_panel_a_mm3": round(
+            intersection_volume(link, panel_a),
+            6,
+        ),
+        "link_to_panel_b_mm3": round(
+            intersection_volume(link, panel_b),
+            6,
+        ),
+        "panel_a_to_panel_b_mm3": round(
+            intersection_volume(panel_a, panel_b),
+            6,
+        ),
+    }
+    if collisions["link_to_panel_a_mm3"] > 0.01:
+        raise ValueError("Source panel A has unexpected link body collision")
+    if collisions["link_to_panel_b_mm3"] > 0.25:
+        raise ValueError("Source panel B has excessive link body collision")
+    if collisions["panel_a_to_panel_b_mm3"] > 0.01:
+        raise ValueError("Source sector panels collide")
+    return {
+        "panel_socket_used": "lower blind pocket on both panels",
+        "panel_a_connection": "upper link pin pair at 0 degrees",
+        "panel_b_connection": (
+            f"lower link pin pair at {SOURCE_SECTOR_SECOND_PANEL_ANGLE_DEG:.1f} degrees"
+        ),
+        "collision_volumes": collisions,
+        "status": "joint geometry accepted",
     }
 
 
@@ -746,6 +1267,338 @@ def build_bearing_fit_coupon() -> trimesh.Trimesh:
     coupon = _union([coupon, *shaft_bases, *shafts, *identifiers])
     coupon.metadata["name"] = "R188 bearing fit matrix"
     return coupon
+
+
+def _identifier_dots(
+    *,
+    count: int,
+    centre: tuple[float, float],
+    z0: float,
+    spacing: float = 1.6,
+) -> list[trimesh.Trimesh]:
+    """Raised tactile dots used to identify coupon variants after printing."""
+    return [
+        _cylinder(
+            0.9,
+            0.35,
+            (
+                centre[0] + (index - (count - 1) / 2) * spacing,
+                centre[1],
+                z0 + 0.175,
+            ),
+            sections=24,
+        )
+        for index in range(count)
+    ]
+
+
+def build_r188_stack_coupons() -> list[tuple[str, trimesh.Trimesh]]:
+    """Three base/cap pairs testing 0.10–0.30 mm assembled axial freedom.
+
+    The base shoulder supports only the outer race. The cap's 7.40 mm collar
+    addresses only the inner race, while the selected 6.40 mm shaft passes
+    through the bearing. In use the printed cap is flipped shaft-down and its
+    broad disk seats on the top of the housing.
+    """
+    housing_height = 6.50
+    shoulder_z = 1.20
+    through_diameter = 7.20
+    cap_disk_height = 2.00
+    cap_disk_diameter = 20.00
+    inner_race_collar_diameter = 7.40
+    shaft_length = 5.40
+    output: list[tuple[str, trimesh.Trimesh]] = []
+
+    for index, clearance in enumerate(COUPONS.axial_clearances, start=1):
+        body = _cylinder(24.0, housing_height, (0.0, 0.0, housing_height / 2))
+        through = _cylinder(
+            through_diameter,
+            housing_height + 2.0,
+            (0.0, 0.0, housing_height / 2),
+        )
+        pocket_start = shoulder_z
+        pocket_height = housing_height - pocket_start + 1.0
+        pocket = _cylinder(
+            COUPONS.selected_housing_diameter,
+            pocket_height,
+            (0.0, 0.0, pocket_start + pocket_height / 2),
+        )
+        # Three underside access holes let the bearing be pushed out against
+        # its outer race rather than levering on a shield.
+        ejectors = [
+            _cylinder(
+                2.0,
+                shoulder_z + 0.4,
+                (
+                    5.0 * math.cos(math.radians(angle)),
+                    5.0 * math.sin(math.radians(angle)),
+                    (shoulder_z + 0.4) / 2,
+                ),
+                sections=40,
+            )
+            for angle in (30.0, 150.0, 270.0)
+        ]
+        base = _difference(body, [through, pocket, *ejectors])
+        base = _union(
+            [
+                base,
+                *_identifier_dots(
+                    count=index,
+                    centre=(0.0, -10.8),
+                    z0=housing_height,
+                ),
+            ]
+        )
+        base.metadata["name"] = (
+            f"R188 stack base {clearance:.2f} mm axial freedom"
+        )
+
+        cap_disk = _cylinder(
+            cap_disk_diameter,
+            cap_disk_height,
+            (0.0, 0.0, cap_disk_height / 2),
+        )
+        shaft_overlap = 0.15
+        shaft = _cylinder(
+            COUPONS.selected_shaft_diameter,
+            shaft_length + shaft_overlap,
+            (
+                0.0,
+                0.0,
+                cap_disk_height - shaft_overlap + (shaft_length + shaft_overlap) / 2,
+            ),
+        )
+        bearing_top = shoulder_z + R188.width
+        collar_projection = housing_height - bearing_top - clearance
+        if collar_projection <= 0:
+            raise ValueError("Axial clearance leaves no inner-race collar")
+        collar = _cylinder(
+            inner_race_collar_diameter,
+            collar_projection + shaft_overlap,
+            (
+                0.0,
+                0.0,
+                cap_disk_height
+                - shaft_overlap
+                + (collar_projection + shaft_overlap) / 2,
+            ),
+        )
+        cap = _union(
+            [
+                cap_disk,
+                shaft,
+                collar,
+                *_identifier_dots(
+                    count=index,
+                    centre=(0.0, -7.8),
+                    z0=cap_disk_height,
+                ),
+            ]
+        )
+        cap.metadata["name"] = (
+            f"R188 stack cap {clearance:.2f} mm axial freedom — flip to assemble"
+        )
+
+        label = f"{clearance:.2f}".replace(".", "_")
+        output.extend(
+            [
+                (f"r188_stack_{label}_base", base),
+                (f"r188_stack_{label}_cap", cap),
+            ]
+        )
+    return output
+
+
+def build_pin_socket_coupons() -> list[tuple[str, trimesh.Trimesh]]:
+    """Source-like snap heads and panel sockets, identified by one to three dots."""
+    output: list[tuple[str, trimesh.Trimesh]] = []
+    base_height = 2.00
+    stem_height = 2.20
+    stem_diameter = 1.95
+    head_height = 1.50
+
+    for index, head_diameter in enumerate(COUPONS.pin_head_diameters, start=1):
+        base = _cylinder(12.0, base_height, (0.0, 0.0, base_height / 2))
+        root_overlap = 0.15
+        stem = _cylinder(
+            stem_diameter,
+            stem_height + root_overlap,
+            (
+                0.0,
+                0.0,
+                base_height - root_overlap + (stem_height + root_overlap) / 2,
+            ),
+            sections=64,
+        )
+        head = _cone_between(
+            head_diameter / 2,
+            (0.0, 0.0, base_height + stem_height - root_overlap),
+            (0.0, 0.0, base_height + stem_height + head_height),
+        )
+        pin = _union(
+            [
+                base,
+                stem,
+                head,
+                *_identifier_dots(
+                    count=index,
+                    centre=(0.0, -4.8),
+                    z0=base_height,
+                    spacing=1.3,
+                ),
+            ]
+        )
+        pin.metadata["name"] = (
+            f"Snap pin head {head_diameter:.2f} mm / stem {stem_diameter:.2f} mm"
+        )
+        label = f"{head_diameter:.2f}".replace(".", "_")
+        output.append((f"snap_pin_head_{label}", pin))
+
+    for index, socket_diameter in enumerate(COUPONS.socket_diameters, start=1):
+        ring = _cylinder(10.0, 2.0, (0.0, 0.0, 1.0), sections=96)
+        handle = _rounded_prism(9.0, 5.0, 2.0, 1.5)
+        handle.apply_translation([6.0, 0.0, 0.0])
+        socket = _union([ring, handle])
+        cutter = _cylinder(
+            socket_diameter,
+            4.0,
+            (0.0, 0.0, 2.0),
+            sections=64,
+        )
+        socket = _difference(socket, [cutter])
+        socket = _union(
+            [
+                socket,
+                *_identifier_dots(
+                    count=index,
+                    centre=(7.0, 0.0),
+                    z0=2.0,
+                    spacing=1.2,
+                ),
+            ]
+        )
+        socket.metadata["name"] = f"Panel socket {socket_diameter:.2f} mm"
+        label = f"{socket_diameter:.2f}".replace(".", "_")
+        output.append((f"panel_socket_{label}", socket))
+    return output
+
+
+def build_nominal_socket_pair_coupons() -> list[tuple[str, trimesh.Trimesh]]:
+    """Three fresh Ø2.20 sockets, dot-matched to the three pin-head variants."""
+    output: list[tuple[str, trimesh.Trimesh]] = []
+    for index in range(1, 4):
+        ring = _cylinder(10.0, 2.0, (0.0, 0.0, 1.0), sections=96)
+        handle = _rounded_prism(9.0, 5.0, 2.0, 1.5)
+        handle.apply_translation([6.0, 0.0, 0.0])
+        socket = _union([ring, handle])
+        cutter = _cylinder(
+            PANEL_SOCKET_DIAMETER,
+            4.0,
+            (0.0, 0.0, 2.0),
+            sections=64,
+        )
+        socket = _difference(socket, [cutter])
+        socket = _union(
+            [
+                socket,
+                *_identifier_dots(
+                    count=index,
+                    centre=(7.0, 0.0),
+                    z0=2.0,
+                    spacing=1.2,
+                ),
+            ]
+        )
+        socket.metadata["name"] = (
+            f"Panel socket {PANEL_SOCKET_DIAMETER:.2f} mm — pair {index}"
+        )
+        output.append((f"panel_socket_2_20_pair_{index}", socket))
+    return output
+
+
+def build_compliant_socket_coupons() -> list[tuple[str, trimesh.Trimesh]]:
+    """Reinforced pins paired with thin split sockets that provide compliance.
+
+    The first rigid-ring matrix failed because the pin had to bend to create
+    every bit of snap-through displacement. These C-shaped socket tabs move
+    that compliance into the panel-side feature, while the pin receives a
+    broad tapered root representative of the source link blend.
+    """
+    output: list[tuple[str, trimesh.Trimesh]] = []
+    pin_profile = np.asarray(
+        [
+            (0.000, 1.850),
+            (2.000, 1.850),
+            (2.000, 2.050),
+            (1.400, 2.450),
+            (0.975, 2.800),
+            (0.975, 4.600),
+            (1.175, 4.600),
+            (1.175, 4.900),
+            (0.400, 6.100),
+            (0.000, 6.100),
+            (0.000, 1.850),
+        ]
+    )
+
+    for index, slot_width in enumerate(COUPONS.compliant_socket_slots, start=1):
+        base = _cylinder(12.0, 2.0, (0.0, 0.0, 1.0))
+        pin_body = trimesh.creation.revolve(pin_profile, sections=128)
+        pin = _union(
+            [
+                base,
+                pin_body,
+                *_identifier_dots(
+                    count=index,
+                    centre=(0.0, -4.8),
+                    z0=2.0,
+                    spacing=1.3,
+                ),
+            ]
+        )
+        pin.metadata["name"] = (
+            f"Reinforced snap pin 2.35 mm head — pair {index}"
+        )
+        output.append((f"reinforced_snap_pin_pair_{index}", pin))
+
+        socket_thickness = 1.20
+        ring = _cylinder(
+            10.0,
+            socket_thickness,
+            (0.0, 0.0, socket_thickness / 2),
+            sections=96,
+        )
+        handle = _rounded_prism(9.0, 5.0, socket_thickness, 1.5)
+        handle.apply_translation([6.0, 0.0, 0.0])
+        socket = _union([ring, handle])
+        hole = _cylinder(
+            PANEL_SOCKET_DIAMETER,
+            socket_thickness + 2.0,
+            (0.0, 0.0, socket_thickness / 2),
+            sections=64,
+        )
+        slit = _box(
+            (5.0, slot_width, socket_thickness + 2.0),
+            (-3.5, 0.0, socket_thickness / 2),
+        )
+        socket = _difference(socket, [hole, slit])
+        socket = _union(
+            [
+                socket,
+                *_identifier_dots(
+                    count=index,
+                    centre=(7.0, 0.0),
+                    z0=socket_thickness,
+                    spacing=1.2,
+                ),
+            ]
+        )
+        socket.metadata["name"] = (
+            f"Compliant panel socket 2.20 mm / {slot_width:.2f} mm slit"
+        )
+        label = f"{slot_width:.2f}".replace(".", "_")
+        output.append((f"compliant_socket_slot_{label}", socket))
+    return output
 
 
 def _capsule_polygon(length: float, width: float):
@@ -874,6 +1727,8 @@ def _coupon_model_settings(
     plate_title: str,
     objects: list[tuple[str, Path, int]],
     meshes: list[trimesh.Trimesh],
+    enable_support: bool = False,
+    process_overrides: dict[str, str] | None = None,
 ) -> bytes:
     lines = ['<?xml version="1.0" encoding="UTF-8"?>', "<config>"]
     overrides = {
@@ -881,7 +1736,7 @@ def _coupon_model_settings(
         "wall_loops": "4",
         "sparse_infill_density": "15%",
         "sparse_infill_pattern": "gyroid",
-        "enable_support": "0",
+        "enable_support": "1" if enable_support else "0",
         "outer_wall_speed": "80",
         "inner_wall_speed": "140",
         "top_shell_layers": "5",
@@ -889,6 +1744,18 @@ def _coupon_model_settings(
         "seam_position": "back",
         "fuzzy_skin": "none",
     }
+    if enable_support:
+        overrides.update(
+            {
+                "support_type": "normal(auto)",
+                "support_style": "snug",
+                "support_on_build_plate_only": "1",
+                "support_threshold_angle": "30",
+                "support_top_z_distance": "0.20",
+            }
+        )
+    if process_overrides:
+        overrides.update(process_overrides)
     for index, ((name, source, extruder), mesh) in enumerate(
         zip(objects, meshes),
         start=1,
@@ -959,6 +1826,14 @@ def build_coupon_3mf(
     plate_title: str,
     objects: list[tuple[str, Path, int]],
     positions: list[tuple[float, float, float]],
+    enable_support: bool = False,
+    filament_profile: str = "Bambu PLA Matte @BBL P2S",
+    filament_id: str = "GFA01",
+    filament_colour: str = "#FFFFFF",
+    process_overrides: dict[str, str] | None = None,
+    filament_profiles: tuple[str, str] | None = None,
+    filament_ids: tuple[str, str] | None = None,
+    filament_colours: tuple[str, str] | None = None,
 ) -> Path:
     """Package coupon meshes into a single-plate Bambu Lab P2S Matte PLA project."""
     if len(objects) != len(positions):
@@ -996,6 +1871,8 @@ def build_coupon_3mf(
                 plate_title=plate_title,
                 objects=objects,
                 meshes=meshes,
+                enable_support=enable_support,
+                process_overrides=process_overrides,
             ),
         )
 
@@ -1007,18 +1884,56 @@ def build_coupon_3mf(
         settings["wall_loops"] = "4"
         settings["sparse_infill_density"] = "15%"
         settings["sparse_infill_pattern"] = "gyroid"
-        settings["enable_support"] = "0"
+        settings["enable_support"] = "1" if enable_support else "0"
+        if enable_support:
+            settings["support_type"] = "normal(auto)"
+            settings["support_style"] = "snug"
+            settings["support_on_build_plate_only"] = "1"
+            settings["support_threshold_angle"] = "30"
+            settings["support_top_z_distance"] = "0.20"
         settings["seam_position"] = "back"
         settings["fuzzy_skin"] = "none"
+        selected_profiles = list(
+            filament_profiles
+            if filament_profiles is not None
+            else (filament_profile, filament_profile)
+        )
+        selected_ids = list(
+            filament_ids
+            if filament_ids is not None
+            else (filament_id, filament_id)
+        )
+        selected_colours = list(
+            filament_colours
+            if filament_colours is not None
+            else (filament_colour, filament_colour)
+        )
         settings["filament_type"] = ["PLA", "PLA"]
         settings["filament_vendor"] = ["Bambu Lab", "Bambu Lab"]
-        settings["filament_settings_id"] = [
-            "Bambu PLA Matte @BBL P2S",
-            "Bambu PLA Matte @BBL P2S",
-        ]
-        settings["filament_ids"] = ["GFA01", "GFA01"]
-        settings["filament_colour"] = ["#FFFFFF", "#FFFFFF"]
+        settings["filament_settings_id"] = selected_profiles
+        settings["filament_ids"] = selected_ids
+        settings["filament_colour"] = selected_colours
         settings["default_filament_colour"] = ["", ""]
+        if any("PLA Tough+" in profile for profile in selected_profiles):
+            temperatures = [
+                "245" if "PLA Tough+" in profile else "220"
+                for profile in selected_profiles
+            ]
+            max_speeds = [
+                "21" if "PLA Tough+" in profile else "22"
+                for profile in selected_profiles
+            ]
+            densities = [
+                "1.21" if "PLA Tough+" in profile else "1.30"
+                for profile in selected_profiles
+            ]
+            settings["nozzle_temperature"] = temperatures
+            settings["nozzle_temperature_initial_layer"] = temperatures
+            settings["filament_flow_ratio"] = ["0.98", "0.98"]
+            settings["filament_max_volumetric_speed"] = max_speeds
+            settings["filament_density"] = densities
+        if process_overrides:
+            settings.update(process_overrides)
         output.writestr(
             "Metadata/project_settings.config",
             json.dumps(settings, indent=2, ensure_ascii=False).encode(),
@@ -1039,7 +1954,7 @@ def build_coupon_3mf(
 
 
 def build_coupon_projects(coupon_dir: Path, output_dir: Path) -> list[Path]:
-    """Write the three printable P2S Matte PLA coupon projects."""
+    """Write the printable P2S Matte PLA coupon projects."""
     coupon_dir = Path(coupon_dir)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1113,6 +2028,138 @@ def build_coupon_projects(coupon_dir: Path, output_dir: Path) -> list[Path]:
             ],
             [(128.0, 128.0, 0.0)],
         ),
+        (
+            "Squspi_R188_Assembled_Stack_Coupon_P2S.3mf",
+            "R188 assembled stack - 0.10, 0.20, 0.30 mm",
+            [
+                (
+                    "R188 stack 0.10 base — one dot",
+                    coupon_dir / "r188_stack_0_10_base.stl",
+                    1,
+                ),
+                (
+                    "R188 stack 0.10 cap — one dot — flip after print",
+                    coupon_dir / "r188_stack_0_10_cap.stl",
+                    1,
+                ),
+                (
+                    "R188 stack 0.20 base — two dots",
+                    coupon_dir / "r188_stack_0_20_base.stl",
+                    1,
+                ),
+                (
+                    "R188 stack 0.20 cap — two dots — flip after print",
+                    coupon_dir / "r188_stack_0_20_cap.stl",
+                    1,
+                ),
+                (
+                    "R188 stack 0.30 base — three dots",
+                    coupon_dir / "r188_stack_0_30_base.stl",
+                    1,
+                ),
+                (
+                    "R188 stack 0.30 cap — three dots — flip after print",
+                    coupon_dir / "r188_stack_0_30_cap.stl",
+                    1,
+                ),
+            ],
+            [
+                (80.0, 150.0, 0.0),
+                (80.0, 100.0, 0.0),
+                (128.0, 150.0, 0.0),
+                (128.0, 100.0, 0.0),
+                (176.0, 150.0, 0.0),
+                (176.0, 100.0, 0.0),
+            ],
+        ),
+        (
+            "Squspi_Pin_Socket_Fit_Matrix_P2S.3mf",
+            "Source-like snap pin and panel socket matrix",
+            [
+                (
+                    "Snap pin head 2.35 mm — one dot",
+                    coupon_dir / "snap_pin_head_2_35.stl",
+                    1,
+                ),
+                (
+                    "Snap pin head 2.45 mm — two dots",
+                    coupon_dir / "snap_pin_head_2_45.stl",
+                    1,
+                ),
+                (
+                    "Snap pin head 2.55 mm — three dots",
+                    coupon_dir / "snap_pin_head_2_55.stl",
+                    1,
+                ),
+                (
+                    "Panel socket 2.20 mm paired with 2.35 head — one dot",
+                    coupon_dir / "panel_socket_2_20_pair_1.stl",
+                    1,
+                ),
+                (
+                    "Panel socket 2.20 mm paired with 2.45 head — two dots",
+                    coupon_dir / "panel_socket_2_20_pair_2.stl",
+                    1,
+                ),
+                (
+                    "Panel socket 2.20 mm paired with 2.55 head — three dots",
+                    coupon_dir / "panel_socket_2_20_pair_3.stl",
+                    1,
+                ),
+            ],
+            [
+                (80.0, 145.0, 0.0),
+                (128.0, 145.0, 0.0),
+                (176.0, 145.0, 0.0),
+                (80.0, 100.0, 0.0),
+                (128.0, 100.0, 0.0),
+                (176.0, 100.0, 0.0),
+            ],
+        ),
+        (
+            "Squspi_Compliant_Socket_Coupon_P2S.3mf",
+            "Reinforced pin and compliant socket matrix",
+            [
+                (
+                    "Reinforced pin paired with 0.60 mm socket slit — one dot",
+                    coupon_dir / "reinforced_snap_pin_pair_1.stl",
+                    1,
+                ),
+                (
+                    "Compliant 2.20 mm socket with 0.60 mm slit — one dot",
+                    coupon_dir / "compliant_socket_slot_0_60.stl",
+                    1,
+                ),
+                (
+                    "Reinforced pin paired with 0.80 mm socket slit — two dots",
+                    coupon_dir / "reinforced_snap_pin_pair_2.stl",
+                    1,
+                ),
+                (
+                    "Compliant 2.20 mm socket with 0.80 mm slit — two dots",
+                    coupon_dir / "compliant_socket_slot_0_80.stl",
+                    1,
+                ),
+                (
+                    "Reinforced pin paired with 1.00 mm socket slit — three dots",
+                    coupon_dir / "reinforced_snap_pin_pair_3.stl",
+                    1,
+                ),
+                (
+                    "Compliant 2.20 mm socket with 1.00 mm slit — three dots",
+                    coupon_dir / "compliant_socket_slot_1_00.stl",
+                    1,
+                ),
+            ],
+            [
+                (80.0, 145.0, 0.0),
+                (80.0, 100.0, 0.0),
+                (128.0, 145.0, 0.0),
+                (128.0, 100.0, 0.0),
+                (176.0, 145.0, 0.0),
+                (176.0, 100.0, 0.0),
+            ],
+        ),
     ]
 
     written: list[Path] = []
@@ -1125,6 +2172,312 @@ def build_coupon_projects(coupon_dir: Path, output_dir: Path) -> list[Path]:
                 positions=positions,
             )
         )
+    written.append(
+        build_coupon_3mf(
+            output_path=output_dir / "Squspi_Source_Joint_Control_P2S.3mf",
+            plate_title="Source blind-pocket joint control",
+            objects=[
+                (
+                    "Cleaned source link control",
+                    coupon_dir / "source_control_link.stl",
+                    1,
+                ),
+                (
+                    "Cleaned source panel control A",
+                    coupon_dir / "source_control_panel.stl",
+                    1,
+                ),
+                (
+                    "Cleaned source panel control B",
+                    coupon_dir / "source_control_panel.stl",
+                    1,
+                ),
+            ],
+            positions=[
+                (128.0, 105.0, 0.0),
+                (100.0, 145.0, 0.0),
+                (156.0, 145.0, 0.0),
+            ],
+            enable_support=True,
+        )
+    )
+    written.append(
+        build_coupon_3mf(
+            output_path=(
+                output_dir / "Squspi_Hybrid_Reconstructed_Panel_Sector_P2S.3mf"
+            ),
+            plate_title="Hybrid sector - source link and reconstructed panels",
+            objects=[
+                (
+                    "Source link control",
+                    coupon_dir / "hybrid_source_link.stl",
+                    1,
+                ),
+                (
+                    "Source-envelope reconstructed panel A",
+                    coupon_dir / "hybrid_reconstructed_panel.stl",
+                    1,
+                ),
+                (
+                    "Source-envelope reconstructed panel B",
+                    coupon_dir / "hybrid_reconstructed_panel.stl",
+                    1,
+                ),
+            ],
+            positions=[
+                (128.0, 105.0, 0.0),
+                (100.0, 145.0, 0.0),
+                (156.0, 145.0, 0.0),
+            ],
+            enable_support=True,
+        )
+    )
+    written.append(
+        build_coupon_3mf(
+            output_path=(
+                output_dir / "Squspi_Hybrid_Reconstructed_Link_Sector_P2S.3mf"
+            ),
+            plate_title="Hybrid sector - reconstructed link and source panels",
+            objects=[
+                (
+                    "Source-core parametric-pin reconstructed link",
+                    coupon_dir / "hybrid_reconstructed_link.stl",
+                    1,
+                ),
+                (
+                    "Source panel control A",
+                    coupon_dir / "hybrid_source_panel.stl",
+                    1,
+                ),
+                (
+                    "Source panel control B",
+                    coupon_dir / "hybrid_source_panel.stl",
+                    1,
+                ),
+            ],
+            positions=[
+                (128.0, 105.0, 0.0),
+                (100.0, 145.0, 0.0),
+                (156.0, 145.0, 0.0),
+            ],
+            enable_support=True,
+        )
+    )
+    written.append(
+        build_coupon_3mf(
+            output_path=output_dir / "Squspi_Actual_Base_Button_Stack_P2S.3mf",
+            plate_title="Actual source-shaped base and button stack",
+            objects=[
+                (
+                    "Source-arm base with selected 12.75 mm R188 pocket",
+                    coupon_dir / "actual_stack_selected_base.stl",
+                    1,
+                ),
+                (
+                    "Exact-profile button with selected 6.40 mm shaft",
+                    coupon_dir / "actual_stack_exact_button.stl",
+                    1,
+                ),
+            ],
+            positions=[
+                (105.0, 128.0, 0.0),
+                (155.0, 128.0, 0.0),
+            ],
+            enable_support=True,
+        )
+    )
+    written.append(
+        build_coupon_3mf(
+            output_path=output_dir / "Squspi_Validated_Vertical_Chain_P2S.3mf",
+            plate_title="Validated upper-to-lower vertical chain",
+            objects=[
+                (
+                    "Upper source-arm base with selected R188 pocket",
+                    coupon_dir / "actual_stack_selected_base.stl",
+                    1,
+                ),
+                (
+                    "Upper exact-profile button",
+                    coupon_dir / "actual_stack_exact_button.stl",
+                    1,
+                ),
+                (
+                    "Upper unchanged source panel",
+                    coupon_dir / "hybrid_source_panel.stl",
+                    1,
+                ),
+                (
+                    "Measured-pin reconstructed link",
+                    coupon_dir / "hybrid_reconstructed_link.stl",
+                    1,
+                ),
+                (
+                    "Lower unchanged source panel",
+                    coupon_dir / "hybrid_source_panel.stl",
+                    1,
+                ),
+                (
+                    "Lower source-arm base with selected R188 pocket",
+                    coupon_dir / "actual_stack_selected_base.stl",
+                    1,
+                ),
+                (
+                    "Lower exact-profile button",
+                    coupon_dir / "actual_stack_exact_button.stl",
+                    1,
+                ),
+            ],
+            positions=[
+                (65.0, 165.0, 0.0),
+                (65.0, 105.0, 0.0),
+                (108.0, 155.0, 0.0),
+                (128.0, 95.0, 0.0),
+                (148.0, 155.0, 0.0),
+                (191.0, 165.0, 0.0),
+                (191.0, 105.0, 0.0),
+            ],
+            enable_support=True,
+        )
+    )
+    written.append(
+        build_coupon_3mf(
+            output_path=output_dir / "Squspi_ToughPlus_Source_Panel_Control_P2S.3mf",
+            plate_title="Unchanged source panel - PLA Tough+ control",
+            objects=[
+                (
+                    "Unchanged source panel in PLA Tough+",
+                    coupon_dir / "hybrid_source_panel.stl",
+                    1,
+                ),
+            ],
+            positions=[
+                (128.0, 128.0, 0.0),
+            ],
+            enable_support=True,
+            filament_profile="Bambu PLA Tough+ @BBL P2S",
+            filament_id="GFA10",
+            filament_colour="#FFFFFF",
+        )
+    )
+    written.append(
+        build_coupon_3mf(
+            output_path=output_dir / "Squspi_Base_Arm_Retention_Matrix_P2S.3mf",
+            plate_title="Base arm retention matrix for Tough+ panel",
+            objects=[
+                (
+                    "Base pegs 2.25 mm — one dot",
+                    coupon_dir / "base_arm_retention_2_25.stl",
+                    1,
+                ),
+                (
+                    "Base pegs 2.30 mm — two dots",
+                    coupon_dir / "base_arm_retention_2_30.stl",
+                    1,
+                ),
+                (
+                    "Base pegs 2.35 mm — three dots",
+                    coupon_dir / "base_arm_retention_2_35.stl",
+                    1,
+                ),
+            ],
+            positions=[
+                (65.0, 128.0, 0.0),
+                (128.0, 128.0, 0.0),
+                (191.0, 128.0, 0.0),
+            ],
+            enable_support=True,
+        )
+    )
+    written.append(
+        build_coupon_3mf(
+            output_path=output_dir / "Squspi_Base_Peg_Process_Gauge_P2S.3mf",
+            plate_title="Base peg process gauge - 0.12 mm Arachne",
+            objects=[
+                (
+                    "Source peg 2.20 mm — one dot",
+                    coupon_dir / "base_peg_process_2_20.stl",
+                    1,
+                ),
+                (
+                    "Peg 2.30 mm — two dots",
+                    coupon_dir / "base_peg_process_2_30.stl",
+                    1,
+                ),
+                (
+                    "Peg 2.40 mm — three dots",
+                    coupon_dir / "base_peg_process_2_40.stl",
+                    1,
+                ),
+                (
+                    "Peg 2.50 mm — four dots",
+                    coupon_dir / "base_peg_process_2_50.stl",
+                    1,
+                ),
+            ],
+            positions=[
+                (60.0, 128.0, 0.0),
+                (105.0, 128.0, 0.0),
+                (150.0, 128.0, 0.0),
+                (195.0, 128.0, 0.0),
+            ],
+            enable_support=True,
+            process_overrides={
+                "layer_height": "0.12",
+                "wall_generator": "arachne",
+                "outer_wall_line_width": "0.36",
+                "inner_wall_line_width": "0.40",
+                "outer_wall_speed": "35",
+                "inner_wall_speed": "70",
+                "small_perimeter_speed": "35",
+            },
+        )
+    )
+    written.append(
+        build_coupon_3mf(
+            output_path=(
+                output_dir / "Squspi_Keyed_ToughPlus_Connector_Coupon_P2S.3mf"
+            ),
+            plate_title="Keyed Tough+ clevis and captive filament pin",
+            objects=[
+                (
+                    "Matte keyed panel receiver",
+                    coupon_dir / "keyed_panel_receiver.stl",
+                    1,
+                ),
+                (
+                    "Tough+ keyed clevis insert",
+                    coupon_dir / "keyed_tough_clevis.stl",
+                    2,
+                ),
+                (
+                    "Matte base-arm pivot surrogate",
+                    coupon_dir / "keyed_base_tongue.stl",
+                    1,
+                ),
+            ],
+            positions=[
+                (90.0, 128.0, 0.0),
+                (128.0, 128.0, 0.0),
+                (166.0, 128.0, 0.0),
+            ],
+            enable_support=True,
+            filament_profiles=(
+                "Bambu PLA Matte @BBL P2S",
+                "Bambu PLA Tough+ @BBL P2S",
+            ),
+            filament_ids=("GFA01", "GFA10"),
+            filament_colours=("#FFFFFF", "#F97316"),
+            process_overrides={
+                "layer_height": "0.16",
+                "wall_generator": "arachne",
+                "outer_wall_line_width": "0.40",
+                "inner_wall_line_width": "0.42",
+                "outer_wall_speed": "50",
+                "inner_wall_speed": "100",
+                "small_perimeter_speed": "50",
+            },
+        )
+    )
     return written
 
 
@@ -1147,28 +2500,74 @@ def generate(source_dir: Path, output_dir: Path) -> Path:
         validation.append(validate_mesh(f"reference_{name}", mesh))
         mesh.export(reference_dir / f"{name}_reference.stl")
 
+    source_sector_validation = validate_source_sector_assembly(
+        references["link"],
+        references["panel"],
+    )
+    references["link"].export(coupon_dir / "source_control_link.stl")
+    references["panel"].export(coupon_dir / "source_control_panel.stl")
+
     parametric_button = build_parametric_button_baseline()
     parametric_base = build_parametric_base_baseline()
+    selected_source_base = build_selected_source_base(references["base"])
     parametric_link = build_parametric_link_baseline()
     parametric_panel_shell = build_parametric_panel_shell()
     parametric_panel = build_parametric_panel_baseline()
+    source_envelope_panel = build_source_envelope_panel(references["link"])
+    source_core_parametric_pin_link = build_source_core_parametric_pin_link(
+        references["link"]
+    )
+    hybrid_panel_sector_validation = validate_source_sector_assembly(
+        references["link"],
+        source_envelope_panel,
+    )
+    hybrid_link_sector_validation = validate_source_sector_assembly(
+        source_core_parametric_pin_link,
+        references["panel"],
+    )
     parametric_validation = [
         validate_mesh("parametric_button_baseline", parametric_button),
         validate_mesh("parametric_base_baseline", parametric_base),
+        validate_mesh("selected_source_base", selected_source_base),
         validate_mesh("parametric_link_baseline", parametric_link),
         validate_mesh("parametric_panel_shell", parametric_panel_shell),
         validate_mesh("parametric_panel_baseline", parametric_panel),
+        validate_mesh("source_envelope_panel", source_envelope_panel),
+        validate_mesh(
+            "source_core_parametric_pin_link",
+            source_core_parametric_pin_link,
+        ),
     ]
     parametric_button.export(candidate_dir / "button_baseline.stl")
     parametric_base.export(candidate_dir / "base_baseline.stl")
+    selected_source_base.export(candidate_dir / "base_selected_r188_source_arms.stl")
     parametric_link.export(candidate_dir / "link_baseline.stl")
     parametric_panel_shell.export(candidate_dir / "panel_shell_core.stl")
     parametric_panel.export(candidate_dir / "panel_baseline.stl")
+    source_envelope_panel.export(candidate_dir / "panel_source_envelope.stl")
+    source_core_parametric_pin_link.export(
+        candidate_dir / "link_source_core_parametric_pins.stl"
+    )
+    references["link"].export(coupon_dir / "hybrid_source_link.stl")
+    source_envelope_panel.export(coupon_dir / "hybrid_reconstructed_panel.stl")
+    source_core_parametric_pin_link.export(
+        coupon_dir / "hybrid_reconstructed_link.stl"
+    )
+    references["panel"].export(coupon_dir / "hybrid_source_panel.stl")
+    selected_source_base.export(coupon_dir / "actual_stack_selected_base.stl")
+    parametric_button.export(coupon_dir / "actual_stack_exact_button.stl")
 
     coupon_meshes = [
         ("r188_fit_matrix", build_bearing_fit_coupon()),
         ("link_root_matrix", build_link_root_coupon()),
         *build_running_clearance_coupons(),
+        *build_r188_stack_coupons(),
+        *build_pin_socket_coupons(),
+        *build_nominal_socket_pair_coupons(),
+        *build_compliant_socket_coupons(),
+        *build_base_retention_variants(selected_source_base),
+        *build_base_peg_process_gauge(selected_source_base),
+        *build_keyed_connector_architecture_coupon(),
     ]
     coupon_validation = []
     for filename, mesh in coupon_meshes:
@@ -1188,7 +2587,36 @@ def generate(source_dir: Path, output_dir: Path) -> Path:
         "source_files": {name: path.name for name, path in source_paths.items()},
         "r188": asdict(R188),
         "coupon_parameters": asdict(COUPONS),
+        "joint_dimension_register": {
+            "lower_panel_blind_pocket": {
+                "axis": "Y",
+                "centre_xz": list(PANEL_SOCKET_CENTRES_XZ[0]),
+                "measured_diameter": PANEL_LOWER_POCKET_MEASURED_DIAMETER,
+                "nominal_diameter": PANEL_SOCKET_DIAMETER,
+                "blind_bottom_abs_y": PANEL_LOWER_POCKET_BOTTOM_Y,
+                "mouth_abs_y_range": list(PANEL_LOWER_POCKET_MOUTH_Y),
+                "minimum_local_wall": PANEL_LOWER_POCKET_MIN_WALL,
+            },
+            "upper_panel_oblique_pocket": {
+                "axis": "approximately Y; shell-trimmed",
+                "centre_xz": list(PANEL_SOCKET_CENTRES_XZ[1]),
+                "axis_bottom_abs_y": PANEL_UPPER_POCKET_AXIS_BOTTOM_Y,
+                "nominal_mouth_abs_y": PANEL_UPPER_POCKET_MOUTH_Y,
+                "local_bottom_normal_positive_y": list(
+                    PANEL_UPPER_POCKET_LOCAL_NORMAL
+                ),
+                "construction": "separate oblique shell/rail feature",
+            },
+            "source_link_pins": {
+                "centres_xz": [list(item) for item in SOURCE_LINK_PIN_CENTRES_XZ],
+                "full_radius": 1.002,
+                "tip_abs_y": 3.75098,
+                "radial_clearance_per_side": [0.075, 0.097],
+                "axial_clearance_to_lower_pocket_bottom": 0.249,
+            },
+        },
         "reference_validation": validation,
+        "source_sector_control": source_sector_validation,
         "axisymmetric_profiles": {
             "button": radial_profile(references["button"]),
             "base": radial_profile(references["base"]),
@@ -1198,7 +2626,10 @@ def generate(source_dir: Path, output_dir: Path) -> Path:
             "known_gaps": [
                 "Button is a near-exact revolve of the measured half-section.",
                 "Base arm tips are still a simplified loft versus the organic source tips.",
-                "Link pins are tapered cones approximating blended STL snap geometry.",
+                (
+                    "Legacy parametric_link_baseline uses approximate cones; "
+                    "source_core_parametric_pin_link replaces them with measured sweeps."
+                ),
                 "Panel omits the raised outer spherical lip until a manifold shell bake-in exists.",
             ],
             "surface_comparison": {
@@ -1209,6 +2640,10 @@ def generate(source_dir: Path, output_dir: Path) -> Path:
                 "base": compare_surfaces(
                     references["base"],
                     parametric_base,
+                ),
+                "selected_source_base": compare_surfaces(
+                    references["base"],
+                    selected_source_base,
                 ),
                 "link": compare_surfaces(
                     references["link"],
@@ -1222,8 +2657,18 @@ def generate(source_dir: Path, output_dir: Path) -> Path:
                     references["panel"],
                     parametric_panel,
                 ),
+                "source_envelope_panel": compare_surfaces(
+                    references["panel"],
+                    source_envelope_panel,
+                ),
+                "source_core_parametric_pin_link": compare_surfaces(
+                    references["link"],
+                    source_core_parametric_pin_link,
+                ),
             },
         },
+        "hybrid_panel_sector": hybrid_panel_sector_validation,
+        "hybrid_link_sector": hybrid_link_sector_validation,
         "coupon_validation": coupon_validation,
         "p2s_projects": {
             "printer_profile": "Bambu Lab P2S 0.4 nozzle",
@@ -1232,8 +2677,10 @@ def generate(source_dir: Path, output_dir: Path) -> Path:
             "directory": str(project_dir),
         },
         "next_gate": (
-            "Print the R188, running-clearance, and link-root coupons; freeze selected "
-            "fits; then refine base arm tips and bake the panel edge lip into the shell."
+            "Print the combined upper-to-lower vertical chain using two selected "
+            "source-arm bases, two exact-profile buttons, unchanged source panels, "
+            "and the accepted measured-pin link. Verify both hub stacks remain free "
+            "while the chain completes its full fold without binding or damage."
         ),
     }
     report_path = output_dir / "reconstruction_report.json"
