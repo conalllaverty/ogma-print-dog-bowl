@@ -2,7 +2,7 @@
 
 **Repo:** https://github.com/conalllaverty/ogma-print-dog-bowl  
 **Local path:** `/Users/conalllaverty/Documents/GitHub/ogma-print-dog-bowl`  
-**Last updated:** 2026-07-24
+**Last updated:** 2026-08-04
 **Status:** Local MVP — Cooper, Wave, and solid Honeycomb styles generating
 
 ---
@@ -19,7 +19,7 @@ A configurator for elevated dog-bowl stands (Bambu Lab P2S) that all seat the **
 | Style    | Status               | 3MF                                              |
 | -------- | -------------------- | ------------------------------------------------ |
 | `cooper` | **Live**             | 4 plates — base · paw panel · top ring · letters |
-| `wave`   | **Live (first cut)** | 4 plates — lower · upper shell · seat · letters  |
+| `wave`   | **Print-proven**     | 4 plates — lower · upper shell · seat · letters  |
 | `hex`    | **Live (first cut)** | 2 plates — solid honeycomb body · letters        |
 
 Bowl size is locked to Cooper’s insert — no multi-rim presets for now.
@@ -27,6 +27,144 @@ Bowl size is locked to Cooper’s insert — no multi-rim presets for now.
 Companion / design origin lived in `Documents/Ogma Print Files` (`cooper_bowl_design.py` lineage). This repo is the productised app.
 
 Related product: [`ogma-print-core`](https://github.com/conalllaverty/ogma-print-core) (map tiles) — reuse its Railway + Matte filament patterns.
+
+Standalone design package: `design/boucle-stack-lamp/production/` now contains
+one ready-to-print eight-plate P2S project plus eight individual fallbacks:
+three fuzzy Bone White shells, two smooth halo rings, a Jade White PLA Basic
+diffuser, and Dark Chocolate leg-frame/cradle parts. Every plate contains one
+object. Shell C is 1.2 mm for higher transmission while retaining its original
+reinforced base/register interface. A→B now uses a straight continuous 22 mm
+conformal bond skirt, replacing the ten scarfed tabs whose triangular shadows
+were visible in the first lit assembly. Its twenty straight radial webs now
+join a bed-rooted central collar without the former scalloped crown. B→C keeps
+its continuous 5 mm outer band, five evenly spaced webs and 1.2 mm clearance
+above Shell B's lower register.
+All parts pass fit, complete-stack collision, connectivity and support-free
+slice checks. The matching-band revision still requires a physical dry-fit and
+bond check before replacing the previously successful rings. The production
+legs embed through
+the plinth wall as one watertight frame without entering the removable cradle
+bore; the aligned USB path runs 20° beside the single rear leg, leaving the
+two-leg front gap open. The inverted leg-frame seat/flange is 4 mm with a Ø116 outer lip and a 1.0 mm
+annular locate groove that captures Shell A's Ø112 base for epoxy bonding while
+keeping the cradle removable through the shell opening. A 0.6 mm radial flange
+stop is followed by a 1.9 mm-high 45° bore ramp, so the Ø94 wall no longer
+starts as an unsupported inward cliff and needs no breakaway puck. The removable
+cradle mirrors that ramp with 0.2 mm radial clearance, leaving a 0.8 mm printable
+flange lip; its key also grows outward at 45° instead of starting as a
+cantilever. Plate 7 support is now explicitly off after a physical print
+strung inside the supported inset: the groove and stop are short bridges, and
+the support-free G-code retracts every model travel of at least 5 mm. The
+diffuser uses three reduced locator pegs in
+matching blind cradle sockets rather than resting loose under gravity; the
+assembled clearance model has zero interference. Each halo ring carries one
+outward skirt tab into a short conformal open-rim notch in its lower shell
+(A or B) for hand-align before bonding, plus one hidden tapered tab into an
+open-bottom notch in Shell B/C's internal register for upper-shell rotation —
+without multi-pin over-constraint. The lower notches now follow each tapered
+inner wall at the local rim height; the former global short-to-long cutter
+caused Shell A floating-region warnings and a long channel down Shell B.
+Painted shell sidewalls use the physically preferred Classic Displacement
+texture at 0.30 mm thickness / 0.80 mm point distance; interiors and 4 mm
+base/rim bands remain smooth.
+The combined project disables infill-retraction reduction globally because
+Studio ignores per-object values for that setting; the individual ring/base
+fallbacks also disable it. Both final ring G-code files and all six other plates
+retract every model travel of at least 5 mm. It is not wired into the
+storefront.
+`design/boucle-stack-lamp/fusion/` also carries a full-resolution Autodesk
+Fusion mesh package: nine named watertight bodies (eight printed parts plus the
+LED reference), millimetre OBJ/3MF assembly files, individual component OBJs
+and a Fusion importer script. It is a 584,856-triangle mesh reference rather
+than a native parametric F3D/STEP model; fuzzy skin remains slicer metadata.
+
+Standalone Golf Tee lamp work lives under `design/golf-tee-lamp/`. The revised
+three-plate P2S package uses a one-piece Ø175 Jade White translucent ball
+(solid 1.6 mm shell, constant-thickness dimples), a wood-fill/Caramel tee with
+MH001 pocket, 3-lug bayonet, and slotted spring snap, and a Grass Green base
+with ballast pocket, felt recess, and fuzzy turf top. Cable is internal
+(pocket floor → stem → underside trench). Overall height ~302 mm. See
+`design/golf-tee-lamp/SPEC.md`. Not production-ready until physical gates pass.
+
+Standalone Oggie Spin work lives under `design/modular-spinner/`. The complete
+nine-plate P2S prototype now includes the Ø40 core, pressed outer-race ring, two
+removable three-lug thumb pads, five short wrap-around solid-slide colour segments,
+and a fully printed Tough+ split-collet/receiver cartridge. The first long petal
+arms lifted/rattled too easily, while multiple flex-rail/barb revisions remained
+too rigid or mechanically fussy. The interim maximum-stability arm removes the
+rails and barbs entirely. One full-width solid trapezoidal tongue spans
+R14.0–R21.4 with 0.12 mm nominal side clearance; shallow 0.02 mm/side friction
+ribs engage only over installed Z11.8–13.5. The later rigid 0.13 mm side-detent
+trial required tools and trapped the arms when used with the earlier core, so
+both the arm detents and matching pockets have been removed. A true lofted 0.4 mm slot-mouth
+lead-in is paired with the arm's 0.4 mm tongue lead-in, while 0.12 mm wrap
+clearance limits slap. Legacy barb recesses remain and the detent-free arms are
+compatible with earlier straight-slot cores.
+Arms export print-flipped with the flush top on the bed so the slot tongue is
+not an unsupported overhang. The R188 is the only
+non-printed component. The four 7.8 mm collet fingers retain with a Ø6.80 bead
+and remain accessible for deliberate release after the upper pad is removed.
+All five arm objects use identical 100% grid infill and 2-wall overrides; there
+are no weight pods. All eleven meshes are watertight. The cartridge has zero
+installed interference; each solid-slide arm has only the intended friction-rib
+interference, with zero unexpected overlap and clear adjacent arms. All nine
+plates slice in Bambu Studio 2.7.1 with empty warning fields.
+The separate `Oggie_Spin_Broken_Ring_Illusion_P2S.3mf` optical prototype keeps
+that mechanical geometry unchanged and partitions the top 0.32 mm into flush
+Ivory White inlays: 15/20-dash core tracks and a 25-dash arm track. Its nine
+plates slice with empty warning fields, but the illusion remains physically
+untested and does not supersede the standard complete or five-block projects.
+The separate `Oggie_Spin_5x_Broken_Ring_P2S.3mf` batch places the same flush
+25-dash Ivory White track directly into five Marine Blue arms on one by-layer
+plate; the plain five-block project remains unchanged.
+Seven more physically untested optical projects live under
+`design/modular-spinner/optical-variants/`: full-body five-track vortex (`VX`),
+five-phase spiral/wave (`SP`), chevron reversal (`CH`), phone/LED strobe
+animation (`ST`), dual-radius opposing drift (`OD`), high-contrast colour pulse
+(`CP`) and expanding dashed ladder (`LD`). VX uses five 1.8 mm tracks with a
+70° sweep from R10.6 to R24.5; a -90° core phase matches the first slot while
+fivefold symmetry keeps every arm identical and the core-to-arm paths
+continuous. Each project carries its two-letter identifier as a flush
+contrasting inlay on the core underside and includes only the core plus five arms; the
+standard retaining ring, cartridge and thumb pads are reused. Each project now
+uses one core plate and one centre-plus-four-corners five-arm plate. All arm
+plates retain two walls, 100% gyroid, 0.6 mm Slope Lift and the proven batch
+retraction/wipe profile. Six variants print by layer; colour pulse prints by
+object to reduce AMS changes from 174 to four. Their fourteen total plates slice
+in Bambu Studio 2.7.1 with empty warning fields. Flush optical inlays remain
+0.32 mm deep and all five arms in each project remain volume matched.
+An eighth, separate `SH` shutter experiment uses a modified core rather than an
+arm pattern. Thirteen 1.2 mm radial ribs stand in a 1.6 mm-deep annular recess
+and carry narrower 0.8 mm Ivory flush caps. A split Ø46 × 1.8 mm Dark Chocolate
+ring snaps into a groove in the modified upper pad and samples those ribs
+through twelve 6° slots, creating a 13:12 moiré beat. Its third plate contains
+five standard Dark Chocolate arms in the proven two-wall, 100% gyroid batch
+layout. All three plates slice with empty warning fields. The ring remains inside the R24.5 arm tips by 1.5 mm,
+retains the canonical 1.6 mm face gap and leaves 1.4 mm material outside the
+pad's bayonet entry cavity. This experiment reuses the retaining ring, cartridge
+and lower pad. Snap fit, ring deflection, running clearance and
+the naked-eye effect are physically untested; do not use it if the ring rubs,
+lifts or unclips.
+Physical bearing/ring fit, collet creep,
+free-spin behaviour and all 100-cycle lock tests remain pending, so this is a
+complete prototype rather than production.
+The first printed complete core's Ø12.86 bearing pocket released the R188 under
+gravity, while Ø12.68 would not accept it by hand. The regenerated project now
+uses Ø12.82 after Ø12.78 also remained too tight, giving 0.12 mm nominal
+diametral clearance; the separate pressed outer-race ring provides axial
+capture. Hand insertion, ring retention and free-spin still need physical
+confirmation.
+The first Tough+ split collet spun well, but its Ø6.10 axle and 0.15 mm axial
+play allowed wobble and intermittent hub/core contact. Its collet-side thumb
+pad fitted, while the same pad could not seat on the receiver because the
+exposed collet tip occupied its shallow blind cavity. A Ø6.25 axle still showed
+some wobble, and the first 6.4 mm receiver pad's Ø7.0 socket required pliers.
+Ø6.30 still left a small amount of axle wobble. The current revision uses a
+Ø6.40 axle as a 0.05 mm nominal bearing-bore interference trial, a Ø6.48
+receiver, 0.05 mm axial play and 1.6 mm face gaps. Both sides use the exact same
+6.4 mm pad mesh with a
+Ø7.30 × 5.2 mm socket, providing 0.50 mm nominal diametral tip clearance and
+simplifying batch manufacture. These revised parts remain unprinted.
 
 ---
 
@@ -91,13 +229,17 @@ AGENTS.md              ← instructions for future AI/human sessions
 
 Honeycomb generated outputs were topology-checked for `MAX`, `LUNA`, and wide
 8-letter `WILLIAMS`. The wall is continuous: 1.0 mm recessed grooves leave
-proud hex tiles around a whole-cell smooth letter area. The 208-row /
-1056-section surface removes the old stair-stepped groove edges, while complete
-boundary cells replace the former 12 mm field of broken ghost hexagons. Its
-hollow shell remains 4.0 mm thick with a 3.0 mm minimum groove web and a 43.49°
-internal seat ramp. Every radial/Z profile is now checked for intersections.
-Five-millimetre pattern-free edge bands, shallow border rings, and 0.45 mm
-external edge bevels give the drum deliberate top and bottom terminations.
+proud hex tiles around a whole-cell smooth letter area. The keepout now derives
+from the actual packed glyph envelope with a 1.5 mm margin; for `MAX` this
+reduces the estimated smooth field from 75.8 × 37.4 mm to 63.6 × 34.4 mm.
+The 208-row / 1056-section surface removes the old stair-stepped groove edges,
+while complete boundary cells replace the former field of broken ghost
+hexagons. The 4.0 mm wall retains a 3.0 mm minimum groove web. Moving the
+support start from Z60 to Z58 reduces the internal seat ramp from 43.49° to
+39.02°. The staggered whole-cell field is visually asymmetric around the drum
+midpoint, so the name is optically centred at Z37 for balanced top/bottom
+clearance. Five-millimetre edge bands terminate in a 0.45 mm top bead and a
+0.35 mm bottom elephant-foot chamfer.
 
 The production font set now uses physically tested Overpass Bold as the default,
 with Source Sans (`clean`), Lora italic (`serif`), Roboto Slab Bold (`slab`),
@@ -164,9 +306,9 @@ orientations. The LUNA pocket, seating, proudness, and removal checks passed.
 
 ## Immediate next steps (priority)
 
-1. Slice the four-plate Wave project and inspect upper-shell travel paths
-2. Dry-fit the separate Wave bowl-seat insert before gluing its flange to the upper rim
-3. Open Honeycomb 3MF in Bambu Studio; inspect wall paths, grooves, smooth name area, pockets, colours
+1. Print revised `MAX_Honeycomb_P2S.3mf`; inspect grooves, tighter name field, bottom chamfer, seat underside, and pocket fit
+2. Confirm the Honeycomb print before locking the style as print-proven
+3. Preserve the print-proven Wave geometry while moving on to product preview work
 4. Confirm fonts + `.gitignore` are acceptable for a public GitHub repo
 5. Add `preview.glb` export from generator; show in web viewer
 6. Deploy backend + web on Railway; set `PIPELINE_API_URL`, `JOBS_ROOT`, CORS
