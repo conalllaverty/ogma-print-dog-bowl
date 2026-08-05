@@ -5,13 +5,14 @@ All-PLA workflow (no PETG support interface):
 
 1. Golf ball shade — Jade White PLA Basic (translucent solid shell), opening on bed
 2. Golf tee — Caramel Matte; Ø5 filleted bayonet pins + spring snap
-3. Grass base — Grass Green Matte; ballast ledge, felt recess, fuzzy turf (snap-clear)
-4. Ballast cover — Grass Green Matte; 1.2 mm drop-in plate
+3. Grass base — Grass Green Matte; 45° ballast seat; tree supports; fuzzy turf
+4. Ballast cover — Grass Green Matte; 1.2 mm tapered plug
 5. Reflector cup — Ivory White Matte; 0.8 mm liner under the MH001
 
-MH001 seats in the reflector inside the tee cup. Cable drops through the Ø18
-pocket-floor bore and exits under the base. Ball locks with a 3-lug bayonet
-and end-of-travel detent (no epoxy).
+MH001 seats in the notched reflector inside the tee cup. Its side-exit lead
+runs through a radial chase into a 21 × 12 mm keyed controller passage, then
+exits under the base. Ball locks with a 3-lug bayonet and end-of-travel detent
+(no epoxy).
 
 Run from the repository root:
 
@@ -71,12 +72,13 @@ class Part:
 
 
 # Solid 1.6 mm shell — 4 walls, 0% sparse infill (no gyroid shadowing).
-# Variable layer height (0.08–0.10 mm at the apex) is applied in Studio after
-# open — see SPEC.md. Exterior is self-supporting (flat ring + 45° cone).
+# Dimple-friendly seams: Arachne + inner→outer + aligned scarf (contour+hole).
+# Variable layer height is baked into the 3MF — see SPEC.md.
 BALL_PROFILE = {
     "enable_support": "0",
     "layer_height": "0.20",
     "wall_generator": "arachne",
+    "wall_sequence": "inner wall/outer wall",
     "wall_loops": "4",
     "sparse_infill_density": "0%",
     "sparse_infill_pattern": "zig-zag",
@@ -86,14 +88,27 @@ BALL_PROFILE = {
     "inner_wall_speed": "120",
     "brim_type": "outer_only",
     "brim_width": "5",
-    "seam_position": "aligned",
-    "fuzzy_skin": "none",
+    # Never "random" on a dimpled sphere — nubs land inside every dimple.
+    "seam_position": "back",
+    # Scarf joint (Studio 1.9+): "all" = Contour and Hole.
+    "has_scarf_joint_seam": "1",
+    "override_filament_scarf_seam_setting": "1",
+    "seam_slope_type": "all",
+    "apply_scarf_seam_on_circles": "1",
+    "seam_slope_conditional": "1",
+    "seam_slope_inner_walls": "1",
+    # Outer walls only — keeps the internal bayonet seat crisp.
+    "fuzzy_skin": cfg.BALL_FUZZY_SKIN,
+    "fuzzy_skin_thickness": f"{cfg.BALL_FUZZY_THICKNESS:.2f}",
+    "fuzzy_skin_point_distance": f"{cfg.BALL_FUZZY_POINT_DISTANCE:.2f}",
+    "fuzzy_skin_first_layer": "0",
     "reduce_infill_retraction_mode": "Disabled",
 }
 
 TEE_PROFILE = {
     "enable_support": "0",
     "layer_height": "0.20",
+    "wall_generator": "arachne",
     "wall_loops": "4",
     "sparse_infill_density": "15%",
     "sparse_infill_pattern": "gyroid",
@@ -101,6 +116,7 @@ TEE_PROFILE = {
     "bottom_shell_layers": "4",
     "outer_wall_speed": "150",
     "inner_wall_speed": "250",
+    "bridge_speed": "20",
     "brim_type": "outer_only",
     "brim_width": "8",
     "brim_object_gap": "0.1",
@@ -110,8 +126,12 @@ TEE_PROFILE = {
 }
 
 BASE_PROFILE = {
-    "enable_support": "0",
+    "enable_support": "1",
+    "support_type": "tree(auto)",
+    "support_threshold_angle": "40",
+    "support_on_build_plate_only": "1",
     "layer_height": "0.20",
+    "wall_generator": "arachne",
     "wall_loops": "4",
     "sparse_infill_density": "15%",
     "sparse_infill_pattern": "gyroid",
@@ -132,9 +152,12 @@ BASE_PROFILE = {
 COVER_PROFILE = {
     "enable_support": "0",
     "layer_height": "0.20",
+    "wall_generator": "arachne",
     "wall_loops": "3",
-    "sparse_infill_density": "100%",
-    "sparse_infill_pattern": "gyroid",
+    # The 1.2 mm plate is fully occupied by 3 bottom + 3 top layers.
+    # Keep sparse infill off: Studio 2.7 rejects gyroid at 100% density.
+    "sparse_infill_density": "0%",
+    "sparse_infill_pattern": "zig-zag",
     "top_shell_layers": "3",
     "bottom_shell_layers": "3",
     "brim_type": "auto_brim",
@@ -146,9 +169,12 @@ COVER_PROFILE = {
 REFLECTOR_PROFILE = {
     "enable_support": "0",
     "layer_height": "0.16",
+    "wall_generator": "arachne",
     "wall_loops": "3",
-    "sparse_infill_density": "100%",
-    "sparse_infill_pattern": "gyroid",
+    # The 0.8 mm floor and wall are entirely shells/perimeters.
+    # Keep sparse infill off: Studio 2.7 rejects gyroid at 100% density.
+    "sparse_infill_density": "0%",
+    "sparse_infill_pattern": "zig-zag",
     "top_shell_layers": "4",
     "bottom_shell_layers": "4",
     "brim_type": "auto_brim",
@@ -295,12 +321,19 @@ def build_parts(include_dimples: bool = True) -> tuple[list[Part], dict]:
             "FINAL Plate 1 check: Enable Support = OFF",
             "FINAL Plate 1 check: VLH is baked into the 3MF (0.20 mm → 0.08 mm on top ~20%); confirm in Preview with Layer Height colouring",
             "FINAL Plate 1 check: Sparse Infill = 0%, Wall Loops = 4 (1.6 mm solid shell)",
+            "Plate 1 seams: Back + Scarf Contour and Hole; Arachne; Inner/Outer; Wipe 4 mm",
+            "Plate 1 fuzzy: Outer walls only, 0.04 mm thick / 0.08 mm point distance",
+            "Plate 1 geometry: relaxed equal-area dimple layout with exact centre/profile sampling; nominal 1.4 mm depth is present in the exported mesh",
+            "Plate 2: snap foot on bed, 8 mm brim, supports off, 20 mm/s bridges; 21 × 12 mm keyed controller passage and side-lead chase",
             "Base: fuzzy paint already clears the snap entry; do not re-enable global top fuzzy",
+            "Plate 3: tree supports stay ON for the ballast pocket roof; cover seat is the inward-narrowing 45° loft",
+            "Plate 4: print large face down; insert the tapered cover small-face-first behind the felt",
+            "Plates 4–5: fully solid by shells/walls; keep sparse infill at 0% (Studio 2.7 rejects 100% gyroid)",
         ],
         "assembly_notes": [
             "Fill the base ballast pocket with 200–300 g steel washers/shot; drop in the ballast cover (optional CA); fit the 110 mm square felt pad",
-            "Snap the tee foot into the grass base until it clicks",
-            "Drop the Ivory reflector into the tee cup; feed MH001 USB first then the inline button through the Ø18 bore; seat the module in the reflector",
+            "Feed the USB and controller straight through the tee and base centre before snapping the revised tee foot into the grass base",
+            "Align the Ivory reflector notch with the tee chase; seat the MH001 with its side lead in the chase; route only the flexible lead through the underside side trench",
             "Drop the ball onto the tee pins at the entry slots; twist ~60° until the detent clicks (reverse to service the LED)",
         ],
     }
@@ -643,8 +676,20 @@ def write_project(
         settings["retract_when_changing_layer"] = ["1", "1"]
         settings["retraction_length"] = ["0.8", "0.8"]
         settings["retraction_speed"] = ["30", "30"]
+        # Wipe while retracting — long enough to hide dimple-rim nubs in the 1.6 mm wall.
         settings["wipe"] = ["1", "1"]
-        settings["wipe_distance"] = ["2", "2"]
+        settings["wipe_distance"] = ["4", "4"]
+        settings["retract_before_wipe"] = ["70%", "70%"]
+        # Scarf seams for the dimpled shade (Contour and Hole). Safe on other plates.
+        n_fil = len(filament_slots)
+        settings["has_scarf_joint_seam"] = "1"
+        settings["override_filament_scarf_seam_setting"] = "1"
+        settings["seam_slope_type"] = "all"
+        settings["apply_scarf_seam_on_circles"] = "1"
+        settings["seam_slope_conditional"] = "1"
+        settings["seam_slope_inner_walls"] = "1"
+        settings["filament_scarf_seam_type"] = ["all"] * n_fil
+        settings["wall_sequence"] = "inner wall/outer wall"
         settings["travel_speed"] = "600"
         settings["print_sequence"] = "by layer"
         settings["curr_bed_type"] = "Textured PEI Plate"

@@ -18,6 +18,7 @@ from pathlib import Path
 import manifold3d
 import numpy as np
 import trimesh
+from scipy.spatial import ConvexHull
 
 GENERATOR_DIR = Path(__file__).resolve().parent
 if str(GENERATOR_DIR) not in sys.path:
@@ -27,9 +28,12 @@ import boucle_lamp_coupons as boucle  # noqa: E402
 import golf_tee_lamp_config as cfg  # noqa: E402
 
 SECTIONS = 192
-# Subdiv 5 (~10k verts) resolves ~5 mm dimples on Ø175 without huge files.
+# Subdiv 5 supplies the base sphere. Explicit centre and profile-ring samples
+# make every dimple reach its configured depth without a prohibitively dense
+# global sphere.
 SPHERE_SUBDIV = 5
 SPHERE_SUBDIV_FAST = 4
+DIMPLE_PROFILE_RING_SAMPLES = ((0.45, 8), (0.90, 12))
 
 
 # --------------------------------------------------------------------------
@@ -116,11 +120,59 @@ def _unit_icosphere(subdiv: int) -> tuple[np.ndarray, np.ndarray]:
     return dirs, np.asarray(sphere.faces)
 
 
+def _dimple_profile_samples(centers: np.ndarray) -> np.ndarray:
+    """Add exact centres and concentric profile rings to the sphere point cloud."""
+    samples = [centers]
+    for centre in centers:
+        helper = (
+            np.asarray([1.0, 0.0, 0.0])
+            if abs(float(centre[2])) > 0.9
+            else np.asarray([0.0, 0.0, 1.0])
+        )
+        tangent_u = np.cross(centre, helper)
+        tangent_u /= max(float(np.linalg.norm(tangent_u)), 1e-12)
+        tangent_v = np.cross(centre, tangent_u)
+        for fraction, count in DIMPLE_PROFILE_RING_SAMPLES:
+            alpha = cfg.DIMPLE_ALPHA_MAX * fraction
+            phases = np.linspace(0.0, 2.0 * math.pi, count, endpoint=False)
+            ring = (
+                math.cos(alpha) * centre[None, :]
+                + math.sin(alpha)
+                * (
+                    np.cos(phases)[:, None] * tangent_u[None, :]
+                    + np.sin(phases)[:, None] * tangent_v[None, :]
+                )
+            )
+            samples.append(ring)
+    return np.vstack(samples)
+
+
+def _dimple_unit_sphere(
+    centers: np.ndarray, subdiv: int
+) -> tuple[np.ndarray, np.ndarray]:
+    """Triangulate a sphere containing exact samples for every dimple profile."""
+    base_dirs, _base_faces = _unit_icosphere(subdiv)
+    cloud = np.vstack([base_dirs, _dimple_profile_samples(centers)])
+    cloud = np.unique(np.round(cloud, 11), axis=0)
+    cloud /= np.maximum(np.linalg.norm(cloud, axis=1, keepdims=True), 1e-12)
+    hull = ConvexHull(cloud, qhull_options="QJ Pp")
+    surface = trimesh.Trimesh(
+        vertices=cloud,
+        faces=np.asarray(hull.simplices),
+        process=False,
+    )
+    surface.fix_normals()
+    surface.remove_unreferenced_vertices()
+    dirs = np.asarray(surface.vertices, dtype=np.float64)
+    dirs /= np.maximum(np.linalg.norm(dirs, axis=1, keepdims=True), 1e-12)
+    return dirs, np.asarray(surface.faces)
+
+
 def _displaced_shell(
     centers: np.ndarray, subdiv: int = SPHERE_SUBDIV
 ) -> trimesh.Trimesh:
     """Outer and inner surfaces share the same dimple field → constant wall t."""
-    dirs, faces = _unit_icosphere(subdiv)
+    dirs, faces = _dimple_unit_sphere(centers, subdiv)
     depths = cfg.dimple_depth_field(dirs, centers)
     outer = trimesh.Trimesh(
         vertices=dirs * (cfg.BALL_R - depths)[:, None],
@@ -394,7 +446,10 @@ def build_ball_blank(include_dimples: bool = True) -> tuple[trimesh.Trimesh, dic
         "dimple_count": int(len(centers)),
         "dimple_depth": cfg.DIMPLE_DEPTH,
         "dimple_alpha_max_rad": cfg.DIMPLE_ALPHA_MAX,
-        "dimple_style": "constant-thickness dual-surface displacement",
+        "dimple_style": (
+            "repulsion-relaxed equal-area centres; exact centre/profile samples; "
+            "constant-thickness dual-surface displacement"
+        ),
         "wall_thickness_constant": cfg.BALL_WALL,
         "piece_count": 1,
         "support_free_skirt": {
@@ -463,6 +518,19 @@ def _tee_stem_profile() -> np.ndarray:
     top_r = cfg.TEE_STEM_TOP_OD / 2.0
     cup_body_r = cfg.CUP_OD / 2.0
     seat_r = cfg.BALL_SEAT_OD / 2.0
+    cup_ramp_h = (cup_body_r - top_r) / math.tan(
+        math.radians(cfg.TEE_CUP_UNDERSIDE_ANGLE_DEG)
+    )
+    cup_ramp_z0 = cfg.TEE_CUP_Z0 - cup_ramp_h
+    seat_z0 = cfg.TEE_CUP_Z1 - cfg.CUP_SEAT_H
+    seat_ramp_h = (seat_r - cup_body_r) / math.tan(
+        math.radians(cfg.TEE_SEAT_UNDERSIDE_ANGLE_DEG)
+    )
+    seat_ramp_z0 = seat_z0 - seat_ramp_h
+    if cup_ramp_z0 <= cfg.TEE_STEM_MID_Z:
+        raise RuntimeError("tee cup ramp collides with the mid-stem transition")
+    if seat_ramp_z0 <= cfg.TEE_CUP_Z0:
+        raise RuntimeError("tee seat ramp collides with the lower cup ramp")
     return np.asarray(
         [
             (0.0, 0.0),
@@ -470,10 +538,10 @@ def _tee_stem_profile() -> np.ndarray:
             (foot_r, cfg.TEE_FOOT_FLAT_H),
             (narrow_r, cfg.TEE_STEM_NARROW_Z),
             (mid_r, cfg.TEE_STEM_MID_Z),
-            (top_r, cfg.TEE_CUP_Z0 - 4.0),
+            (top_r, cup_ramp_z0),
             (cup_body_r, cfg.TEE_CUP_Z0),
-            (cup_body_r, cfg.TEE_CUP_Z1 - cfg.CUP_SEAT_H),
-            (seat_r, cfg.TEE_CUP_Z1 - cfg.CUP_SEAT_H),
+            (cup_body_r, seat_ramp_z0),
+            (seat_r, seat_z0),
             (seat_r, cfg.TEE_CUP_Z1),
             (0.0, cfg.TEE_CUP_Z1),
             (0.0, 0.0),
@@ -482,14 +550,22 @@ def _tee_stem_profile() -> np.ndarray:
 
 
 def _snap_bead() -> trimesh.Trimesh:
-    """Circumferential bead on the tee foot that clicks into the base groove."""
+    """Circumferential bead with a 45° print-side lead-in."""
+    shaft_r = cfg.SNAP_SHAFT_OD / 2.0
+    bead_r = cfg.SNAP_BEAD_OD / 2.0
+    z_bottom = cfg.SNAP_BEAD_Z - cfg.SNAP_BEAD_H / 2.0
+    z_top = cfg.SNAP_BEAD_Z + cfg.SNAP_BEAD_H / 2.0
+    ramp_h = bead_r - shaft_r
+    if ramp_h >= cfg.SNAP_BEAD_H:
+        raise RuntimeError("snap bead is too short for its 45° lower lead-in")
     profile = np.asarray(
         [
-            (cfg.SNAP_SHAFT_OD / 2.0 - 0.2, cfg.SNAP_BEAD_Z - cfg.SNAP_BEAD_H / 2.0),
-            (cfg.SNAP_BEAD_OD / 2.0, cfg.SNAP_BEAD_Z - cfg.SNAP_BEAD_H / 2.0 + 0.3),
-            (cfg.SNAP_BEAD_OD / 2.0, cfg.SNAP_BEAD_Z + cfg.SNAP_BEAD_H / 2.0 - 0.3),
-            (cfg.SNAP_SHAFT_OD / 2.0 - 0.2, cfg.SNAP_BEAD_Z + cfg.SNAP_BEAD_H / 2.0),
-            (cfg.SNAP_SHAFT_OD / 2.0 - 0.2, cfg.SNAP_BEAD_Z - cfg.SNAP_BEAD_H / 2.0),
+            (shaft_r - 0.2, z_bottom),
+            (shaft_r, z_bottom),
+            (bead_r, z_bottom + ramp_h),
+            (bead_r, z_top),
+            (shaft_r - 0.2, z_top),
+            (shaft_r - 0.2, z_bottom),
         ]
     )
     return trimesh.creation.revolve(profile, sections=SECTIONS)
@@ -517,18 +593,39 @@ def _snap_spring_slots() -> list[trimesh.Trimesh]:
     return cutters
 
 
-def _cable_stem_bore(pocket_z0: float) -> trimesh.Trimesh:
-    """Vertical cable bore — clears MH001 inline switch + USB overmold."""
+def _controller_stem_passage(pocket_z0: float) -> trimesh.Trimesh:
+    """Vertical keyed passage for the 19.65 × 10.65 mm inline controller."""
     top = pocket_z0 + 1.5
     bottom = -1.0
     height = top - bottom
-    bore = trimesh.creation.cylinder(
-        radius=cfg.CABLE_BORE_DIA / 2.0,
+    passage = _rounded_rectangle_prism(
+        cfg.CONTROLLER_PASSAGE_W,
+        cfg.CONTROLLER_PASSAGE_H,
         height=height,
-        sections=96,
+        corner_r=cfg.CONTROLLER_PASSAGE_CORNER_R,
+        z0=bottom,
     )
-    bore.apply_translation([0.0, 0.0, (top + bottom) / 2.0])
-    return bore
+    return passage
+
+
+def _led_side_cable_chase(pocket_z0: float, pocket_z1: float) -> trimesh.Trimesh:
+    """Radial floor chase joining the MH001 side lead to the centre passage."""
+    chase_bottom = pocket_z0 - cfg.LED_CABLE_CHASE_H
+    chase = trimesh.creation.box(
+        extents=[
+            cfg.LED_CABLE_CHASE_OUTER_R,
+            cfg.LED_CABLE_CHASE_W,
+            pocket_z1 - chase_bottom + 0.4,
+        ]
+    )
+    chase.apply_translation(
+        [
+            cfg.LED_CABLE_CHASE_OUTER_R / 2.0,
+            0.0,
+            (chase_bottom + pocket_z1 + 0.4) / 2.0,
+        ]
+    )
+    return chase
 
 
 def base_top_fuzzy_mask(mesh: trimesh.Trimesh) -> np.ndarray:
@@ -550,10 +647,43 @@ def _translated_cylinder(radius: float, height: float, z_center: float) -> trime
     return cyl
 
 
+def _rounded_rectangle_prism(
+    width: float,
+    depth: float,
+    height: float,
+    corner_r: float,
+    z0: float = 0.0,
+) -> trimesh.Trimesh:
+    """Axis-aligned rounded rectangle extruded along +z from z0."""
+    try:
+        from shapely.geometry import box as shapely_box
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError("shapely is required for rounded passages") from exc
+
+    half_x = width / 2.0
+    half_y = depth / 2.0
+    radius = min(corner_r, half_x - 0.2, half_y - 0.2)
+    # Inset by radius then buffer to get a true rounded rectangle.
+    core = shapely_box(
+        -half_x + radius,
+        -half_y + radius,
+        half_x - radius,
+        half_y - radius,
+    )
+    poly = core.buffer(radius)
+    prism = trimesh.creation.extrude_polygon(poly, height)
+    prism.apply_translation([0.0, 0.0, z0])
+    return prism
+
+
 def _rounded_square_prism(
     side: float, height: float, corner_r: float, z0: float = 0.0
 ) -> trimesh.Trimesh:
-    """Axis-aligned rounded square extruded along +z from z0."""
+    return _rounded_rectangle_prism(side, side, height, corner_r, z0=z0)
+
+
+def _rounded_square_ring(side: float, corner_r: float, count: int = 128) -> np.ndarray:
+    """Resampled boundary of a rounded square in XY (not closed)."""
     try:
         from shapely.geometry import box as shapely_box
     except ImportError as exc:  # pragma: no cover
@@ -561,51 +691,184 @@ def _rounded_square_prism(
 
     half = side / 2.0
     radius = min(corner_r, half - 0.5)
-    # Inset by radius then buffer to get a true rounded rectangle.
     core = shapely_box(-half + radius, -half + radius, half - radius, half - radius)
     poly = core.buffer(radius)
-    prism = trimesh.creation.extrude_polygon(poly, height)
-    prism.apply_translation([0.0, 0.0, z0])
-    return prism
-
-
-def build_grass_base() -> tuple[trimesh.Trimesh, dict]:
-    """Square grass pad: snap recess, ballast pocket with cover ledge, felt, trench."""
-    body = _rounded_square_prism(
-        cfg.BASE_SIDE, cfg.BASE_H, cfg.BASE_CORNER_R, z0=0.0
+    coords = np.asarray(poly.exterior.coords)[:-1]
+    closed = np.vstack([coords, coords[:1]])
+    seg_len = np.linalg.norm(np.diff(closed, axis=0), axis=1)
+    u = np.concatenate([[0.0], np.cumsum(seg_len)])
+    u /= u[-1]
+    samples = np.linspace(0.0, 1.0, count, endpoint=False)
+    return np.column_stack(
+        [
+            np.interp(samples, u, closed[:, 0]),
+            np.interp(samples, u, closed[:, 1]),
+        ]
     )
 
-    recess_z0 = cfg.BASE_H - cfg.BASE_TEE_RECESS_DEPTH
+
+def _loft_rounded_squares(
+    side0: float,
+    corner0: float,
+    side1: float,
+    corner1: float,
+    z0: float,
+    z1: float,
+    count: int = 128,
+) -> trimesh.Trimesh:
+    """Solid frustum between two rounded squares (convex, centroid-capped)."""
+    ring0 = _rounded_square_ring(side0, corner0, count=count)
+    ring1 = _rounded_square_ring(side1, corner1, count=count)
+    n = count
+    v0 = np.column_stack([ring0, np.full(n, z0)])
+    v1 = np.column_stack([ring1, np.full(n, z1)])
+    c0 = np.array([0.0, 0.0, z0])
+    c1 = np.array([0.0, 0.0, z1])
+    verts = np.vstack([v0, v1, c0[None, :], c1[None, :]])
+    i_c0, i_c1 = 2 * n, 2 * n + 1
+    faces: list[list[int]] = []
+    for i in range(n):
+        j = (i + 1) % n
+        faces.append([i, j, n + j])
+        faces.append([i, n + j, n + i])
+        faces.append([i_c0, j, i])
+        faces.append([i_c1, n + i, n + j])
+    mesh = trimesh.Trimesh(vertices=verts, faces=np.asarray(faces), process=True)
+    mesh.fix_normals()
+    if not mesh.is_volume:
+        raise RuntimeError("rounded-square loft is not a volume")
+    return mesh
+
+
+def _ballast_pocket_cutter() -> tuple[trimesh.Trimesh, dict]:
+    """Ballast void with a true 45° cover seat (no horizontal underside ledge)."""
+    ballast_outer_side = cfg.BASE_SIDE - 2.0 * cfg.BALLAST_OUTER_INSET
+    corner = max(cfg.BASE_CORNER_R - cfg.BALLAST_OUTER_INSET, 4.0)
+    deep_side = ballast_outer_side - 2.0 * cfg.BALLAST_COVER_LEDGE
+    deep_corner = max(corner - cfg.BALLAST_COVER_LEDGE, 3.0)
+    seat_angle = math.radians(cfg.BALLAST_COVER_SEAT_ANGLE_DEG)
+    seat_h = cfg.BALLAST_COVER_LEDGE / math.tan(seat_angle)
+    seat_z0 = cfg.FELT_PAD_RECESS
+    seat_z1 = seat_z0 + seat_h
+    if seat_z1 > cfg.BALLAST_DEPTH - 1.0:
+        raise RuntimeError("ballast cover seat ramp consumes the pocket depth")
+
+    # Full-size vertical mouth clears the tapered plug through the felt recess.
+    mouth = _rounded_square_prism(
+        ballast_outer_side,
+        seat_z0 + 0.1,
+        corner,
+        z0=-0.05,
+    )
+    # The cavity narrows inward at 45°. A matching cover enters small-face-first
+    # and stops with its large outward face at the felt-recess floor.
+    seat = _loft_rounded_squares(
+        ballast_outer_side,
+        corner,
+        deep_side,
+        deep_corner,
+        z0=seat_z0 - 0.05,
+        z1=seat_z1,
+    )
+    deep = _rounded_square_prism(
+        deep_side,
+        cfg.BALLAST_DEPTH - seat_z1 + 0.25,
+        deep_corner,
+        z0=seat_z1 - 0.05,
+    )
+    keep = _translated_cylinder(
+        cfg.BALLAST_INNER_R,
+        cfg.BALLAST_DEPTH + 0.4,
+        (cfg.BALLAST_DEPTH + 0.4) / 2.0 - 0.1,
+    )
+    void = _difference(_union([mouth, seat, deep]), [keep])
+    meta = {
+        "outer_side": ballast_outer_side,
+        "deep_side": round(deep_side, 2),
+        "cover_seat_radial_mm": cfg.BALLAST_COVER_LEDGE,
+        "cover_seat_angle_deg": cfg.BALLAST_COVER_SEAT_ANGLE_DEG,
+        "cover_seat_height_mm": round(seat_h, 2),
+        "cover_seat_z_mm": [round(seat_z0, 2), round(seat_z1, 2)],
+        "cover_thickness": cfg.BALLAST_COVER_THICKNESS,
+    }
+    return void, meta
+
+
+def _snap_socket_cutter(recess_z0: float) -> tuple[trimesh.Trimesh, dict]:
+    """Snap recess with a 45° upper groove lip (underside-on-bed print)."""
     shaft_r = cfg.SNAP_SHAFT_OD / 2.0 + cfg.SNAP_SHAFT_CLEARANCE / 2.0
     entry_r = cfg.SNAP_ENTRY_OD / 2.0
+    mouth_r = cfg.SNAP_MOUTH_OD / 2.0
     groove_r = cfg.SNAP_GROOVE_OD / 2.0
     groove_z0 = recess_z0 + cfg.SNAP_BEAD_Z - cfg.SNAP_GROOVE_H / 2.0
     groove_z1 = groove_z0 + cfg.SNAP_GROOVE_H
     if groove_z0 <= recess_z0 + 0.6:
         raise RuntimeError("snap groove sits too low in the base recess")
-    lead = 1.2
+    if entry_r <= shaft_r:
+        raise RuntimeError("snap insertion throat must be wider than the shaft socket")
+    if mouth_r <= entry_r:
+        raise RuntimeError("snap mouth must flare beyond the insertion throat")
+    undercut = groove_r - entry_r
+    if undercut <= 0.2:
+        raise RuntimeError("snap groove undercut is too shallow")
+    lip_angle = math.radians(cfg.SNAP_GROOVE_CEILING_ANGLE_DEG)
+    chamfer_h = undercut / math.tan(lip_angle)
+    flat_h = cfg.SNAP_GROOVE_H - chamfer_h
+    if flat_h < 0.35:
+        raise RuntimeError(
+            "snap groove is too short for a 45° upper lip plus bead land; "
+            f"need ≥{chamfer_h + 0.35:.2f} mm, have {cfg.SNAP_GROOVE_H:.2f} mm"
+        )
+    mouth_lead_h = mouth_r - entry_r  # 45° outward mouth lead-in
     socket_profile = np.asarray(
         [
             (0.0, recess_z0 - 0.2),
             (shaft_r, recess_z0 - 0.2),
             (shaft_r, groove_z0),
             (groove_r, groove_z0),
-            (groove_r, groove_z1),
-            (shaft_r, groove_z1),
-            (shaft_r, cfg.BASE_H - lead),
-            (entry_r, cfg.BASE_H + 0.2),
+            (groove_r, groove_z0 + flat_h),
+            (entry_r, groove_z1),  # 45° retention lip; also the insertion throat
+            (entry_r, cfg.BASE_H - mouth_lead_h),
+            (mouth_r, cfg.BASE_H + 0.2),
             (0.0, cfg.BASE_H + 0.2),
             (0.0, recess_z0 - 0.2),
         ]
     )
     socket = trimesh.creation.revolve(socket_profile, sections=SECTIONS)
+    meta = {
+        "entry_od": cfg.SNAP_ENTRY_OD,
+        "mouth_od": cfg.SNAP_MOUTH_OD,
+        "groove_od": cfg.SNAP_GROOVE_OD,
+        "shaft_clearance_od": round(shaft_r * 2.0, 2),
+        "bead_entry_interference_radial": round(
+            cfg.SNAP_BEAD_OD / 2.0 - entry_r, 2
+        ),
+        "recess_depth": cfg.BASE_TEE_RECESS_DEPTH,
+        "spring_slots_on_tee": cfg.SNAP_SLOT_COUNT,
+        "groove_lip_angle_deg": cfg.SNAP_GROOVE_CEILING_ANGLE_DEG,
+        "groove_lip_chamfer_mm": round(chamfer_h, 2),
+        "groove_flat_land_mm": round(flat_h, 2),
+    }
+    return socket, meta
 
-    well = trimesh.creation.cylinder(
-        radius=cfg.CABLE_BORE_DIA / 2.0 + 0.4,
-        height=cfg.BASE_H + 1.0,
-        sections=64,
+
+def build_grass_base() -> tuple[trimesh.Trimesh, dict]:
+    """Square grass pad: snap recess, 45° ballast seat, felt, trench."""
+    body = _rounded_square_prism(
+        cfg.BASE_SIDE, cfg.BASE_H, cfg.BASE_CORNER_R, z0=0.0
     )
-    well.apply_translation([0.0, 0.0, cfg.BASE_H / 2.0])
+
+    recess_z0 = cfg.BASE_H - cfg.BASE_TEE_RECESS_DEPTH
+    socket, snap_meta = _snap_socket_cutter(recess_z0)
+
+    well = _rounded_rectangle_prism(
+        cfg.CONTROLLER_PASSAGE_W + cfg.BASE_CONTROLLER_PASSAGE_CLEARANCE,
+        cfg.CONTROLLER_PASSAGE_H + cfg.BASE_CONTROLLER_PASSAGE_CLEARANCE,
+        height=cfg.BASE_H + 1.0,
+        corner_r=cfg.CONTROLLER_PASSAGE_CORNER_R
+        + cfg.BASE_CONTROLLER_PASSAGE_CLEARANCE / 2.0,
+        z0=-0.1,
+    )
 
     trench_roof = 2.0
     trench_h = min(cfg.BALLAST_DEPTH + 0.4, cfg.BASE_H - trench_roof + 0.4)
@@ -616,29 +879,7 @@ def build_grass_base() -> tuple[trimesh.Trimesh, dict]:
     )
     trench.apply_translation([trench_len / 2.0, 0.0, trench_h / 2.0 - 0.2])
 
-    # Ballast: deep pocket + narrower mouth → radial ledge for the cover plate.
-    ballast_outer_side = cfg.BASE_SIDE - 2.0 * cfg.BALLAST_OUTER_INSET
-    corner = max(cfg.BASE_CORNER_R - cfg.BALLAST_OUTER_INSET, 4.0)
-    mouth_side = ballast_outer_side - 2.0 * cfg.BALLAST_COVER_LEDGE
-    mouth_corner = max(corner - cfg.BALLAST_COVER_LEDGE, 3.0)
-    deep = _rounded_square_prism(
-        ballast_outer_side,
-        cfg.BALLAST_DEPTH - cfg.BALLAST_COVER_THICKNESS + 0.2,
-        corner,
-        z0=cfg.BALLAST_COVER_THICKNESS - 0.1,
-    )
-    mouth = _rounded_square_prism(
-        mouth_side,
-        cfg.BALLAST_COVER_THICKNESS + 0.15,
-        mouth_corner,
-        z0=-0.1,
-    )
-    keep = _translated_cylinder(
-        cfg.BALLAST_INNER_R,
-        cfg.BALLAST_DEPTH + 0.4,
-        (cfg.BALLAST_DEPTH + 0.4) / 2.0 - 0.1,
-    )
-    ballast = _difference(_union([deep, mouth]), [keep])
+    ballast, ballast_meta = _ballast_pocket_cutter()
 
     felt = _rounded_square_prism(
         cfg.FELT_PAD_SIDE,
@@ -661,10 +902,7 @@ def build_grass_base() -> tuple[trimesh.Trimesh, dict]:
     )
     base.apply_translation([0.0, 0.0, -base.bounds[0, 2]])
     base = _serialization_safe(base, "Golf_Grass_Base")
-    ballast_half = ballast_outer_side / 2.0
-    ballast_cm3 = (
-        (2.0 * ballast_half) ** 2 - math.pi * cfg.BALLAST_INNER_R**2
-    ) * (cfg.BALLAST_DEPTH - cfg.BALLAST_COVER_THICKNESS) / 1000.0
+    ballast_cm3 = float(ballast.volume) / 1000.0
     report = {
         "part": "grass base",
         "filament": cfg.BASE_FILAMENT_ID,
@@ -672,19 +910,17 @@ def build_grass_base() -> tuple[trimesh.Trimesh, dict]:
         "side": cfg.BASE_SIDE,
         "corner_radius": cfg.BASE_CORNER_R,
         "height": cfg.BASE_H,
-        "snap": {
-            "entry_od": cfg.SNAP_ENTRY_OD,
-            "groove_od": cfg.SNAP_GROOVE_OD,
-            "shaft_clearance_od": round(shaft_r * 2.0, 2),
-            "recess_depth": cfg.BASE_TEE_RECESS_DEPTH,
-            "spring_slots_on_tee": cfg.SNAP_SLOT_COUNT,
-        },
+        "snap": snap_meta,
         "ballast": {
             "pocket_cm3": round(ballast_cm3, 1),
-            "outer_side": ballast_outer_side,
+            "outer_side": ballast_meta["outer_side"],
+            "deep_side": ballast_meta["deep_side"],
             "inner_keepout_od": cfg.BALLAST_INNER_R * 2.0,
             "depth": cfg.BALLAST_DEPTH,
-            "cover_ledge_mm": cfg.BALLAST_COVER_LEDGE,
+            "cover_seat_radial_mm": ballast_meta["cover_seat_radial_mm"],
+            "cover_seat_angle_deg": ballast_meta["cover_seat_angle_deg"],
+            "cover_seat_height_mm": ballast_meta["cover_seat_height_mm"],
+            "cover_seat_z_mm": ballast_meta["cover_seat_z_mm"],
             "cover_thickness": cfg.BALLAST_COVER_THICKNESS,
             "target_fill_g": "200–300 (steel washers / shot)",
         },
@@ -700,35 +936,59 @@ def build_grass_base() -> tuple[trimesh.Trimesh, dict]:
             "point_distance": cfg.BASE_FUZZY_POINT_DISTANCE,
         },
         "cable_exit": {
-            "style": "underside_trench_only",
-            "central_well_dia": round(cfg.CABLE_BORE_DIA + 0.8, 2),
+            "style": "keyed controller well plus flexible-lead underside trench",
+            "central_well_mm": [
+                round(
+                    cfg.CONTROLLER_PASSAGE_W
+                    + cfg.BASE_CONTROLLER_PASSAGE_CLEARANCE,
+                    2,
+                ),
+                round(
+                    cfg.CONTROLLER_PASSAGE_H
+                    + cfg.BASE_CONTROLLER_PASSAGE_CLEARANCE,
+                    2,
+                ),
+            ],
             "underside_trench_width": round(trench_w, 2),
-            "clears_inline_switch_od": cfg.LED_INLINE_SWITCH_CLEAR_DIA,
+            "controller_mm": [
+                cfg.LED_CONTROLLER_L,
+                cfg.LED_CONTROLLER_W,
+                cfg.LED_CONTROLLER_H,
+            ],
             "trench_roof_mm": trench_roof,
             "phase_deg": cfg.CABLE_PHASE_DEG,
         },
         "print_orientation": "underside on bed",
+        "supports": (
+            "tree(auto) on build plate — ballast pocket roof and trench bridge; "
+            "snap opens upward so support scars stay off the snap faces"
+        ),
         "volume_cm3": round(float(base.volume) / 1000.0, 2),
         "acceptance": (
             "Tee foot snaps into the recess with a positive click; pulls out "
             "with firm hand force but not under cable tug alone; ballast pocket "
             "accepts ≥200 g under the printed cover; square felt pad seats flush "
-            "in the 1 mm recess over the cover; Ø18 bore and trench clear the "
-            "MH001 inline switch and USB plug; fuzzy turf stops clear of the "
-            "snap entry."
+            "in the 1 mm recess over the cover; the keyed centre well passes the "
+            "19.65 × 10.65 mm controller and the side trench carries only the "
+            "flexible lead; fuzzy turf stops clear of the snap entry."
         ),
     }
     return base, report
 
 
 def build_ballast_cover() -> tuple[trimesh.Trimesh, dict]:
-    """1.2 mm drop-in plate that seals the ballast pocket before the felt pad."""
-    side = cfg.ballast_cover_side()
-    cover = _rounded_square_prism(
-        side,
-        cfg.BALLAST_COVER_THICKNESS,
-        cfg.ballast_cover_corner_r(),
+    """45° tapered plug that seals the ballast pocket behind the felt pad."""
+    outward_side = cfg.ballast_cover_side()
+    inward_side = cfg.ballast_cover_inward_side()
+    outward_corner = cfg.ballast_cover_corner_r()
+    inward_corner = cfg.ballast_cover_inward_corner_r()
+    cover = _loft_rounded_squares(
+        outward_side,
+        outward_corner,
+        inward_side,
+        inward_corner,
         z0=0.0,
+        z1=cfg.BALLAST_COVER_THICKNESS,
     )
     hole = _translated_cylinder(
         cfg.BALLAST_INNER_R + 0.4,
@@ -738,36 +998,44 @@ def build_ballast_cover() -> tuple[trimesh.Trimesh, dict]:
     # Cable trench relief so the cover does not bridge the exit channel.
     trench = trimesh.creation.box(
         extents=[
-            side / 2.0 + 2.0,
+            outward_side / 2.0 + 2.0,
             cfg.CABLE_EXIT_TRENCH_W + 0.4,
             cfg.BALLAST_COVER_THICKNESS + 0.4,
         ]
     )
     trench.apply_translation(
-        [side / 4.0 + 1.0, 0.0, cfg.BALLAST_COVER_THICKNESS / 2.0]
+        [outward_side / 4.0 + 1.0, 0.0, cfg.BALLAST_COVER_THICKNESS / 2.0]
     )
     cover = _difference(cover, [hole, trench])
     cover = _serialization_safe(cover, "Golf_Ballast_Cover")
     report = {
         "part": "ballast cover",
         "filament": cfg.BASE_FILAMENT_ID,
-        "side": round(side, 2),
-        "corner_radius": round(cfg.ballast_cover_corner_r(), 2),
+        "outward_side": round(outward_side, 2),
+        "inward_side": round(inward_side, 2),
+        "outward_corner_radius": round(outward_corner, 2),
+        "inward_corner_radius": round(inward_corner, 2),
         "thickness": cfg.BALLAST_COVER_THICKNESS,
         "central_hole_od": round((cfg.BALLAST_INNER_R + 0.4) * 2.0, 2),
-        "fit": "drop-in on 1.5 mm ledge; optional CA glue",
-        "print_orientation": "flat on bed",
+        "fit": (
+            f"{cfg.BALLAST_COVER_SEAT_ANGLE_DEG:.0f}° tapered plug in "
+            f"{cfg.BALLAST_COVER_LEDGE:.1f} mm seat; "
+            f"{cfg.BALLAST_COVER_CLEARANCE:.2f} mm/side; outward face at "
+            f"Z{cfg.ballast_cover_installed_z():.2f}; optional CA glue"
+        ),
+        "print_orientation": "large outward face on bed; shrinks inward at 45°",
         "volume_cm3": round(float(cover.volume) / 1000.0, 2),
         "acceptance": (
-            "Cover drops onto the ballast ledge flush with the felt recess floor; "
-            "felt pad then adheres over a rigid sealed pocket."
+            "Tapered cover passes through the pocket mouth and settles into the "
+            "45° seat within 0.05 mm of the felt-recess floor; felt pad then "
+            "adheres over a rigid sealed pocket."
         ),
     }
     return cover, report
 
 
 def build_reflector_cup() -> tuple[trimesh.Trimesh, dict]:
-    """0.8 mm Ivory cup lining the LED pocket — bounces light into the shade."""
+    """0.8 mm Ivory cup with a side-lead notch for the MH001."""
     outer_r = cfg.reflector_outer_r()
     inner_r = outer_r - cfg.REFLECTOR_WALL
     height = cfg.LED_POCKET_DEPTH - cfg.REFLECTOR_HEIGHT_CLEARANCE
@@ -786,12 +1054,30 @@ def build_reflector_cup() -> tuple[trimesh.Trimesh, dict]:
     bore.apply_translation(
         [0.0, 0.0, cfg.REFLECTOR_FLOOR + (height - cfg.REFLECTOR_FLOOR + 0.2) / 2.0]
     )
-    cable = _translated_cylinder(
-        cfg.CABLE_BORE_DIA / 2.0 + 0.5,
+    controller = _rounded_rectangle_prism(
+        cfg.CONTROLLER_PASSAGE_W + 0.6,
+        cfg.CONTROLLER_PASSAGE_H + 0.6,
         cfg.REFLECTOR_FLOOR + 0.4,
-        cfg.REFLECTOR_FLOOR / 2.0,
+        cfg.CONTROLLER_PASSAGE_CORNER_R + 0.3,
+        z0=-0.1,
     )
-    cup = _difference(outer, [bore, cable])
+    side_lead = trimesh.creation.box(
+        extents=[
+            outer_r + 2.0,
+            cfg.LED_CABLE_CHASE_W + 0.6,
+            height + 0.4,
+        ]
+    )
+    side_lead.apply_translation(
+        [(outer_r + 2.0) / 2.0, 0.0, height / 2.0]
+    )
+    cup = _difference(outer, [bore, controller, side_lead])
+    cup.apply_transform(
+        trimesh.transformations.rotation_matrix(
+            math.radians(cfg.CABLE_PHASE_DEG),
+            [0.0, 0.0, 1.0],
+        )
+    )
     cup = _serialization_safe(cup, "Golf_Reflector_Cup")
     report = {
         "part": "LED reflector cup",
@@ -801,12 +1087,17 @@ def build_reflector_cup() -> tuple[trimesh.Trimesh, dict]:
         "wall": cfg.REFLECTOR_WALL,
         "floor": cfg.REFLECTOR_FLOOR,
         "height": round(height, 2),
-        "cable_bore_od": round(cfg.CABLE_BORE_DIA + 1.0, 2),
+        "controller_passage_mm": [
+            round(cfg.CONTROLLER_PASSAGE_W + 0.6, 2),
+            round(cfg.CONTROLLER_PASSAGE_H + 0.6, 2),
+        ],
+        "side_lead_notch_width": round(cfg.LED_CABLE_CHASE_W + 0.6, 2),
         "print_orientation": "floor on bed",
         "volume_cm3": round(float(cup.volume) / 1000.0, 2),
         "acceptance": (
-            "Cup drops into the tee LED pocket; MH001 seats inside; floor cable "
-            "hole aligns with the Ø18 stem bore; white walls bounce light upward."
+            "Cup drops into the tee LED pocket; MH001 seats inside; its side lead "
+            "aligns with the radial notch and the keyed controller passage; white "
+            "walls bounce light upward."
         ),
     }
     return cup, report
@@ -815,7 +1106,7 @@ def build_reflector_cup() -> tuple[trimesh.Trimesh, dict]:
 def build_tee() -> tuple[trimesh.Trimesh, dict]:
     """Wooden tee: LED pocket, bayonet pins, hollow stem, slotted snap bead.
 
-    Print inverted: ball seat on the bed, stem and foot upward.
+    Print foot-down. Both cup expansions are 45° self-supporting ramps.
     """
     groove = cfg.ball_seat_groove()
     groove_outer_r = groove["groove_outer_diameter"] / 2.0
@@ -852,7 +1143,12 @@ def build_tee() -> tuple[trimesh.Trimesh, dict]:
 
     tee = _difference(
         blank,
-        [pocket, groove_cutter, _cable_stem_bore(pocket_z0)],
+        [
+            pocket,
+            groove_cutter,
+            _controller_stem_passage(pocket_z0),
+            _led_side_cable_chase(pocket_z0, pocket_z1),
+        ],
     )
     tee.apply_transform(
         trimesh.transformations.rotation_matrix(
@@ -863,19 +1159,26 @@ def build_tee() -> tuple[trimesh.Trimesh, dict]:
     tee = _serialization_safe(tee, "Golf_Tee")
 
     tee_print = tee.copy()
-    tee_print.apply_transform(
-        trimesh.transformations.rotation_matrix(math.pi, [1.0, 0.0, 0.0])
-    )
     tee_print.apply_translation([0.0, 0.0, -tee_print.bounds[0, 2]])
     tee_print = _serialization_safe(tee_print, "Golf_Tee_Print")
 
-    stem_wall = (cfg.TEE_STEM_NARROW_OD - cfg.CABLE_BORE_DIA) / 2.0
+    controller_corner_r = (
+        math.hypot(
+            cfg.CONTROLLER_PASSAGE_W / 2.0 - cfg.CONTROLLER_PASSAGE_CORNER_R,
+            cfg.CONTROLLER_PASSAGE_H / 2.0 - cfg.CONTROLLER_PASSAGE_CORNER_R,
+        )
+        + cfg.CONTROLLER_PASSAGE_CORNER_R
+    )
+    stem_wall = cfg.TEE_STEM_NARROW_OD / 2.0 - controller_corner_r
     floor_thickness = pocket_z0 - cfg.TEE_CUP_Z0
     report = {
         "part": "wooden golf tee",
         "filament": cfg.TEE_FILAMENT_LABEL_OVERRIDE,
         "assembled_orientation": "snapped into green base",
-        "print_orientation": "top seat on bed, hollow stem upward; 3-layer brim",
+        "print_orientation": (
+            "snap foot on bed, cup and bayonet pins upward; 8 mm outer brim; "
+            "45° cup and seat underside ramps; supports off"
+        ),
         "height": cfg.TEE_OVERALL_H,
         "foot_od": cfg.TEE_FOOT_OD,
         "snap_bead_od": cfg.SNAP_BEAD_OD,
@@ -887,8 +1190,16 @@ def build_tee() -> tuple[trimesh.Trimesh, dict]:
             "depth": cfg.LED_POCKET_DEPTH,
             "floor_thickness": round(floor_thickness, 2),
             "tape_pad_diameter": cfg.LED_TAPE_DIA,
-            "cable_floor_bore": True,
-            "rim_cable_notch": False,
+            "controller_passage": [
+                cfg.CONTROLLER_PASSAGE_W,
+                cfg.CONTROLLER_PASSAGE_H,
+            ],
+            "side_cable_chase": {
+                "width": cfg.LED_CABLE_CHASE_W,
+                "height": cfg.LED_CABLE_CHASE_H,
+                "outer_radius": cfg.LED_CABLE_CHASE_OUTER_R,
+            },
+            "rim_cable_notch": True,
         },
         "bayonet": {
             "lugs": cfg.BAYONET_LUG_COUNT,
@@ -899,16 +1210,23 @@ def build_tee() -> tuple[trimesh.Trimesh, dict]:
             "pin_fillet_r": cfg.BAYONET_PIN_FILLET_R,
             "detent_h": cfg.BAYONET_DETENT_H,
         },
-        "hollow_cable_bore_dia": cfg.CABLE_BORE_DIA,
+        "self_supporting_cup": {
+            "cup_underside_angle_deg": cfg.TEE_CUP_UNDERSIDE_ANGLE_DEG,
+            "seat_underside_angle_deg": cfg.TEE_SEAT_UNDERSIDE_ANGLE_DEG,
+        },
+        "hollow_controller_passage": [
+            cfg.CONTROLLER_PASSAGE_W,
+            cfg.CONTROLLER_PASSAGE_H,
+        ],
         "minimum_stem_wall": round(stem_wall, 2),
         "cable_phase_deg": cfg.CABLE_PHASE_DEG,
         "ball_seat_groove": groove,
         "volume_cm3": round(float(tee.volume) / 1000.0, 2),
         "acceptance": (
-            "LED reflector drops into the cup; MH001 seats on top; USB then "
-            "inline switch pass the Ø18 pocket-floor bore and hollow stem; ball "
-            "bayonet locks with a ~60° twist and detent click; slotted foot snaps "
-            "into the grass base; cup seat rim is continuous (no side notch)."
+            "LED reflector drops into the cup with its notch aligned; the MH001 "
+            "side lead settles into the radial chase; USB and the 19.65 × 10.65 mm "
+            "controller pass the keyed stem passage; ball bayonet locks with a "
+            "~60° twist and detent click; revised slotted foot snaps into the base."
         ),
     }
     report["assembled_height"] = cfg.TEE_OVERALL_H
@@ -941,10 +1259,15 @@ def smoke(include_dimples: bool = False) -> dict:
     wall = groove["wall_thickness_constant"]
     if wall < 1.2:
         raise RuntimeError(f"ball wall is only {wall} mm")
-    if tee_r["led_pocket"].get("rim_cable_notch"):
-        raise RuntimeError("tee cup must not have a rim cable notch")
-    if cfg.CABLE_BORE_DIA < 18.0:
-        raise RuntimeError("cable bore must clear MH001 switch/USB (≥Ø18)")
+    passage = tee_r["led_pocket"].get("controller_passage")
+    if passage != [cfg.CONTROLLER_PASSAGE_W, cfg.CONTROLLER_PASSAGE_H]:
+        raise RuntimeError("tee controller passage metadata is missing")
+    if cfg.CONTROLLER_PASSAGE_W <= cfg.LED_CONTROLLER_W:
+        raise RuntimeError("controller passage is not wider than the controller")
+    if cfg.CONTROLLER_PASSAGE_H <= cfg.LED_CONTROLLER_H:
+        raise RuntimeError("controller passage is not taller than the controller")
+    if not tee_r["led_pocket"].get("rim_cable_notch"):
+        raise RuntimeError("tee cup must include the MH001 side-lead chase")
     return {
         "summary": cfg.summary(),
         "ball": ball_r,

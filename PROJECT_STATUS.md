@@ -2,7 +2,7 @@
 
 **Repo:** https://github.com/conalllaverty/ogma-print-dog-bowl  
 **Local path:** `/Users/conalllaverty/Documents/GitHub/ogma-print-dog-bowl`  
-**Last updated:** 2026-08-04
+**Last updated:** 2026-08-05
 **Status:** Local MVP — Cooper, Wave, and solid Honeycomb styles generating
 
 ---
@@ -79,44 +79,58 @@ and a Fusion importer script. It is a 584,856-triangle mesh reference rather
 than a native parametric F3D/STEP model; fuzzy skin remains slicer metadata.
 
 Standalone Golf Tee lamp work lives under `design/golf-tee-lamp/`. The revised
-three-plate P2S package uses a one-piece Ø175 Jade White translucent ball
-(solid 1.6 mm shell, constant-thickness dimples), a wood-fill/Caramel tee with
-MH001 pocket, 3-lug bayonet, and slotted spring snap, and a Grass Green base
-with ballast pocket, felt recess, and fuzzy turf top. Cable is internal
-(pocket floor → stem → underside trench). Overall height ~302 mm. See
-`design/golf-tee-lamp/SPEC.md`. Not production-ready until physical gates pass.
+five-plate all-PLA P2S package uses a one-piece Ø175 Jade White translucent ball
+(solid 1.6 mm shell, exact-depth relaxed dimples, 45° support-free skirt), a
+Caramel Matte tee with an MH001 side-lead chase / notched reflector / 21 × 12 mm
+controller passage, 3-lug bayonet with detents, and slotted spring snap. The
+former Ø18 bore could not pass the supplied 19.65 × 10.65 mm controller. The
+first Ø74/Ø77 snap was also physically too tight; V2 uses a Ø73.4 shaft,
+Ø76.4 bead, Ø75.8 insertion throat, Ø76.8 mouth and Ø77.4 groove. The first
+revised Plate 3 incorrectly narrowed to Ø74.2 before the groove and also failed
+physical insertion; the corrected socket keeps Ø75.8 through that throat.
+Plate 2 prints snap-foot-down with an
+8 mm brim and dual 45° self-supporting cup/seat flares; this replaces the failed
+seat-down orientation that put only the three protruding pins on the first
+layer. The Grass Green base has a **45° inward-narrowing ballast seat** and a
+matching 111.7→109.3 mm tapered cover that installs behind the felt, plus tree
+supports for the pocket roof, felt recess, and fuzzy turf. See
+`design/golf-tee-lamp/SPEC.md`. The first two snap sockets failed insertion;
+the corrected throat remains physically unverified. The revised cable path,
+bayonet,
+ballast and lit-glow gates also remain open.
 
 Standalone Oggie Spin work lives under `design/modular-spinner/`. The complete
 nine-plate P2S prototype now includes the Ø40 core, pressed outer-race ring, two
-removable three-lug thumb pads, five short wrap-around solid-slide colour segments,
+removable three-lug thumb pads, five short wrap-around clip-lock colour segments,
 and a fully printed Tough+ split-collet/receiver cartridge. The first long petal
 arms lifted/rattled too easily, while multiple flex-rail/barb revisions remained
-too rigid or mechanically fussy. The interim maximum-stability arm removes the
-rails and barbs entirely. One full-width solid trapezoidal tongue spans
-R14.0–R21.4 with 0.12 mm nominal side clearance; shallow 0.02 mm/side friction
-ribs engage only over installed Z11.8–13.5. The later rigid 0.13 mm side-detent
-trial required tools and trapped the arms when used with the earlier core, so
-both the arm detents and matching pockets have been removed. A true lofted 0.4 mm slot-mouth
-lead-in is paired with the arm's 0.4 mm tongue lead-in, while 0.12 mm wrap
-clearance limits slap. Legacy barb recesses remain and the detent-free arms are
-compatible with earlier straight-slot cores.
+too rigid or mechanically fussy. Solid-slide with shallow friction ribs inserted
+by hand but was hard to remove; a later rigid 0.13 mm side-detent trial required
+tools and trapped the arms. The matched core/arm revision retires friction ribs,
+rigid detents and legacy barb recesses. Each arm now uses a three-rail tongue
+(central dovetail ~0.16 mm/side plus two tapered guide rails ~0.22 mm/side) and
+an integrated underside Matte PLA battery-cover cantilever clip that snaps into
+a core OD pocket; press the tip radially outward to release, then lift. A true
+lofted 0.4 mm slot-mouth lead-in is paired with the arm's 0.4 mm tongue lead-in,
+while 0.12 mm wrap clearance limits slap. New cores and arms are a matched pair
+— do not claim old-arm or old-core compatibility.
 Arms export print-flipped with the flush top on the bed so the slot tongue is
 not an unsupported overhang. The R188 is the only
 non-printed component. The four 7.8 mm collet fingers retain with a Ø6.80 bead
 and remain accessible for deliberate release after the upper pad is removed.
 All five arm objects use identical 100% grid infill and 2-wall overrides; there
 are no weight pods. All eleven meshes are watertight. The cartridge has zero
-installed interference; each solid-slide arm has only the intended friction-rib
-interference, with zero unexpected overlap and clear adjacent arms. All nine
+installed interference; each clip-lock arm has only the intended underside-hook
+engagement, with zero unexpected overlap, clear adjacent arms and verified
+hook-clearance after 0.35 mm radial release travel. All nine
 plates slice in Bambu Studio 2.7.1 with empty warning fields.
-The separate `Oggie_Spin_Broken_Ring_Illusion_P2S.3mf` optical prototype keeps
-that mechanical geometry unchanged and partitions the top 0.32 mm into flush
-Ivory White inlays: 15/20-dash core tracks and a 25-dash arm track. Its nine
-plates slice with empty warning fields, but the illusion remains physically
-untested and does not supersede the standard complete or five-block projects.
-The separate `Oggie_Spin_5x_Broken_Ring_P2S.3mf` batch places the same flush
-25-dash Ivory White track directly into five Marine Blue arms on one by-layer
-plate; the plain five-block project remains unchanged.
+The separate `Oggie_Spin_Broken_Ring_Illusion_P2S.3mf` is the optical winner:
+it reuses the matched three-rail + underside-clip mechanism and keeps the
+proven 15/20/25 dash rings as flush 0.32 mm Ivory White inlays, with an
+underside `BR` identifier only. Its nine plates and the matching
+`Oggie_Spin_5x_Broken_Ring_P2S.3mf` batch plate slice with empty warning fields.
+Clip click, pinch-tab release, 100-cycle lock and free-spin remain physical
+gates. The plain five-block batch is now `Oggie_Spin_5x_Clip_Lock_P2S.3mf`.
 Seven more physically untested optical projects live under
 `design/modular-spinner/optical-variants/`: full-body five-track vortex (`VX`),
 five-phase spiral/wave (`SP`), chevron reversal (`CH`), phone/LED strobe

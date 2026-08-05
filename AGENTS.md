@@ -34,7 +34,7 @@ results say otherwise. Its archived Ø12.86 bearing pocket proved loose in the
 first complete physical core and is superseded by the complete generator.
 `backend/generator/oggie_spin_complete.py` extends that mechanism into the
 current hardware-free nine-plate prototype with five identical short wrap-around
-solid-slide colour segments (R20.12–R24.5, ±20°), a Ø15.22 pressed outer-race ring
+clip-lock colour segments (R20.12–R24.5, ±20°), a Ø15.22 pressed outer-race ring
 in a Ø15.15 counterbore, and a Bambu PLA Tough+ split-collet cartridge. The first Ø6.10 axle spun well but wobbled;
 Ø6.25 and Ø6.30 reduced but did not eliminate the wobble. The current Ø6.40
 axle is a deliberate 0.05 mm nominal interference trial in the Ø6.35 R188 bore;
@@ -48,25 +48,29 @@ it on both sides simplifies batch manufacturing. The earlier Ø7.0 socket
 required pliers to fit and is superseded; both pads must install by hand. The
 five arms must retain their identical 100% grid infill and 2 wall-loop
 overrides; do not restore weight pods, 5-wall arms, or mix mechanical slicer
-settings across colours. The R188 is the only non-printed part. The interim
-maximum-stability arm uses one full-width solid trapezoidal dovetail from R14.0
-to R21.4: no flex rails or snap barbs. Keep 0.12 mm nominal side clearance and
-the shallow 0.02 mm/side friction ribs over installed Z11.8–13.5. Do not restore
-the rigid 0.13 mm side detents: physical use in the earlier straight-slot core
-required tools and trapped the arms. The detent-free arms must remain compatible
-with those earlier cores. Legacy barb recesses remain. Wrap radial clearance is
+settings across colours. The R188 is the only non-printed part. The matched
+core/arm revision uses a three-rail tongue (central dovetail ~0.16 mm/side,
+two guide rails ~0.22 mm/side) plus an integrated underside Matte PLA
+battery-cover cantilever clip into a core OD pocket. Do not restore friction
+ribs, rigid side detents, Pinch-Lok flex rails/barbs, or legacy barb recesses.
+New cores and arms are a matched pair — do not claim old-arm or old-core
+compatibility. Wrap radial clearance is
 0.12 mm; keep the arm's 0.4 mm bottom lead-in and the core's continuously
 lofted 0.4 mm slot-mouth lead-in. Export wrap segments print-flipped with the flush top
 face on the bed; wrap-bottom-down turns the slot tongue into an unsupported
 overhang above the 2 mm shelf. Do not restore
 the earlier long petal arms after physical testing showed easy lift/rattle and
 uneven one-side lock. Do not call the complete 3MF production-ready
-until the retaining ring, Tough+ collet, all five arm locks, both thumb locks
+until the retaining ring, Tough+ collet, all five arm clip locks, both thumb locks
 and free-spin behaviour pass physical testing. The current R188 pocket is
 Ø12.82: Ø12.86 released the bearing under gravity, Ø12.68 would not install by
 hand, and Ø12.78 remained too tight. The pocket now uses 0.12 mm nominal
 diametral clearance and relies on the separate pressed outer-race ring for axial
 capture.
+`backend/generator/oggie_spin_broken_rings.py` owns the optical winner: keep the
+proven 15/20/25 dash rings at R15.5 / R18.5 / R22.5 (1.1 mm width, 52% duty,
+0.32 mm flush Ivory inlays), add underside `BR` only, and reuse the matched
+three-rail + underside-clip mechanism. Do not add a fourth ring.
 `backend/generator/oggie_spin_optical_variants.py` owns seven separate
 core-and-arm optical experiments under `design/modular-spinner/optical-variants/`:
 full-body vortex (`VX`), spiral (`SP`), chevron (`CH`), strobe (`ST`), opposing
@@ -181,19 +185,47 @@ geometry.
 The standalone Golf Tee lamp is under `design/golf-tee-lamp/`.
 `backend/generator/golf_tee_lamp.py` generates a five-plate all-PLA P2S project:
 one-piece Ø175 Jade White PLA Basic shade with constant-thickness dimples
-(1.6 mm solid shell, 0% sparse infill; 1.4 mm depth; dual-surface displacement)
+(1.6 mm solid shell, 0% sparse infill; 1.4 mm depth; relaxed equal-area layout;
+exact centre/profile samples; dual-surface displacement)
 and **0.4 mm bayonet lock detents**; a Caramel Matte tee with integrated MH001
-pocket (widened to Ø62.1 for the reflector), continuous cup rim, **Ø18
-floor-bore** cable path (clears the MH001 inline switch and USB plug; neck Ø24),
+pocket (widened to Ø62.1 for the reflector), a radial 7.5 × 5.5 mm floor chase
+for the puck's side-exit lead, and a **21 × 12 mm rounded controller passage**
+through the Ø28 neck. The controller is 55.7 × 19.65 × 10.65 mm; do not restore
+the Ø18 circular bore, which cannot pass its ~22.35 mm diagonal. The matching
+reflector must retain its aligned 8.1 mm side notch. Feed the rigid controller
+straight through the tee and base centre; only the flexible lead occupies the
+7.2 mm underside trench. The tee also carries
 **Ø5 bayonet pins with R1.2 root fillets** on PCD 70, and a **4-slot spring snap
-foot**; a Grass Green base (120 × 120 mm rounded square × 18 mm) with ballast
-pocket + **1.2 mm printed cover ledge**, 110 mm square felt recess, 19 mm
+foot**. The physically too-tight Ø74/Ø77 snap is superseded by a Ø73.4 shaft /
+Ø76.4 bead, Ø75.8 insertion throat, Ø76.8 mouth and Ø77.4 groove: 0.8 mm
+diametral shaft clearance, 0.30 mm/side throat interference and 0.50 mm/side
+groove clearance. The first revised base still narrowed to the Ø74.2 shaft
+socket above the groove and would not accept the tee; never restore that
+pre-groove throat. Print the
+tee **snap-foot-down** with its 8 mm brim and supports off.
+Its Ø48→Ø90 cup underside and Ø90→Ø110 seat underside are 45° self-supporting
+flares, and its bead has a 45° lower lead-in. Never restore the former
+seat-down orientation: the three pins extend below the inverted seat and were
+the only first-layer islands, causing immediate spaghetti. A Grass Green base
+(120 × 120 mm rounded square × 18 mm) has a ballast pocket + **1.2 mm
+111.7→109.3 mm tapered cover**, 110 mm square felt recess, 7.2 mm
 underside cable trench, and top-face fuzzy turf paint that **clears the snap
-entry**; plus an Ivory White **0.8 mm reflector cup**. The shade uses a **flat
+entry**. Print the base **underside on bed** with **tree supports** for the
+ballast pocket roof; the cover seat narrows inward over a **45° × 1.2 mm
+lofted ramp** (no horizontal ledge cantilever). Insert the cover small-face
+first until its large outward face settles behind the felt. Snap groove lips
+use a **45° upper chamfer**. Plus an
+Ivory White **0.8 mm reflector cup**. The shade uses a **flat
 bed ring + 45° self-supporting cone** into the sphere so exterior supports stay
 off; the tee seat is a matching flat-ring rebate. **Variable Layer Height is
 baked into Plate 1** (`layer_heights_profile.txt`: 0.20 mm → 0.08 mm on the top
-~20%). Print the ball opening-down. One object per production plate. Not
+~20%). Plate 1 seams are **Back + scarf Contour and Hole**, **Arachne**,
+**Inner/Outer** wall order, and **4 mm wipe** — never Random on the dimpled
+sphere. Shade fuzzy is **outer walls only** at **0.04 mm / 0.08 mm** so dimple
+edges stay sharp and the bayonet seat stays crisp. Print the ball opening-down.
+The 1.2 mm ballast cover and 0.8 mm reflector are fully solid from their shell
+layers and wall loops; keep sparse infill at 0%. Do not restore 100% gyroid:
+Bambu Studio 2.7 rejects that combination. One object per production plate. Not
 production-ready until bayonet, snap, ballast and lit glow pass physical checks.
 
 County clicker physical gates: 1.25 mm moving-top clearance, ≥1.50 mm material

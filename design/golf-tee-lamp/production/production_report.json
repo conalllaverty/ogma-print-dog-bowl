@@ -17,21 +17,24 @@
       "ring_width": 4.76
     },
     "dimple_target_count": 550,
-    "dimple_applied_count": 463,
+    "dimple_applied_count": 462,
     "dimple_depth": 1.4,
     "dimple_alpha_max_rad": 0.058,
     "dimple_surface_dia": 10.15,
-    "dimple_style": "constant-thickness dual-surface displacement; 1.6 mm solid shell, 0% sparse infill",
+    "dimple_style": "relaxed equal-area layout; exact centre/profile sampling; constant-thickness dual-surface displacement; 1.6 mm solid shell, 0% sparse infill",
     "tee_height": 129.3,
     "led_pocket_in_tee": true,
     "reflector_insert": true,
     "separate_cradle": false,
     "separate_diffuser": false,
     "snap_fit": {
-      "shaft_od": 74.0,
-      "bead_od": 77.0,
-      "entry_od": 75.6,
+      "shaft_od": 73.4,
+      "bead_od": 76.4,
+      "entry_od": 75.8,
+      "mouth_od": 76.8,
       "groove_od": 77.4,
+      "shaft_clearance_diametral": 0.8,
+      "entry_interference_radial": 0.3,
       "spring_slots": 4
     },
     "base_side": 120.0,
@@ -40,7 +43,13 @@
     "ballast_pocket_cm3": 52.6,
     "ballast_cover_thickness": 1.2,
     "felt_pad_side": 110.0,
-    "cable_bore_dia": 18.0,
+    "controller_passage": {
+      "width": 21.0,
+      "height": 12.0,
+      "corner_radius": 3.0,
+      "controller_width": 19.65,
+      "controller_height": 10.65
+    },
     "filaments": {
       "ball": "Bambu PLA Basic \u00b7 Jade White (semi-translucent)",
       "tee": "Bambu PLA Matte \u00b7 Caramel",
@@ -78,10 +87,10 @@
     "ball_od": 175.0,
     "wall": 1.6,
     "opening_id": 85.0,
-    "dimple_count": 463,
+    "dimple_count": 462,
     "dimple_depth": 1.4,
     "dimple_alpha_max_rad": 0.058,
-    "dimple_style": "constant-thickness dual-surface displacement",
+    "dimple_style": "repulsion-relaxed equal-area centres; exact centre/profile samples; constant-thickness dual-surface displacement",
     "wall_thickness_constant": 1.6,
     "piece_count": 1,
     "support_free_skirt": {
@@ -105,7 +114,7 @@
     "bounds_mm": [
       [
         -87.5,
-        -87.43,
+        -87.44,
         0.0
       ],
       [
@@ -119,10 +128,10 @@
     "part": "wooden golf tee",
     "filament": "Bambu PLA Matte \u00b7 Caramel",
     "assembled_orientation": "snapped into green base",
-    "print_orientation": "top seat on bed, hollow stem upward; 3-layer brim",
+    "print_orientation": "snap foot on bed, cup and bayonet pins upward; 8 mm outer brim; 45\u00b0 cup and seat underside ramps; supports off",
     "height": 129.3,
-    "foot_od": 74.0,
-    "snap_bead_od": 77.0,
+    "foot_od": 73.4,
+    "snap_bead_od": 76.4,
     "snap_spring_slots": 4,
     "cup_od": 90.0,
     "seat_od": 110.0,
@@ -131,8 +140,16 @@
       "depth": 9.3,
       "floor_thickness": 8.0,
       "tape_pad_diameter": 40.0,
-      "cable_floor_bore": true,
-      "rim_cable_notch": false
+      "controller_passage": [
+        21.0,
+        12.0
+      ],
+      "side_cable_chase": {
+        "width": 7.5,
+        "height": 5.5,
+        "outer_radius": 39.05
+      },
+      "rim_cable_notch": true
     },
     "bayonet": {
       "lugs": 3,
@@ -143,8 +160,15 @@
       "pin_fillet_r": 1.2,
       "detent_h": 0.4
     },
-    "hollow_cable_bore_dia": 18.0,
-    "minimum_stem_wall": 3.0,
+    "self_supporting_cup": {
+      "cup_underside_angle_deg": 45.0,
+      "seat_underside_angle_deg": 45.0
+    },
+    "hollow_controller_passage": [
+      21.0,
+      12.0
+    ],
+    "minimum_stem_wall": 2.92,
     "cable_phase_deg": 0.0,
     "ball_seat_groove": {
       "style": "flat_ring_rebate",
@@ -167,8 +191,8 @@
       "bayonet_detent_h": 0.4,
       "ballast_pocket_cm3": 52.6
     },
-    "volume_cm3": 208.82,
-    "acceptance": "LED reflector drops into the cup; MH001 seats on top; USB then inline switch pass the \u00d818 pocket-floor bore and hollow stem; ball bayonet locks with a ~60\u00b0 twist and detent click; slotted foot snaps into the grass base; cup seat rim is continuous (no side notch).",
+    "volume_cm3": 273.88,
+    "acceptance": "LED reflector drops into the cup with its notch aligned; the MH001 side lead settles into the radial chase; USB and the 19.65 \u00d7 10.65 mm controller pass the keyed stem passage; ball bayonet locks with a ~60\u00b0 twist and detent click; revised slotted foot snaps into the base.",
     "assembled_height": 129.3
   },
   "grass_base": {
@@ -179,18 +203,30 @@
     "corner_radius": 14.0,
     "height": 18.0,
     "snap": {
-      "entry_od": 75.6,
+      "entry_od": 75.8,
+      "mouth_od": 76.8,
       "groove_od": 77.4,
-      "shaft_clearance_od": 74.35,
+      "shaft_clearance_od": 74.2,
+      "bead_entry_interference_radial": 0.3,
       "recess_depth": 7.0,
-      "spring_slots_on_tee": 4
+      "spring_slots_on_tee": 4,
+      "groove_lip_angle_deg": 45.0,
+      "groove_lip_chamfer_mm": 0.8,
+      "groove_flat_land_mm": 2.0
     },
     "ballast": {
-      "pocket_cm3": 43.6,
+      "pocket_cm3": 51.0,
       "outer_side": 112.0,
+      "deep_side": 109.6,
       "inner_keepout_od": 80.0,
       "depth": 7.0,
-      "cover_ledge_mm": 1.5,
+      "cover_seat_radial_mm": 1.2,
+      "cover_seat_angle_deg": 45.0,
+      "cover_seat_height_mm": 1.2,
+      "cover_seat_z_mm": [
+        1.0,
+        2.2
+      ],
       "cover_thickness": 1.2,
       "target_fill_g": "200\u2013300 (steel washers / shot)"
     },
@@ -201,33 +237,43 @@
     },
     "fuzzy_turf": {
       "faces": "top only, clear of snap entry",
-      "keep_radius": 40.8,
+      "keep_radius": 40.9,
       "thickness": 0.15,
       "point_distance": 0.1
     },
     "cable_exit": {
-      "style": "underside_trench_only",
-      "central_well_dia": 18.8,
-      "underside_trench_width": 19.0,
-      "clears_inline_switch_od": 18.0,
+      "style": "keyed controller well plus flexible-lead underside trench",
+      "central_well_mm": [
+        21.8,
+        12.8
+      ],
+      "underside_trench_width": 7.2,
+      "controller_mm": [
+        55.7,
+        19.65,
+        10.65
+      ],
       "trench_roof_mm": 2.0,
       "phase_deg": 0.0
     },
     "print_orientation": "underside on bed",
-    "volume_cm3": 159.27,
-    "acceptance": "Tee foot snaps into the recess with a positive click; pulls out with firm hand force but not under cable tug alone; ballast pocket accepts \u2265200 g under the printed cover; square felt pad seats flush in the 1 mm recess over the cover; \u00d818 bore and trench clear the MH001 inline switch and USB plug; fuzzy turf stops clear of the snap entry."
+    "supports": "tree(auto) on build plate \u2014 ballast pocket roof and trench bridge; snap opens upward so support scars stay off the snap faces",
+    "volume_cm3": 163.27,
+    "acceptance": "Tee foot snaps into the recess with a positive click; pulls out with firm hand force but not under cable tug alone; ballast pocket accepts \u2265200 g under the printed cover; square felt pad seats flush in the 1 mm recess over the cover; the keyed centre well passes the 19.65 \u00d7 10.65 mm controller and the side trench carries only the flexible lead; fuzzy turf stops clear of the snap entry."
   },
   "ballast_cover": {
     "part": "ballast cover",
     "filament": "matte-grass-green",
-    "side": 111.3,
-    "corner_radius": 9.65,
+    "outward_side": 111.7,
+    "inward_side": 109.3,
+    "outward_corner_radius": 9.85,
+    "inward_corner_radius": 8.65,
     "thickness": 1.2,
     "central_hole_od": 80.8,
-    "fit": "drop-in on 1.5 mm ledge; optional CA glue",
-    "print_orientation": "flat on bed",
-    "volume_cm3": 8.25,
-    "acceptance": "Cover drops onto the ballast ledge flush with the felt recess floor; felt pad then adheres over a rigid sealed pocket."
+    "fit": "45\u00b0 tapered plug in 1.2 mm seat; 0.15 mm/side; outward face at Z1.15; optional CA glue",
+    "print_orientation": "large outward face on bed; shrinks inward at 45\u00b0",
+    "volume_cm3": 8.27,
+    "acceptance": "Tapered cover passes through the pocket mouth and settles into the 45\u00b0 seat within 0.05 mm of the felt-recess floor; felt pad then adheres over a rigid sealed pocket."
   },
   "reflector": {
     "part": "LED reflector cup",
@@ -237,10 +283,14 @@
     "wall": 0.8,
     "floor": 0.8,
     "height": 9.1,
-    "cable_bore_od": 19.0,
+    "controller_passage_mm": [
+      21.6,
+      12.6
+    ],
+    "side_lead_notch_width": 8.1,
     "print_orientation": "floor on bed",
-    "volume_cm3": 3.44,
-    "acceptance": "Cup drops into the tee LED pocket; MH001 seats inside; floor cable hole aligns with the \u00d818 stem bore; white walls bounce light upward."
+    "volume_cm3": 3.28,
+    "acceptance": "Cup drops into the tee LED pocket; MH001 seats inside; its side lead aligns with the radial notch and the keyed controller passage; white walls bounce light upward."
   },
   "plates": [
     {
@@ -248,8 +298,8 @@
       "label": "Golf ball shade",
       "filament": "Bambu PLA Basic \u00b7 Jade White (semi-translucent)",
       "profile": "Bambu PLA Basic @BBL P2S",
-      "faces": 41012,
-      "volume_cm3": 151.47,
+      "faces": 79858,
+      "volume_cm3": 151.48,
       "fuzzy_painted_faces": 0
     },
     {
@@ -257,8 +307,8 @@
       "label": "Golf tee",
       "filament": "Bambu PLA Matte \u00b7 Caramel",
       "profile": "Bambu PLA Matte @BBL P2S",
-      "faces": 10630,
-      "volume_cm3": 208.82,
+      "faces": 10354,
+      "volume_cm3": 273.88,
       "fuzzy_painted_faces": 0
     },
     {
@@ -266,8 +316,8 @@
       "label": "Grass base",
       "filament": "Bambu PLA Matte \u00b7 Grass Green",
       "profile": "Bambu PLA Matte @BBL P2S",
-      "faces": 4640,
-      "volume_cm3": 159.27,
+      "faces": 4792,
+      "volume_cm3": 163.27,
       "fuzzy_painted_faces": 260
     },
     {
@@ -275,8 +325,8 @@
       "label": "Ballast cover",
       "filament": "Bambu PLA Matte \u00b7 Grass Green",
       "profile": "Bambu PLA Matte @BBL P2S",
-      "faces": 992,
-      "volume_cm3": 8.25,
+      "faces": 856,
+      "volume_cm3": 8.27,
       "fuzzy_painted_faces": 0
     },
     {
@@ -284,8 +334,8 @@
       "label": "LED reflector cup",
       "filament": "Bambu PLA Matte \u00b7 Ivory White",
       "profile": "Bambu PLA Matte @BBL P2S",
-      "faces": 1536,
-      "volume_cm3": 3.44,
+      "faces": 988,
+      "volume_cm3": 3.28,
       "fuzzy_painted_faces": 0
     }
   ],
@@ -293,12 +343,19 @@
     "FINAL Plate 1 check: Enable Support = OFF",
     "FINAL Plate 1 check: VLH is baked into the 3MF (0.20 mm \u2192 0.08 mm on top ~20%); confirm in Preview with Layer Height colouring",
     "FINAL Plate 1 check: Sparse Infill = 0%, Wall Loops = 4 (1.6 mm solid shell)",
-    "Base: fuzzy paint already clears the snap entry; do not re-enable global top fuzzy"
+    "Plate 1 seams: Back + Scarf Contour and Hole; Arachne; Inner/Outer; Wipe 4 mm",
+    "Plate 1 fuzzy: Outer walls only, 0.04 mm thick / 0.08 mm point distance",
+    "Plate 1 geometry: relaxed equal-area dimple layout with exact centre/profile sampling; nominal 1.4 mm depth is present in the exported mesh",
+    "Plate 2: snap foot on bed, 8 mm brim, supports off, 20 mm/s bridges; 21 \u00d7 12 mm keyed controller passage and side-lead chase",
+    "Base: fuzzy paint already clears the snap entry; do not re-enable global top fuzzy",
+    "Plate 3: tree supports stay ON for the ballast pocket roof; cover seat is the inward-narrowing 45\u00b0 loft",
+    "Plate 4: print large face down; insert the tapered cover small-face-first behind the felt",
+    "Plates 4\u20135: fully solid by shells/walls; keep sparse infill at 0% (Studio 2.7 rejects 100% gyroid)"
   ],
   "assembly_notes": [
     "Fill the base ballast pocket with 200\u2013300 g steel washers/shot; drop in the ballast cover (optional CA); fit the 110 mm square felt pad",
-    "Snap the tee foot into the grass base until it clicks",
-    "Drop the Ivory reflector into the tee cup; feed MH001 USB first then the inline button through the \u00d818 bore; seat the module in the reflector",
+    "Feed the USB and controller straight through the tee and base centre before snapping the revised tee foot into the grass base",
+    "Align the Ivory reflector notch with the tee chase; seat the MH001 with its side lead in the chase; route only the flexible lead through the underside side trench",
     "Drop the ball onto the tee pins at the entry slots; twist ~60\u00b0 until the detent clicks (reverse to service the LED)"
   ],
   "outputs": [

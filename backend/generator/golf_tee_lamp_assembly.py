@@ -93,8 +93,8 @@ def build_assembly(include_dimples: bool = True) -> tuple[list[Piece], dict]:
     )
 
     cover, cover_report = geo.build_ballast_cover()
-    # Cover sits on the underside ledge (assembled frame, underside at z=0).
-    cover.apply_translation([0.0, 0.0, 0.0])
+    # Large outward face settles just behind the felt-recess floor.
+    cover.apply_translation([0.0, 0.0, cfg.ballast_cover_installed_z()])
 
     led = build_led_module()
 
@@ -118,7 +118,7 @@ def build_assembly(include_dimples: bool = True) -> tuple[list[Piece], dict]:
                 "snap_bead_od",
                 "seat_od",
                 "cable_phase_deg",
-                "hollow_cable_bore_dia",
+                "hollow_controller_passage",
                 "led_pocket",
                 "bayonet",
             )

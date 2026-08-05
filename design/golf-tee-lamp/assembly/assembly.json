@@ -15,21 +15,24 @@
       "ring_width": 4.76
     },
     "dimple_target_count": 550,
-    "dimple_applied_count": 463,
+    "dimple_applied_count": 462,
     "dimple_depth": 1.4,
     "dimple_alpha_max_rad": 0.058,
     "dimple_surface_dia": 10.15,
-    "dimple_style": "constant-thickness dual-surface displacement; 1.6 mm solid shell, 0% sparse infill",
+    "dimple_style": "relaxed equal-area layout; exact centre/profile sampling; constant-thickness dual-surface displacement; 1.6 mm solid shell, 0% sparse infill",
     "tee_height": 129.3,
     "led_pocket_in_tee": true,
     "reflector_insert": true,
     "separate_cradle": false,
     "separate_diffuser": false,
     "snap_fit": {
-      "shaft_od": 74.0,
-      "bead_od": 77.0,
-      "entry_od": 75.6,
+      "shaft_od": 73.4,
+      "bead_od": 76.4,
+      "entry_od": 75.8,
+      "mouth_od": 76.8,
       "groove_od": 77.4,
+      "shaft_clearance_diametral": 0.8,
+      "entry_interference_radial": 0.3,
       "spring_slots": 4
     },
     "base_side": 120.0,
@@ -38,14 +41,20 @@
     "ballast_pocket_cm3": 52.6,
     "ballast_cover_thickness": 1.2,
     "felt_pad_side": 110.0,
-    "cable_bore_dia": 18.0,
+    "controller_passage": {
+      "width": 21.0,
+      "height": 12.0,
+      "corner_radius": 3.0,
+      "controller_width": 19.65,
+      "controller_height": 10.65
+    },
     "filaments": {
       "ball": "Bambu PLA Basic \u00b7 Jade White (semi-translucent)",
       "tee": "Bambu PLA Matte \u00b7 Caramel",
       "base": "matte-grass-green",
       "ballast_cover": "matte-grass-green",
       "reflector": "matte-ivory-white",
-      "supports": "none on shade (self-supporting 45\u00b0 skirt)"
+      "supports": "shade VLH baked (0.20\u21920.08 mm on top 20%)"
     },
     "overall_height": 303.29,
     "ball_origin_z": 215.79,
@@ -76,10 +85,10 @@
     "ball_od": 175.0,
     "wall": 1.6,
     "opening_id": 85.0,
-    "dimple_count": 463,
+    "dimple_count": 462,
     "dimple_depth": 1.4,
     "dimple_alpha_max_rad": 0.058,
-    "dimple_style": "constant-thickness dual-surface displacement",
+    "dimple_style": "repulsion-relaxed equal-area centres; exact centre/profile samples; constant-thickness dual-surface displacement",
     "wall_thickness_constant": 1.6,
     "piece_count": 1,
     "support_free_skirt": {
@@ -102,18 +111,29 @@
   },
   "tee": {
     "height": 129.3,
-    "foot_od": 74.0,
-    "snap_bead_od": 77.0,
+    "foot_od": 73.4,
+    "snap_bead_od": 76.4,
     "seat_od": 110.0,
     "cable_phase_deg": 0.0,
-    "hollow_cable_bore_dia": 18.0,
+    "hollow_controller_passage": [
+      21.0,
+      12.0
+    ],
     "led_pocket": {
       "diameter": 62.1,
       "depth": 9.3,
       "floor_thickness": 8.0,
       "tape_pad_diameter": 40.0,
-      "cable_floor_bore": true,
-      "rim_cable_notch": false
+      "controller_passage": [
+        21.0,
+        12.0
+      ],
+      "side_cable_chase": {
+        "width": 7.5,
+        "height": 5.5,
+        "outer_radius": 39.05
+      },
+      "rim_cable_notch": true
     },
     "bayonet": {
       "lugs": 3,
@@ -131,26 +151,45 @@
     "corner_radius": 14.0,
     "height": 18.0,
     "snap": {
-      "entry_od": 75.6,
+      "entry_od": 75.8,
+      "mouth_od": 76.8,
       "groove_od": 77.4,
-      "shaft_clearance_od": 74.35,
+      "shaft_clearance_od": 74.2,
+      "bead_entry_interference_radial": 0.3,
       "recess_depth": 7.0,
-      "spring_slots_on_tee": 4
+      "spring_slots_on_tee": 4,
+      "groove_lip_angle_deg": 45.0,
+      "groove_lip_chamfer_mm": 0.8,
+      "groove_flat_land_mm": 2.0
     },
     "cable_exit": {
-      "style": "underside_trench_only",
-      "central_well_dia": 18.8,
-      "underside_trench_width": 19.0,
-      "clears_inline_switch_od": 18.0,
+      "style": "keyed controller well plus flexible-lead underside trench",
+      "central_well_mm": [
+        21.8,
+        12.8
+      ],
+      "underside_trench_width": 7.2,
+      "controller_mm": [
+        55.7,
+        19.65,
+        10.65
+      ],
       "trench_roof_mm": 2.0,
       "phase_deg": 0.0
     },
     "ballast": {
-      "pocket_cm3": 43.6,
+      "pocket_cm3": 51.0,
       "outer_side": 112.0,
+      "deep_side": 109.6,
       "inner_keepout_od": 80.0,
       "depth": 7.0,
-      "cover_ledge_mm": 1.5,
+      "cover_seat_radial_mm": 1.2,
+      "cover_seat_angle_deg": 45.0,
+      "cover_seat_height_mm": 1.2,
+      "cover_seat_z_mm": [
+        1.0,
+        2.2
+      ],
       "cover_thickness": 1.2,
       "target_fill_g": "200\u2013300 (steel washers / shot)"
     },
@@ -161,7 +200,7 @@
     },
     "fuzzy_turf": {
       "faces": "top only, clear of snap entry",
-      "keep_radius": 40.8,
+      "keep_radius": 40.9,
       "thickness": 0.15,
       "point_distance": 0.1
     }
@@ -169,14 +208,16 @@
   "ballast_cover": {
     "part": "ballast cover",
     "filament": "matte-grass-green",
-    "side": 111.3,
-    "corner_radius": 9.65,
+    "outward_side": 111.7,
+    "inward_side": 109.3,
+    "outward_corner_radius": 9.85,
+    "inward_corner_radius": 8.65,
     "thickness": 1.2,
     "central_hole_od": 80.8,
-    "fit": "drop-in on 1.5 mm ledge; optional CA glue",
-    "print_orientation": "flat on bed",
-    "volume_cm3": 8.25,
-    "acceptance": "Cover drops onto the ballast ledge flush with the felt recess floor; felt pad then adheres over a rigid sealed pocket."
+    "fit": "45\u00b0 tapered plug in 1.2 mm seat; 0.15 mm/side; outward face at Z1.15; optional CA glue",
+    "print_orientation": "large outward face on bed; shrinks inward at 45\u00b0",
+    "volume_cm3": 8.27,
+    "acceptance": "Tapered cover passes through the pocket mouth and settles into the 45\u00b0 seat within 0.05 mm of the felt-recess floor; felt pad then adheres over a rigid sealed pocket."
   },
   "reflector": {
     "part": "LED reflector cup",
@@ -186,10 +227,14 @@
     "wall": 0.8,
     "floor": 0.8,
     "height": 9.1,
-    "cable_bore_od": 19.0,
+    "controller_passage_mm": [
+      21.6,
+      12.6
+    ],
+    "side_lead_notch_width": 8.1,
     "print_orientation": "floor on bed",
-    "volume_cm3": 3.44,
-    "acceptance": "Cup drops into the tee LED pocket; MH001 seats inside; floor cable hole aligns with the \u00d818 stem bore; white walls bounce light upward."
+    "volume_cm3": 3.28,
+    "acceptance": "Cup drops into the tee LED pocket; MH001 seats inside; its side lead aligns with the radial notch and the keyed controller passage; white walls bounce light upward."
   },
   "parts": [
     "Grass base",
@@ -202,7 +247,7 @@
   "overall_bounds_mm": [
     [
       -87.5,
-      -87.43,
+      -87.44,
       0.0
     ],
     [

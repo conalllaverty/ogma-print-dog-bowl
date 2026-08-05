@@ -3,9 +3,10 @@
 A Ø175 sculptural golf ball sits on a Matte PLA tee over a Grass Green base.
 The MH001 LED seats in the tee cup over a white reflector insert. A 3-lug
 ¼-turn bayonet with end-of-travel detents locks the shade for serviceability.
-Cable runs through an Ø18 pocket-floor bore and hollow stem to an underside
-base trench. The tee foot uses slotted spring fingers; the base carries a
-ballast pocket, a printed ballast cover, and a felt-pad recess.
+The LED's side-exit lead runs through a radial floor chase into a rounded
+controller passage through the hollow stem. The tee foot uses slotted spring
+fingers; the base carries a ballast pocket, a printed ballast cover, and a
+felt-pad recess.
 
 Dimples displace outer and inner surfaces equally so the wall stays a constant
 1.6 mm solid shell (four 0.4 mm passes, 0% sparse infill).
@@ -34,16 +35,27 @@ LED_POCKET_DEPTH = LED_HEIGHT + 0.5 + 0.8  # LED + reflector floor
 LED_TAPE_DIA = 40.0
 LED_CABLE_W = 6.0
 LED_CABLE_H = 4.5
-# Inline on/off button (~14.5–15 mm) + USB-A overmold (~16 mm wide). Ø18 leaves
-# print-bulge margin that Ø16 did not.
-LED_INLINE_SWITCH_CLEAR_DIA = 18.0
+# Supplied controller measured from the hardware listing supplied after V1.
+LED_CONTROLLER_L = 55.7
+LED_CONTROLLER_W = 19.65
+LED_CONTROLLER_H = 10.65
+# A circular Ø18 bore cannot pass the 22.35 mm controller diagonal. Preserve
+# material in the tee neck with a keyed rounded rectangle instead.
+CONTROLLER_PASSAGE_W = 21.0
+CONTROLLER_PASSAGE_H = 12.0
+CONTROLLER_PASSAGE_CORNER_R = 3.0
+BASE_CONTROLLER_PASSAGE_CLEARANCE = 0.8
+# The puck lead exits radially from its side, not through its centre.
+LED_CABLE_CHASE_W = LED_CABLE_W + 1.5
+LED_CABLE_CHASE_H = LED_CABLE_H + 1.0
+LED_CABLE_CHASE_OUTER_R = LED_POCKET_DIA / 2.0 + 8.0
 
 PLINTH_CABLE_CLEARANCE = 0.8
 CABLE_PHASE_DEG = 0.0
 CABLE_CHANNEL_W = LED_CABLE_W + PLINTH_CABLE_CLEARANCE  # 6.8
-CABLE_BORE_DIA = LED_INLINE_SWITCH_CLEAR_DIA
-# Underside trench must also clear the switch/USB on the way out.
-CABLE_EXIT_TRENCH_W = CABLE_BORE_DIA + 1.0  # 19.0
+# Only the flexible lead occupies the side trench. The rigid controller feeds
+# straight down through the centre and remains outside the base.
+CABLE_EXIT_TRENCH_W = CABLE_CHANNEL_W + 0.4
 
 # --------------------------------------------------------------------------
 # Filaments — all-PLA workflow
@@ -91,6 +103,8 @@ DIMPLE_ALPHA_MAX = 0.058
 DIMPLE_SURFACE_DIA = round(2.0 * BALL_R * DIMPLE_ALPHA_MAX, 2)
 DIMPLE_EQUATOR_KEEP_MM = 0.0
 DIMPLE_OPENING_KEEP_MM = 8.0
+DIMPLE_RELAX_ITERATIONS = 12
+DIMPLE_RELAX_STEP_FRACTION = 0.06
 
 BALL_SEAT_GROOVE_DEPTH = 1.0
 BALL_SEAT_RADIAL_CLEARANCE = 0.25
@@ -102,6 +116,12 @@ LED_POCKET_SEAT_LAND = 2.5
 # Replaces the shallow spherical overhang that forced massive supports.
 SUPPORT_FREE_OVERHANG_DEG = 45.0
 SUPPORT_FREE_BLEND_MARGIN_MM = 2.0  # dimple keepout above blend
+
+# Light outer-wall fuzzy — softens layer lines without chewing dimple edges.
+# "external" = Contour / outer walls only (bayonet seat stays crisp).
+BALL_FUZZY_SKIN = "external"
+BALL_FUZZY_THICKNESS = 0.04
+BALL_FUZZY_POINT_DISTANCE = 0.08
 
 
 def ball_vlh_profile(print_height: float) -> list[float]:
@@ -183,14 +203,23 @@ BASE_CORNER_R = 14.0  # soft corners — still reads as a pad, not a disc
 BASE_H = 18.0  # taller to host ballast under the snap floor
 BASE_TEE_RECESS_DEPTH = 7.0
 
-SNAP_SHAFT_OD = 74.0
-SNAP_BEAD_OD = 77.0
+# V1's Ø74/Ø77 male was too tight. The first V2 socket also accidentally
+# narrowed to its Ø74.2 shaft clearance above the groove, demanding 1.1 mm
+# radial bead compression. Keep the insertion throat at Ø75.8 so the revised
+# bead compresses only 0.30 mm/side, with a Ø76.8 mouth lead-in.
+SNAP_SHAFT_OD = 73.4
+SNAP_BEAD_OD = 76.4
 SNAP_BEAD_H = 1.6
 SNAP_BEAD_Z = 3.2
-SNAP_ENTRY_OD = 75.6
+SNAP_ENTRY_OD = 75.8
+SNAP_MOUTH_OD = 76.8
 SNAP_GROOVE_OD = 77.4
-SNAP_GROOVE_H = 2.0
-SNAP_SHAFT_CLEARANCE = 0.35
+# Tall enough for the bead land plus a 45° print-side upper-lip chamfer.
+SNAP_GROOVE_H = 2.8
+SNAP_SHAFT_CLEARANCE = 0.8
+# Upper groove lip chamfer (from horizontal). Clears the undercut cantilever
+# when the base prints underside-on-bed (snap opens up).
+SNAP_GROOVE_CEILING_ANGLE_DEG = 45.0
 # Vertical slots turn the bead into cantilever spring fingers (anti-creep).
 SNAP_SLOT_COUNT = 4
 SNAP_SLOT_WIDTH_DEG = 10.0
@@ -203,8 +232,12 @@ BALLAST_DEPTH = 7.0
 BALLAST_INNER_R = 40.0  # circular keepout around the snap well
 BALLAST_OUTER_INSET = 4.0  # wall left between pocket and outer edge
 BALLAST_COVER_THICKNESS = 1.2
-BALLAST_COVER_CLEARANCE = 0.35  # per side vs pocket
-BALLAST_COVER_LEDGE = 1.5  # radial shelf the cover rests on
+BALLAST_COVER_CLEARANCE = 0.15  # per side on the tapered seat
+# Radial run of the 45° cover seat. Do not restore a horizontal ledge —
+# underside-on-bed printing makes a flat shelf a floating cantilever. The seat
+# begins behind the 1.0 mm felt recess and runs inward for the 1.2 mm cover.
+BALLAST_COVER_LEDGE = BALLAST_COVER_THICKNESS
+BALLAST_COVER_SEAT_ANGLE_DEG = 45.0
 # Die-cut felt / silicone pad recess on the underside (matching square).
 FELT_PAD_SIDE = 110.0
 FELT_PAD_CORNER_R = 12.0
@@ -223,12 +256,14 @@ BASE_OD = BASE_SIDE
 
 TEE_FOOT_OD = SNAP_SHAFT_OD
 TEE_FOOT_FLAT_H = 6.5
-# Neck Ø24 around Ø18 bore → 3 mm wall (desk-lamp sufficient).
-TEE_STEM_NARROW_OD = 24.0
+# Ø28 leaves ~2.9 mm at the rounded controller-passage corners.
+TEE_STEM_NARROW_OD = 28.0
 TEE_STEM_NARROW_Z = 24.0
 TEE_STEM_MID_OD = 30.0
 TEE_STEM_MID_Z = 74.0
 TEE_STEM_TOP_OD = 48.0
+TEE_CUP_UNDERSIDE_ANGLE_DEG = 45.0
+TEE_SEAT_UNDERSIDE_ANGLE_DEG = 45.0
 
 CUP_OD = 90.0
 CUP_FLOOR = 4.0
@@ -264,11 +299,28 @@ def ball_opening_radii() -> dict:
 
 
 def ballast_cover_side() -> float:
+    """Large outward face of the tapered cover."""
     return BASE_SIDE - 2.0 * BALLAST_OUTER_INSET - 2.0 * BALLAST_COVER_CLEARANCE
 
 
 def ballast_cover_corner_r() -> float:
+    """Corner radius of the large outward face."""
     return max(BASE_CORNER_R - BALLAST_OUTER_INSET - BALLAST_COVER_CLEARANCE, 4.0)
+
+
+def ballast_cover_inward_side() -> float:
+    """Small inward face; the cover shrinks at 45° while printing."""
+    return ballast_cover_side() - 2.0 * BALLAST_COVER_THICKNESS
+
+
+def ballast_cover_inward_corner_r() -> float:
+    return ballast_cover_corner_r() - BALLAST_COVER_THICKNESS
+
+
+def ballast_cover_installed_z() -> float:
+    """Outward-face Z after the tapered plug settles into its seat."""
+    angle = math.radians(BALLAST_COVER_SEAT_ANGLE_DEG)
+    return FELT_PAD_RECESS + BALLAST_COVER_CLEARANCE / math.tan(angle)
 
 
 def reflector_outer_r() -> float:
@@ -306,10 +358,17 @@ def ball_seat_groove() -> dict:
         raise ValueError(
             f"dimple depth {DIMPLE_DEPTH} mm is too deep for R={BALL_R}"
         )
-    narrow_wall = (TEE_STEM_NARROW_OD - CABLE_BORE_DIA) / 2.0
+    controller_corner_r = (
+        math.hypot(
+            CONTROLLER_PASSAGE_W / 2.0 - CONTROLLER_PASSAGE_CORNER_R,
+            CONTROLLER_PASSAGE_H / 2.0 - CONTROLLER_PASSAGE_CORNER_R,
+        )
+        + CONTROLLER_PASSAGE_CORNER_R
+    )
+    narrow_wall = TEE_STEM_NARROW_OD / 2.0 - controller_corner_r
     if narrow_wall < 2.5:
         raise ValueError(
-            f"hollow tee stem wall is only {narrow_wall:.2f} mm at the neck"
+            f"tee stem leaves only {narrow_wall:.2f} mm around the controller passage"
         )
     if BAYONET_PIN_FILLET_R < 1.0:
         raise ValueError("bayonet pin root fillet must be ≥1.0 mm")
@@ -352,12 +411,36 @@ def fibonacci_sphere(count: int) -> np.ndarray:
     return np.column_stack((radius * np.cos(theta), radius * np.sin(theta), z))
 
 
+def relax_sphere(points: np.ndarray) -> np.ndarray:
+    """Deterministically relax Fibonacci points to suppress visible spiral rows."""
+    relaxed = np.asarray(points, dtype=np.float64).copy()
+    if len(relaxed) < 4 or DIMPLE_RELAX_ITERATIONS <= 0:
+        return relaxed
+    for _iteration in range(DIMPLE_RELAX_ITERATIONS):
+        delta = relaxed[:, None, :] - relaxed[None, :, :]
+        distance_sq = np.einsum("ijk,ijk->ij", delta, delta)
+        np.fill_diagonal(distance_sq, np.inf)
+        nearest = np.sqrt(np.min(distance_sq, axis=1))
+        # Inverse-square repulsion, projected onto each sphere tangent plane.
+        force = np.sum(
+            delta / np.maximum(distance_sq[..., None], 1e-9) ** 1.5,
+            axis=1,
+        )
+        force -= np.sum(force * relaxed, axis=1)[:, None] * relaxed
+        force_norm = np.linalg.norm(force, axis=1, keepdims=True)
+        direction = force / np.maximum(force_norm, 1e-12)
+        step = DIMPLE_RELAX_STEP_FRACTION * float(np.median(nearest))
+        relaxed += step * direction
+        relaxed /= np.maximum(np.linalg.norm(relaxed, axis=1, keepdims=True), 1e-12)
+    return relaxed
+
+
 def dimple_unit_centers() -> np.ndarray:
-    """Fibonacci dimple axes clear of the opening seat and support-free skirt."""
+    """Relaxed equal-area dimple axes clear of the opening and print skirt."""
     skirt = support_free_skirt()
     opening_limit_z = skirt["z_blend"] + SUPPORT_FREE_BLEND_MARGIN_MM
     keep: list[np.ndarray] = []
-    for unit in fibonacci_sphere(DIMPLE_COUNT):
+    for unit in relax_sphere(fibonacci_sphere(DIMPLE_COUNT)):
         surface_z = float(unit[2] * BALL_R)
         if abs(surface_z) < DIMPLE_EQUATOR_KEEP_MM:
             continue
@@ -403,6 +486,7 @@ def summary() -> dict:
         "dimple_alpha_max_rad": DIMPLE_ALPHA_MAX,
         "dimple_surface_dia": DIMPLE_SURFACE_DIA,
         "dimple_style": (
+            "relaxed equal-area layout; exact centre/profile sampling; "
             "constant-thickness dual-surface displacement; "
             f"{BALL_WALL} mm solid shell, 0% sparse infill"
         ),
@@ -415,7 +499,12 @@ def summary() -> dict:
             "shaft_od": SNAP_SHAFT_OD,
             "bead_od": SNAP_BEAD_OD,
             "entry_od": SNAP_ENTRY_OD,
+            "mouth_od": SNAP_MOUTH_OD,
             "groove_od": SNAP_GROOVE_OD,
+            "shaft_clearance_diametral": SNAP_SHAFT_CLEARANCE,
+            "entry_interference_radial": round(
+                (SNAP_BEAD_OD - SNAP_ENTRY_OD) / 2.0, 3
+            ),
             "spring_slots": SNAP_SLOT_COUNT,
         },
         "base_side": BASE_SIDE,
@@ -424,7 +513,13 @@ def summary() -> dict:
         "ballast_pocket_cm3": groove["ballast_pocket_cm3"],
         "ballast_cover_thickness": BALLAST_COVER_THICKNESS,
         "felt_pad_side": FELT_PAD_SIDE,
-        "cable_bore_dia": CABLE_BORE_DIA,
+        "controller_passage": {
+            "width": CONTROLLER_PASSAGE_W,
+            "height": CONTROLLER_PASSAGE_H,
+            "corner_radius": CONTROLLER_PASSAGE_CORNER_R,
+            "controller_width": LED_CONTROLLER_W,
+            "controller_height": LED_CONTROLLER_H,
+        },
         "filaments": {
             "ball": BALL_FILAMENT_LABEL,
             "tee": TEE_FILAMENT_LABEL_OVERRIDE,
