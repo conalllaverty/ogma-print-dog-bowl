@@ -20,17 +20,11 @@ if str(GENERATOR_DIR) not in sys.path:
 
 from pipeline import FONT_STYLES, generate  # noqa: E402
 from cooper_bowl_design import NameFitError  # noqa: E402
-from geometry_config import STYLE_COOPER, STYLE_META, STYLES  # noqa: E402
+import styles  # noqa: E402
 
-STYLE_CATALOG = [
-    {
-        "id": sid,
-        "name": STYLE_META[sid]["name"],
-        "description": STYLE_META[sid]["description"],
-        "available": STYLE_META[sid]["available"],
-    }
-    for sid in STYLES
-]
+# Derived from the registry: a new styles/<id>.py appears in the API and the web
+# configurator with no edit here.
+STYLE_CATALOG = styles.catalog()
 
 
 class JobStatus(str, Enum):
@@ -48,7 +42,7 @@ class Job:
     font_style: str
     stand_filament_id: str
     letter_filament_id: str
-    style: str = STYLE_COOPER
+    style: str = styles.DEFAULT_STYLE
     fuzzy_enabled: bool = True
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -76,14 +70,14 @@ def create_job(
     stand_filament_id: str,
     letter_filament_id: str,
     fuzzy_enabled: bool = True,
-    style: str = STYLE_COOPER,
+    style: str = styles.DEFAULT_STYLE,
 ) -> Job:
     if font_style not in FONT_STYLES:
         raise ValueError(f"font_style must be one of {list(FONT_STYLES)}")
     style = style.lower().strip()
-    if style not in STYLES:
-        raise ValueError(f"style must be one of {list(STYLES)}")
-    if not STYLE_META[style]["available"]:
+    if style not in styles.STYLES:
+        raise ValueError(f"style must be one of {list(styles.STYLES)}")
+    if not styles.get(style).available:
         raise ValueError(f"Style '{style}' is not available yet")
     job = Job(
         id=uuid.uuid4().hex[:12],
@@ -113,7 +107,7 @@ def get_job(job_id: str) -> Job | None:
         return None
     data = json.loads(status_path.read_text())
     # Older status.json files may omit style.
-    data.setdefault("style", STYLE_COOPER)
+    data.setdefault("style", styles.DEFAULT_STYLE)
     job = Job(**{**data, "status": JobStatus(data["status"])})
     with _lock:
         _jobs[job_id] = job

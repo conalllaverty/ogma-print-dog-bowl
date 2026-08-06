@@ -19,29 +19,10 @@ BOWL_OPENING_D = 133.0
 BOWL_SEAT_D = 142.0
 BOWL_RIM_RECESS = 1.8
 
-# --- Style ids ---
-STYLE_COOPER = "cooper"
-STYLE_WAVE = "wave"
-STYLE_HEX = "hex"
-STYLES = (STYLE_COOPER, STYLE_WAVE, STYLE_HEX)
-
-STYLE_META = {
-    STYLE_COOPER: {
-        "name": "Paw lattice",
-        "description": "Recessed paws + curved name rail (default)",
-        "available": True,
-    },
-    STYLE_WAVE: {
-        "name": "Split wave",
-        "description": "Sine seam · separate bowl seat · glue-in letters",
-        "available": True,
-    },
-    STYLE_HEX: {
-        "name": "Honeycomb",
-        "description": "Solid drum · recessed hex pattern · glue-in letters",
-        "available": True,
-    },
-}
+# Style ids, display names and availability now live with the styles themselves,
+# in the `styles` registry package — this module is geometry only. Importing the
+# registry from here would be circular: styles/wave.py imports wave_bowl_design,
+# which imports this module.
 
 
 @dataclass(frozen=True)

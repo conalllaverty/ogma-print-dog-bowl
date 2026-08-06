@@ -15,17 +15,7 @@ if str(GENERATOR_DIR) not in sys.path:
     sys.path.insert(0, str(GENERATOR_DIR))
 
 import cooper_bowl_design as design  # noqa: E402
-import build_bambu_project as bambu  # noqa: E402
-import hex_bowl_design as hex_design  # noqa: E402
-import wave_bowl_design as wave_design  # noqa: E402
-from paint_fuzzy_skin import COOPER_PAINTER  # noqa: E402
-from geometry_config import (  # noqa: E402
-    STYLE_COOPER,
-    STYLE_HEX,
-    STYLE_META,
-    STYLE_WAVE,
-    STYLES,
-)
+import styles  # noqa: E402
 from ogma.filaments import (  # noqa: E402
     DEFAULT_LETTERS,
     DEFAULT_STAND,
@@ -45,7 +35,7 @@ FONT_STYLES = (
     "playful",
     "condensed",
 )
-DEFAULT_STYLE = STYLE_COOPER
+DEFAULT_STYLE = styles.DEFAULT_STYLE
 
 
 @dataclass
@@ -72,12 +62,11 @@ def generate(
     fuzzy_enabled: bool = True,
 ) -> GenerateResult:
     """Generate printable meshes and a Bambu 3MF into job_dir."""
-    style = style.lower().strip()
-    if style not in STYLES:
-        raise ValueError(f"Unknown style '{style}'. Choose from {list(STYLES)}")
-    if not STYLE_META[style].get("generator_available", STYLE_META[style]["available"]):
+    bowl_style = styles.get(style)
+    style = bowl_style.id
+    if not bowl_style.generator_available:
         raise ValueError(
-            f"Style '{style}' is not available yet ({STYLE_META[style]['description']})."
+            f"Style '{style}' is not available yet ({bowl_style.description})."
         )
 
     job_dir = Path(job_dir)
@@ -92,61 +81,24 @@ def generate(
 
     work = GENERATOR_DIR / "bambu_work"
 
-    if style == STYLE_WAVE:
-        report = wave_design.generate_wave_meshes(job_dir, name=name, font_style=font_style)
-        cleaned = design.NAME
-        rail_outer = float(report["letters"]["name_rail_outer_deg"])
-        output = job_dir / f"{cleaned}_Wave_P2S.3mf"
-        bambu.build_wave_project(
-            mesh_dir=meshes,
-            output_path=output,
-            name=cleaned,
-            stand_hex=stand.hex,
-            letter_hex=letters.hex,
-            stand_name=stand.name,
-            letter_name=letters.name,
-            work_dir=work,
-            template_path=GENERATOR_DIR / "blank_project.3mf",
-        )
-    elif style == STYLE_HEX:
-        report = hex_design.generate_hex_meshes(job_dir, name=name, font_style=font_style)
-        cleaned = design.NAME
-        rail_outer = float(report["letters"]["name_rail_outer_deg"])
-        output = job_dir / f"{cleaned}_Honeycomb_P2S.3mf"
-        bambu.build_hex_project(
-            mesh_dir=meshes,
-            output_path=output,
-            name=cleaned,
-            stand_hex=stand.hex,
-            letter_hex=letters.hex,
-            stand_name=stand.name,
-            letter_name=letters.name,
-            work_dir=work,
-            template_path=GENERATOR_DIR / "blank_project.3mf",
-        )
-    else:
-        # STYLE_COOPER
-        design.configure_output(job_dir, name=name, font_style=font_style)
-        cleaned = design.NAME
-        design.main()
-        dims_path = job_dir / "dimensions_and_validation.json"
-        dims = json.loads(dims_path.read_text())
-        rail_outer = float(dims["letters"]["name_rail_outer_deg"])
-        output = job_dir / f"{cleaned}_Paw_Lattice_P2S.3mf"
-        bambu.build_project(
-            mesh_dir=meshes,
-            output_path=output,
-            name=cleaned,
-            stand_hex=stand.hex,
-            letter_hex=letters.hex,
-            stand_name=stand.name,
-            letter_name=letters.name,
-            work_dir=work,
-            template_path=GENERATOR_DIR / "blank_project.3mf",
-            dims_root=job_dir,
-            fuzzy_enabled=fuzzy_enabled,
-            painter=COOPER_PAINTER,
-        )
+    rail_outer = bowl_style.generate_meshes(job_dir, name, font_style)
+    cleaned = design.NAME
+    output = job_dir / f"{cleaned}_{bowl_style.output_suffix}_P2S.3mf"
+
+    build_kwargs = dict(
+        mesh_dir=meshes,
+        output_path=output,
+        name=cleaned,
+        stand_hex=stand.hex,
+        letter_hex=letters.hex,
+        stand_name=stand.name,
+        letter_name=letters.name,
+        work_dir=work,
+        template_path=GENERATOR_DIR / "blank_project.3mf",
+    )
+    if bowl_style.supports_fuzzy:
+        build_kwargs.update(dims_root=job_dir, fuzzy_enabled=fuzzy_enabled)
+    bowl_style.build_project(**build_kwargs)
 
     dims_path = job_dir / "dimensions_and_validation.json"
     meta = {
@@ -157,7 +109,7 @@ def generate(
         "letter_filament_id": letters.id,
         "stand_hex": stand.hex,
         "letter_hex": letters.hex,
-        "fuzzy_enabled": fuzzy_enabled if style == STYLE_COOPER else False,
+        "fuzzy_enabled": fuzzy_enabled if bowl_style.supports_fuzzy else False,
         "threemf": output.name,
         "rail_outer_deg": rail_outer,
     }
@@ -181,7 +133,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Generate a custom bowl 3MF")
     parser.add_argument("--name", required=True)
-    parser.add_argument("--style", default=DEFAULT_STYLE, choices=STYLES)
+    parser.add_argument("--style", default=DEFAULT_STYLE, choices=styles.STYLES)
     parser.add_argument("--font-style", default="bold", choices=FONT_STYLES)
     parser.add_argument("--stand", default=DEFAULT_STAND)
     parser.add_argument("--letters", default=DEFAULT_LETTERS)

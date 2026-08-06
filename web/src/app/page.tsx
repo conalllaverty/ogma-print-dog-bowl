@@ -4,7 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 
 type Filament = { id: string; name: string; hex: string; material?: string };
 type FontStyle = { id: string; name: string; description: string };
-type BowlStyle = { id: string; name: string; description: string; available: boolean };
+type BowlStyle = {
+  id: string;
+  name: string;
+  description: string;
+  available: boolean;
+  // Served by the backend style registry. Do not re-derive this from the id —
+  // a new style should not need a web edit to show its fuzzy toggle.
+  supports_fuzzy?: boolean;
+};
 
 const MAX = 8;
 
@@ -37,7 +45,7 @@ export default function HomePage() {
   const stand = useMemo(() => filaments.find((f) => f.id === standId), [filaments, standId]);
   const letter = useMemo(() => filaments.find((f) => f.id === letterId), [filaments, letterId]);
   const cleanName = name.toUpperCase().replace(/[^A-Z]/g, "").slice(0, MAX);
-  const showFuzzy = style === "cooper";
+  const showFuzzy = styles.find((s) => s.id === style)?.supports_fuzzy ?? false;
 
   async function onGenerate() {
     setBusy(true);
