@@ -23,8 +23,10 @@ _to_delete/
 # macOS/FUSE artefacts left by editing files over the remote-device bridge.
 .fuse_hidden*
 
-# Intermediate 3MF plates rewritten on every generator run — not source.
-backend/generator/bambu_work/
+# NOTE: backend/generator/bambu_work/ is deliberately TRACKED. Despite the name,
+# those .3mf files are read-only INPUT assets — build_bambu_project.py opens them
+# for the plate preview thumbnails it embeds in every output project. Nothing in
+# the repo writes them. Untracking them breaks a fresh clone.
 
 # Derived Fusion mesh exports (OBJ/MTL dumps + a zip of themselves). 256 MB, stored
 # four times over, and regenerable from backend/generator/boucle_lamp_fusion.py.
