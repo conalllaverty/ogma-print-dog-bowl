@@ -112,7 +112,7 @@ Treat 12.75/6.40 as the provisional printer-calibrated fit. It becomes final
 only after the assembled stack confirms free spin without race clamping,
 housing creep, or excessive removal force.
 
-Printable Bambu Lab P2S Matte PLA projects are written to `p2s_projects/`:
+Printable Bambu Lab P2S projects are written to `p2s_projects/`:
 
 ```text
 Squspi_R188_Fit_Coupon_P2S.3mf
@@ -128,13 +128,18 @@ Squspi_ToughPlus_Source_Panel_Control_P2S.3mf
 Squspi_Base_Arm_Retention_Matrix_P2S.3mf
 Squspi_Base_Peg_Process_Gauge_P2S.3mf
 Squspi_Keyed_ToughPlus_Connector_Coupon_P2S.3mf
+Squspi_Fixed_Pin_Clevis_Matrix_P2S.3mf
+Squspi_Twin_Rail_Curvature_Coupon_P2S.3mf
+Squspi_Full_Base_Lower_Hooks_Panel_Rails_P2S.3mf
+Squspi_Lower_Rail_Panel_High_Adhesion_P2S.3mf
 Squspi_Running_Clearance_Coupons_P2S.3mf
 Squspi_Link_Root_Coupon_P2S.3mf
 ```
 
-Profile: Bambu Lab P2S 0.4 nozzle, Bambu PLA Matte @BBL P2S, 0.20 mm layers,
-4 walls. Joint-sector and actual-stack projects enable snug automatic support;
-flat calibration coupons do not.
+Profiles: Bambu Lab P2S 0.4 nozzle with Bambu PLA Matte and, where specified,
+Bambu PLA Tough+. Functional joint projects use their documented 0.16 mm,
+five-wall settings and snug automatic support; flat calibration coupons retain
+the simpler baseline process.
 
 ### Assembled R188 stack coupon
 
@@ -321,6 +326,415 @@ filament offcut. Check dovetail retention, free pivoting, lateral play, pin
 migration, whitening, and 200 cycles. This is an architecture coupon—not a
 complete panel—and must pass before the keyed insert is integrated into the
 curved source shell.
+
+Physical testing confirmed that the coupon assembled as intended and the
+filament hinge allowed the tongue to pivot. When held vertically, however, the
+pin walked downward during repeated motion. This is expected from the 0.15 mm
+diametral clearance through all three parts, so the all-running-fit pin is not
+acceptable for the production joint.
+
+`Squspi_Fixed_Pin_Clevis_Matrix_P2S.3mf` reuses the existing receiver, Matte
+tongue, and 1.75 mm filament. It prints only three replacement Tough+ clevis
+inserts:
+
+```text
+one dot:    Ø1.80 fixed ear / Ø1.90 opposite ear
+two dots:   Ø1.75 fixed ear / Ø1.90 opposite ear
+three dots: Ø1.70 fixed ear / Ø1.90 opposite ear
+```
+
+Start with one dot. Insert the pin from the Ø1.90 ear, pass it through the
+existing tongue, then press its final section into the marked tight ear. Move
+the assembly vertically for 200 cycles. Select the largest fixed-ear hole that
+prevents migration without splitting, whitening, or noticeably increasing
+pivot friction; test two and three dots only if the pin still moves.
+
+Physical result: Ø1.80 assembled after several attempts and prevented
+migration. Ø1.75 and Ø1.70 could not be assembled. The real joint therefore
+uses a provisional Ø1.85 fixed ear with a short entry chamfer; the tongue and
+opposite ear remain Ø1.90 running fits.
+
+### Compact twin-rail panel/base integration
+
+The first `Squspi_Real_Keyed_Joint_Integration_P2S.3mf` is **withdrawn and must
+not be printed**. Its full-width saddle changed too much of the source panel:
+the result was mechanically compact relative to the first concept, but still
+visibly replaced the curved upper connector rather than preserving it.
+
+The replacement is a masked twin-rail design under digital review:
+
+```text
+Panel — fill only the two source upper blind pockets, then cut two short rails
+Insert — one-piece Tough+ twin-key cartridge with a positive latch
+Clevis — Ø1.85 fixed ear / Ø1.90 running ear for 1.75 mm filament
+Base — one source arm changed to an Ø4.40 mm circular pinned tongue
+```
+
+The rail pair is centred at local U ±3.95 mm and runs only from local V −5.00
+to +0.20 mm. The source outer silhouette and the complete link-side connector
+remain unchanged. The primary rail owns the closed stop and latch; the second
+rail is a clearance-biased follower so manufacturing variation cannot make the
+pair fight each other.
+
+No replacement 3MF is released yet. The next gate is approval of exact
+source-versus-candidate overlays and connector-section renders. After that, the
+first printable artifact will be an actual-curvature rail/latch coupon, not a
+full panel. The full-panel/cropped-base-arm joint is held until the coupon
+passes retention, removal, and repeated-cycle tests.
+
+Current digital result:
+
+```text
+Source volume removed:        2.8459%
+Source volume added:          0.3108%
+Source bounding box:          unchanged
+Changes outside upper mask:   none above 0.0001 mm³
+Closed-stop registration:     0.015 mm
+Primary rail clearance/side:  0.15 mm tail / 0.20 mm throat
+Follower clearance/side:      0.25 mm tail / 0.30 mm throat
+Fixed/running ear ligament:   1.255 / 1.230 mm
+Tongue ligament:              1.300 mm
+Validated pivot range:        −45° to +75°, zero overlap
+Minimum sampled clearance:    0.200 mm
+```
+
+The first whole-cartridge withdrawal probe was later proven invalid: it counted
+ear/shell contact rather than latch contact. Physical testing exposed the error
+because the cartridge slid into the receiver but had no retention. An isolated
+hook audit then showed that the original nominal notch removed exactly
+0.0000 mm³ from the receiver—it was outside the available Matte material.
+Review evidence is generated from the exact meshes:
+
+- [source overlay](./review/twin-rail-source-overlay.png)
+- [connector sections](./review/twin-rail-sections.png)
+- [coupon assembly](./review/twin-rail-coupon-assembly.png)
+- [validation metrics](./review/twin-rail-review-metrics.json)
+
+### Actual-curvature twin-rail coupon
+
+`Squspi_Twin_Rail_Curvature_Coupon_P2S.3mf` is the first printable gate for the
+compact design. It contains only:
+
+```text
+Object 1 — Matte PLA: source-curvature receiver crop (no bed foot)
+Object 2 — PLA Tough+: production twin-rail/latch cartridge
+Object 3 — Matte PLA: Ø4.50 boss with an Ø2.05 vertical running hole
+Hardware — straight, deburred 1.75 mm filament offcut
+```
+
+The receiver keeps the source panel's Z-layer orientation. An earlier flat bed
+foot is withdrawn: it overlapped the rail cavities and made cartridge insertion
+impossible. Rely on the crop's natural bed contact plus the project's 3 mm brim.
+The cartridge prints with both rail tails on the bed and the fixed/running ear
+holes horizontal, as in the successful fixed-ear matrix. The tongue prints
+pin-axis vertical because this gate isolates receiver/latch behaviour; the later
+cropped source arm will restore the production base orientation.
+
+Physical testing found that the first tongue's nominal Ø1.90 vertical hole
+printed too small for the 1.75 mm filament. Coupon v2 increases only the tongue
+to Ø2.05 and adds Ø2.40 self-supporting entry chamfers on both faces. The
+cartridge remains Ø1.90 on the loose ear and Ø1.85 on the fixed ear, so pin
+retention does not depend on the enlarged tongue.
+
+Embedded P2S settings are 0.16 mm Arachne, five walls, 20% gyroid, 3 mm outer
+brim, snug build-plate-only support, and print by object. A Bambu Studio 2.7
+slice completed without warnings in 18 minutes 19 seconds with two filament
+changes and approximately 0.99 g Matte plus 0.55 g Tough+ including flush.
+
+After the parts cool completely:
+
+1. Remove brim/support, but do not sand the rails before the first fit.
+2. Slide the Tough+ cartridge into the open end until the primary rail bottoms
+   and the latch engages. Stop if insertion requires enough force to whiten or
+   split either part.
+3. Confirm the cartridge cannot lift away from the panel or slide out under
+   repeated firm hand tugs.
+4. Put the Matte tongue between the ears. Feed the filament through the Ø1.90
+   running ear and Ø2.05 tongue, then press it into the chamfered Ø1.85 fixed
+   ear.
+5. Check free pivoting through the comfortable range and perform 200 cycles
+   while vertical.
+6. Report insertion force, audible/tactile latch engagement, rail play, whether
+   deliberate removal is possible, whitening/cracks, pin migration, and any
+   support damage.
+
+Do not release the full-panel joint unless this coupon passes.
+
+### Compliant latch matrix
+
+Physical testing of curvature coupon v2 passed rail fit and tongue rotation,
+but the rigid Tough+ cartridge did not click, lock, or resist withdrawal. Do
+not glue that receiver and do not use it to judge the replacement cartridges.
+
+`Squspi_Twin_Rail_Latch_Matrix_v4_P2S.3mf` corrects both sides of the latch:
+
+```text
+Object 1 — Matte PLA: revised receiver with a real deep latch notch
+Object 2 — PLA Tough+: one-dot easy hook, R0.32 mm
+Object 3 — PLA Tough+: two-dot balanced hook, R0.36 mm
+Object 4 — PLA Tough+: three-dot strong hook, R0.40 mm
+```
+
+The old Matte receiver cannot be reused because it has no physical notch. The
+existing Matte tongue and filament pin can be reused. The corrected Ø1.00 mm
+notch sits deep in material at local V −4.35 mm instead of in open space near
+the rail mouth. Each Tough+ cartridge replaces the rigid bump with a
+4.15 × 0.65 × 0.90 mm bed-rooted cantilever, separated from the primary rail by
+a 0.40 mm slot.
+
+Matrix v4 also supersedes the first matrix after its central rear yoke felt
+flimsy. The yoke grows from 8.40 × 1.40 × 1.00 mm to
+8.40 × 1.65 × 1.25 mm, extending away from the tongue envelope. After the
+Ø4.90 mm pivot-clearance cut, its minimum clear section increases from
+0.6851 mm² to 1.3570 mm² (1.98×) while the validated pivot clearance remains
+0.20 mm.
+
+Digital checks for the three cartridges:
+
+```text
+Seated receiver overlap:       0.000000 mm³ each
+0.25 mm withdrawal engagement:
+  one dot / R0.32:             0.003447 mm³
+  two dots / R0.36:            0.010336 mm³
+  three dots / R0.40:          0.022333 mm³
+Estimated beam deflection:     0.27 / 0.31 / 0.35 mm
+Corrected source volume cut:   2.8459%
+Production pivot sweep:        −45° to +75°, zero overlap
+```
+
+The project sliced on Bambu Studio 2.7 for P2S without warnings in 19 minutes
+58 seconds. It uses one filament change, approximately 0.66 g Matte and 0.51 g
+Tough+ in the objects, and 0.80 g Matte plus 0.76 g Tough+ including flush.
+
+Let all parts cool, then use only the new Matte receiver. Start with the
+one-dot cartridge. Slide it fully to the closed stop and check for a tactile
+click, ten firm straight pulls, and ten insert/remove cycles. If it retains
+without whitening or cracking and remains deliberately removable, stop there.
+Otherwise test two dots, then three dots. Press the visible cantilever inward
+while withdrawing if a stronger variant will not release by a controlled
+straight pull. Only after choosing a hook should the existing tongue and pin
+be installed for 200 vertical pivot cycles.
+
+The full-panel joint remains blocked until one variant passes retention,
+deliberate removal, damage, and fatigue checks.
+
+### Monolithic receiver material A/B
+
+The separate receiver/cartridge architecture is superseded after all three
+compliant Tough+ hooks failed to retain physically. The next gate removes that
+interface completely:
+
+`Squspi_Monolithic_Receiver_Material_AB_P2S.3mf` contains two copies of one
+identical monolithic receiver/clevis mesh:
+
+```text
+Object 1 — Bambu PLA Matte: monolithic receiver and clevis control
+Object 2 — Bambu PLA Tough+: the exact same geometry
+Hardware — existing Ø4.50 / Ø2.05 Matte tongue and 1.75 mm filament pin
+```
+
+This is one CAD design with two filament assignments, not two geometry
+variants. The former twin keys now overlap the filled source panel by
+28.7727 mm³ and act as embedded anchor ribs. There is no sliding rail, latch,
+adhesive joint or AMS material boundary inside either part. The monolithic
+boolean remains one watertight component, removes only a 0.000011 mm³ numerical
+sliver from the source mesh, and has zero base overlap throughout the validated
+−45° to +75° pivot range.
+
+Both objects print in the same source-panel orientation with 0.16 mm Arachne,
+five walls, 20% gyroid, snug build-plate-only support and a 3 mm brim. Print by
+object limits the project to one Matte/Tough+ change rather than changing
+filament on every layer. The P2S CLI slice completed without warnings in
+18 minutes 1 second, using approximately 0.82 g Matte and 0.76 g Tough+ in the
+objects (0.96 g and 1.00 g including flush).
+
+After cooling:
+
+1. Remove support from each part independently and record any root or ear
+   damage before inserting hardware.
+2. Use the same accepted Matte tongue and filament pin in each receiver so the
+   receiver material is the only test variable.
+3. Compare pin insertion, initial play and free pivoting, then perform 200
+   vertical cycles and 20 firm lateral hand-loads.
+4. Inspect the clevis roots, yoke, layer lines and pin holes for whitening,
+   cracks, permanent bending or ovalisation.
+5. Choose Matte if both pass. Keep Tough+ only if the Matte control shows a
+   physical durability or fit disadvantage.
+
+Do not print another latch matrix before this A/B is complete.
+
+### Captive hook and rail material A/B
+
+The monolithic pinned-clevis A/B is paused before printing. A paired captive
+C-hook can remove the filament pin and simplify every final assembly, but its
+flexing hook must be tested in the real panel orientation rather than inferred
+from a solid clevis.
+
+The first hook coupon placed a new hinge on the former twin-rail yoke. It was
+superseded before physical testing by the simpler source-axis revision proposed
+during review: use the original pin/pocket pivot centre, extend the hooks beyond
+the old pockets, and strengthen them locally.
+
+The first source-axis rail base was also rejected before printing: each column
+ended at the rail centreline and overlapped the rail by only 0.20 mm axially.
+The printable revision is
+`Squspi_Original_Pin_Axis_Hook_Rail_AB_v2_P2S.3mf`, which contains:
+
+```text
+Object 1 — Bambu PLA Matte: source-axis extended-hook panel
+Object 2 — Bambu PLA Matte: fresh paired-rail base A
+Object 3 — Bambu PLA Matte: fresh paired-rail base B
+Object 4 — Bambu PLA Tough+: the exact same extended-hook panel
+```
+
+Each panel keeps the original upper connector pivot centre and replaces its two
+small blind pin pockets with 3.65 mm-wide C-hooks. The mating base has two
+longer Ø3.00 mm rail stubs in those source positions, supported from the outer
+sides. Each rail is embedded 1.50 mm into a full-height column, has 0.60 mm of
+solid cover above its top, and transitions through an R2.10 mm tapered
+shoulder. Ø4.10 mm inner caps prevent axial escape after assembly.
+
+The hook bore is Ø3.40 mm for 0.20 mm radial running clearance, the wall is
+1.30 mm, and the tapered entrance narrows to 2.65 mm. That leaves a 0.175 mm
+capture undercut per side. The openings face across the connector rather than
+along the normal panel-separation load.
+
+Digital gates:
+
+```text
+Source material removed:         3.0549%, confined to old connector pockets
+Seated overlap:                  0.000000 mm³
+Peak snap-path interference:    0.913779 mm³
+0.40 mm outward engagement:     3.427921 mm³
+0.40 mm closed-side engagement: 3.957182 mm³
+0.30 mm axial-cap engagement:   2.212106 mm³ in either direction
+Maximum coupon pivot overlap:   0.000000 mm³ through −45° to +75°
+```
+
+The exact hook mesh is duplicated for the material comparison and every hook
+gets a fresh Matte rail. Print by object limits the P2S project to one filament
+change. The 0.16 mm Arachne slice completed without warnings in 28 minutes
+27 seconds, using approximately 2.62 g Matte and 0.92 g Tough+ in the objects
+(2.77 g and 1.16 g including flush).
+
+After cooling:
+
+1. Remove support and inspect both hook mouths before sanding or flexing them.
+2. Pair the Matte hooks with rail A and the Tough+ hooks with rail B.
+3. Place the hooks between the two outer rail supports. Align both rails with
+   the visible open sides of the C-hooks and push laterally until both seat.
+   Do not force the rails through the closed hook backs.
+4. Record insertion force, click, initial axial/radial play and free rotation.
+5. Apply 20 firm outward hand-loads, then complete 200 pivot cycles while
+   checking for accidental release.
+6. Inspect for whitening, cracks, permanent opening, rail damage and increased
+   play. Test deliberate removal only after the retention cycles.
+
+Physical result:
+
+- both rails used with the Matte hook panel broke;
+- the Tough+ hook panel retained, rotated freely and passed 20 outward
+  hand-loads plus 200 pivot cycles;
+- freeze the full panel/hook object as Tough+ and keep the base/rails Matte.
+
+The intended compliance is therefore in the Tough+ hooks. The stiffer Matte
+hooks transferred their snap displacement into the horizontal rails and are
+rejected for this architecture. The pinned-clevis path remains paused.
+
+### Withdrawn cropped-arm integration
+
+Do not print `Squspi_Full_Panel_Real_Base_Arm_Hook_Rail_P2S.3mf`. Physical
+review exposed two modelling errors that the isolated coupon could not reveal:
+
+- it modified the broad upper panel connector, but the source assembly uses
+  the narrow lower connector at the centre base and the upper connector at the
+  yellow link;
+- a cropped arm omitted the complete-base access needed to establish the real
+  panel insertion path.
+
+The local Tough+ hook material result remains valid. The attempted production
+layout does not.
+
+### Complete base with lower hooks
+
+`Squspi_Full_Base_Lower_Hooks_Panel_Rails_P2S.3mf` is the corrected physical
+gate:
+
+```text
+Object 1 — Bambu PLA Tough+: complete source base with twelve C-hooks
+Object 2 — Bambu PLA Matte: one source panel with two rigid lower rails
+```
+
+This inverts the joint so the proven compliant material stays with the hooks.
+Each of the six base arms carries a pair of radially accessible Tough+ hooks.
+Only the panel's true lower blind pockets are replaced by Ø3.00 mm Matte rails;
+the broad upper link-side connector is untouched. One panel is supplied so the
+same rail pair can be checked on all six arms without printing six panels.
+
+![Corrected full-base lower-hook assembly](./review/full-base-lower-hooks-assembly.png)
+
+Digital gates:
+
+```text
+Panel source material removed:       2.2047%
+Base source material removed:       13.0404% across all six arms
+Minimum hook/root overlap:           5.453205 mm³
+Minimum panel rail/root overlap:     6.534521 mm³
+Adjacent-arm authored overlap:       0.000000 mm³
+Seated full-panel overlap:           0.000000 mm³
+Peak complete snap-path interference: 0.641551 mm³
+Non-hook base overlap during entry:  0.000000 mm³
+0.30 mm axial capture:               2.648167 / 2.648314 mm³
+Maximum overlap from 20° to 45°:     0.000000 mm³
+```
+
+The complete panel was also translated from a collision-free external start
+pose through the hook mouths to its seated position. Only the intended snap
+interval contacts. This directly checks the assembly path that the rejected
+cropped-arm version omitted.
+
+The first project used a 3 mm brim with the default 0.10 mm separation. Repeated
+physical spaghetti detection on the panel, while the base remained sound,
+identified that as inadequate: the panel begins on only 8.73 mm² split across
+three small islands, versus 165.79 mm² of continuous first-layer section on the
+base.
+
+The updated combined project prints the panel first and changes the process to:
+
+```text
+Attached outer brim:        8 mm
+Brim/object gap:            0.00 mm
+Initial-layer wall speed:   25 mm/s
+Initial-layer infill speed: 30 mm/s (previously 105 mm/s)
+```
+
+Geometry, orientation, support, materials and functional clearances are
+unchanged. If the Tough+ base from an interrupted job is usable, print only
+`Squspi_Lower_Rail_Panel_High_Adhesion_P2S.3mf`; it contains the Matte panel
+with the same high-adhesion process. The panel-only P2S slice completes without
+warnings in 18 minutes with no filament changes and approximately 2.04 g Matte.
+The updated combined project also slices without warnings.
+
+After cooling:
+
+1. Remove all support from the twelve hook mouths and bores. Do not sand or
+   pre-flex them.
+2. Use the narrow lower end of the panel. The broad connector at the opposite
+   end remains for the link.
+3. Hold the panel roughly 30° above the base plane, align both rails with one
+   arm's outward-facing hook mouths, and push the panel radially toward the hub.
+   Do not slide it along the hinge axis.
+4. Confirm both hooks click over the rails, prevent axial drift and allow free
+   rotation.
+5. Test the same panel once on each of the six arms and record the tightest and
+   loosest arm.
+6. On the weakest-retaining arm, complete 20 firm outward hand-loads and
+   200 pivot cycles.
+7. Inspect every Tough+ hook root and both Matte rail roots for whitening,
+   cracks, permanent opening or increased play.
+
+Only after this gate passes should six rail panels be released for a complete
+half assembly.
 
 ### Pin/socket fit matrix
 
@@ -538,12 +952,14 @@ The baseline reconstruction is accepted only when:
 
 ## Immediate next work
 
-1. Capture the quantitative current-prototype baseline.
-2. Keep the selected 12.75/6.40/0.30 mm R188 stack.
-3. Keep the 2.35/1.95/2.20/0.60 mm result as an experimental compliant snap,
-   not the production joint.
-4. Print and validate the source blind-pocket control before replacing either
-   the source link or source panel with reconstructed geometry.
+1. Print the complete Tough+ hook base and one Matte lower-rail panel.
+2. Confirm radial assembly and free pivoting on each of the six arms.
+3. Complete 200 pivot cycles and 20 outward hand-loads on the weakest arm.
+4. Inspect all hook roots, both rail roots and the unchanged upper connector.
+5. Release six rail panels only after the whole-base gate passes.
+6. Reinforce or replace the unchanged upper link-side pocket if required.
+7. Build a new vertical chain only after both interfaces pass separately.
 
-Only after those four gates pass should the plan refine the panel lip, base arm
-tips, and full baseline assembly.
+The friction peg, cartridge latch and monolithic pinned-clevis paths remain
+development fallbacks. Do not resume them while the captive hook/rail gate is
+active.

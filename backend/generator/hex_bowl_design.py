@@ -2,7 +2,7 @@
 """Solid honeycomb bowl stand — Cooper metal bowl size.
 
 The wall remains continuous. One-millimetre recessed grooves leave a field of
-proud hexagonal tiles, with the pattern faded to a smooth name area. Letters
+proud hexagonal tiles, with whole cells suppressed around the name. Letters
 seat in shallow glyph pockets directly in the curved drum wall.
 """
 
@@ -27,10 +27,14 @@ from geometry_config import (
 
 def _wall_radius(z: float, p=HEX) -> float:
     radius = p.rb_out + (p.rt_out - p.rb_out) * (z / p.h)
-    edge_distance = min(z, p.h - z)
-    if edge_distance < p.edge_bevel_height:
-        radius += p.edge_bevel * (
-            1.0 - _smoothstep(edge_distance / p.edge_bevel_height)
+    if z < p.bottom_edge_height:
+        radius -= p.bottom_edge_chamfer * (
+            1.0 - _smoothstep(z / p.bottom_edge_height)
+        )
+    top_distance = p.h - z
+    if top_distance < p.top_edge_height:
+        radius += p.top_edge_bead * (
+            1.0 - _smoothstep(top_distance / p.top_edge_height)
         )
     return radius
 
@@ -133,10 +137,25 @@ def _honeycomb_offset(
 def build_honeycomb_body(letter_data, p=HEX) -> tuple[trimesh.Trimesh, dict]:
     """Build the solid textured drum, Cooper seat, and direct glyph pockets."""
     params = _honeycomb_params(p)
+    reference_r = float(params["reference_r"])
+    letter_face_r = float(design.LETTER_FACE_R)
+    angular_edges = [
+        edge
+        for item in letter_data
+        for edge in (
+            item["arc_center"] / letter_face_r - item["half_angle"],
+            item["arc_center"] / letter_face_r + item["half_angle"],
+        )
+    ]
     smooth_half_u = (
-        float(params["reference_r"]) * math.radians(design.NAME_RAIL_OUTER_DEG) + 3.0
+        reference_r * max(abs(edge) for edge in angular_edges)
+        + p.name_keepout_margin
     )
-    smooth_half_z = design.LETTER_HEIGHT * 0.5 + 3.0
+    glyph_half_z = max(
+        max(abs(float(item["polygon"].bounds[1])), abs(float(item["polygon"].bounds[3])))
+        for item in letter_data
+    )
+    smooth_half_z = glyph_half_z + p.name_keepout_margin
 
     profile_columns: list[list[list[float]]] = []
     for section in range(p.sections):
@@ -289,7 +308,11 @@ def generate_hex_meshes(out_dir: Path, name: str, font_style: str = "bold") -> d
             "pattern_edge_band": HEX.pattern_edge_band,
             "pattern_border_width": HEX.pattern_border_width,
             "pattern_border_depth": HEX.pattern_border_depth,
-            "edge_bevel": HEX.edge_bevel,
+            "name_keepout_margin": HEX.name_keepout_margin,
+            "top_edge_bead": HEX.top_edge_bead,
+            "top_edge_height": HEX.top_edge_height,
+            "bottom_edge_chamfer": HEX.bottom_edge_chamfer,
+            "bottom_edge_height": HEX.bottom_edge_height,
             "construction": "solid continuous wall with recessed grooves",
             "name_keepout": "whole honeycomb cells; complete boundary edges",
             "profile_validation": "all radial/Z cross-sections simple and positive-area",

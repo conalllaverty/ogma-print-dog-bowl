@@ -7,6 +7,7 @@ Runs **fully locally** and deploys to **Railway** with the same env contract.
 - **Status / roadmap:** [PROJECT_STATUS.md](./PROJECT_STATUS.md)
 - **Future session guide:** [AGENTS.md](./AGENTS.md)
 - **Ireland county clickers:** [county-clickers/README.md](./county-clickers/README.md)
+- **Bouclé Stack lamp:** [ready-to-print P2S shade](./design/boucle-stack-lamp/production/README.md)
 
 ## Quick start (local)
 
@@ -123,9 +124,12 @@ Plate 2 also enables critical-regions-only normal support for the pocket-closing
 layers; remove this small support before fitting the letters.
 
 Honeycomb uses a 4 mm hollow drum with 1 mm recessed grooves. Its name area
-suppresses complete honeycomb cells, leaving a deliberate smooth centre without
-clipped or fading groove fragments. Pattern-free edge bands and shallow border
-rings give the top and bottom a clean finish.
+derives a tight keepout from the packed glyph envelope, then suppresses complete
+honeycomb cells so there are no clipped or fading groove fragments. The name is
+optically centred at Z37 within the staggered whole-cell field. Pattern-free
+edge bands and shallow border rings end in a 0.45 mm top bead and a 0.35 mm
+bottom elephant-foot chamfer. The internal seat ramp starts at Z58 and stays
+near 39°.
 
 `bold` is Overpass Bold, selected from physical FDM font testing. `rounded`
 uses Fredoka SemiBold, `playful` uses Baloo 2 SemiBold, `condensed` uses Barlow

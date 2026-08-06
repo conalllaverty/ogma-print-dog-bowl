@@ -1,0 +1,196 @@
+{
+  "project": "Sligo County Clicker",
+  "series": "Standalone Ireland county clickers",
+  "units": "mm",
+  "sizing": {
+    "reference_county": "Tyrone",
+    "reference_width_mm": 62.0,
+    "size_boosted": true,
+    "size_scale_factor": 1.537011,
+    "scale_reasons": [
+      "minimum_mechanism_radius",
+      "switch_shoulder_wall"
+    ],
+    "placement_center_mm": [
+      75.137,
+      189.012
+    ]
+  },
+  "filaments": [
+    {
+      "slot": 1,
+      "name": "Sligo Black",
+      "hex": "#1A1A1A"
+    },
+    {
+      "slot": 2,
+      "name": "Sligo White",
+      "hex": "#FFFFFF"
+    }
+  ],
+  "shell": {
+    "outer_size": [
+      61.892,
+      59.258,
+      23.5
+    ],
+    "inscribed_radius_mm": 10.542,
+    "cap_inset": 2.65,
+    "pocket_inset": 1.4,
+    "moving_side_clearance": 1.25,
+    "min_side_clearance_mm": 1.2
+  },
+  "moving_top": {
+    "released_height_above_shell": 2.5,
+    "full_switch_travel": 4.0,
+    "print_orientation": "top face-down; MX socket boss points upward",
+    "robustness": {
+      "cap_area_retention_percent": 54.036,
+      "cap_perimeter_retention_percent": 51.554,
+      "fragile_lobe_trimmed_percent": 0.6143,
+      "neck_test_width_mm": 1.2,
+      "core_component_count": 1,
+      "secondary_core_area_percent": 0.0,
+      "min_area_retention_percent": 45.0
+    }
+  },
+  "switch": {
+    "type": "Outemu (Gaote) Blue, 3-pin, 50 gf",
+    "centre_xy": [
+      9.458,
+      -8.238
+    ],
+    "mount_opening": 14.1,
+    "shoulder_size": 16.4,
+    "lower_opening_wall_mm": 2.735,
+    "shoulder_wall_mm": 1.5,
+    "minimum_shoulder_wall_mm": 1.5,
+    "centre_strategy": "square-shoulder clearance optimization"
+  },
+  "boundary_source_fidelity": {
+    "ok": true,
+    "dataset": "Counties \u2013 National Statutory Boundaries \u2013 2019",
+    "publisher": "Tailte \u00c9ireann",
+    "licence": "Creative Commons Attribution 4.0",
+    "iou": 0.994723,
+    "accuracy_percent_iou": 99.472,
+    "hausdorff_distance_mm_at_print_scale": 0.0807,
+    "generated_to_source_area_ratio": 1.000324,
+    "size_scale_factor_excluded_from_comparison": 1.537011,
+    "min_iou": 0.99,
+    "max_hausdorff_mm": 0.1
+  },
+  "fit_checks": {
+    "county": "Sligo",
+    "ok": true,
+    "issues": [],
+    "clearance": {
+      "cap_inside_pocket": true,
+      "cap_outside_pocket_area_mm2": 0.0,
+      "min_side_clearance_mm": 1.2483,
+      "p10_side_clearance_mm": 1.2491,
+      "median_side_clearance_mm": 1.2497,
+      "exact_min_side_clearance_mm": 1.248,
+      "target_side_clearance_mm": 1.25,
+      "min_allowed_side_clearance_mm": 1.2
+    },
+    "cap_inscribed_radius_mm": 9.175,
+    "mx_boss_edge_clearance_mm": 4.968,
+    "shell_inscribed_radius_mm": 10.542,
+    "switch_cavity": {
+      "centre_strategy": "square-shoulder clearance optimization",
+      "centre_shift_from_circle_polylabel_mm": 1.591,
+      "lower_opening_wall_mm": 2.735,
+      "shoulder_wall_mm": 1.5,
+      "min_shoulder_wall_mm": 1.5,
+      "shoulder_size_mm": 16.4
+    },
+    "moving_top_robustness": {
+      "cap_area_retention_percent": 54.036,
+      "cap_perimeter_retention_percent": 51.554,
+      "fragile_lobe_trimmed_percent": 0.6143,
+      "neck_test_width_mm": 1.2,
+      "core_component_count": 1,
+      "secondary_core_area_percent": 0.0,
+      "min_area_retention_percent": 45.0
+    },
+    "boundary_source_fidelity": {
+      "ok": true,
+      "dataset": "Counties \u2013 National Statutory Boundaries \u2013 2019",
+      "publisher": "Tailte \u00c9ireann",
+      "licence": "Creative Commons Attribution 4.0",
+      "iou": 0.994723,
+      "accuracy_percent_iou": 99.472,
+      "hausdorff_distance_mm_at_print_scale": 0.0807,
+      "generated_to_source_area_ratio": 1.000324,
+      "size_scale_factor_excluded_from_comparison": 1.537011,
+      "min_iou": 0.99,
+      "max_hausdorff_mm": 0.1
+    },
+    "travel_cap_overlap": {
+      "released": {
+        "assembled_z": 19.0,
+        "cap_shell_overlap_mm3": 0.0
+      },
+      "mid": {
+        "assembled_z": 17.0,
+        "cap_shell_overlap_mm3": 0.0
+      },
+      "pressed": {
+        "assembled_z": 15.0,
+        "cap_shell_overlap_mm3": 0.0
+      }
+    },
+    "decisions_needed": []
+  },
+  "validation": [
+    {
+      "name": "sligo_shell",
+      "vertices": 1951,
+      "faces": 3898,
+      "watertight": true,
+      "volume_mm3": 24411.521,
+      "bounds_mm": {
+        "min": [
+          -30.946,
+          -29.629,
+          0.0
+        ],
+        "max": [
+          30.946,
+          29.629,
+          23.5
+        ],
+        "size": [
+          61.892,
+          59.258,
+          23.5
+        ]
+      }
+    },
+    {
+      "name": "sligo_top",
+      "vertices": 5075,
+      "faces": 10146,
+      "watertight": true,
+      "volume_mm3": 3658.187,
+      "bounds_mm": {
+        "min": [
+          -26.849,
+          -21.92,
+          0.0
+        ],
+        "max": [
+          26.095,
+          25.521,
+          7.0
+        ],
+        "size": [
+          52.945,
+          47.441,
+          7.0
+        ]
+      }
+    }
+  ]
+}

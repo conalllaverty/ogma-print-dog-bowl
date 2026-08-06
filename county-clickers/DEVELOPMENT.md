@@ -68,6 +68,13 @@ Optional geographic reference:
 - Moving top offset from actual pocket: 1.25 mm.
 - Required exact minimum moving clearance: 1.20 mm.
 - Small lateral wobble is intentional.
+- Switch centre maximizes material around the 16.4 mm square shoulder and may
+  shift by up to 3 mm from the circular polylabel.
+- Required switch-shoulder wall: 1.50 mm.
+- Counties may enlarge as much as needed to meet physical gates.
+- Moving-top area must retain at least 45% of the fixed shell.
+- Moving-top lobes must survive a 1.20 mm neck test; fragile secondary lobes
+  are trimmed from the top only.
 - Full top, including MX boss, must have zero shell collision at released,
   midpoint and fully pressed positions.
 - Top prints face-down.
@@ -76,10 +83,10 @@ Optional geographic reference:
 
 1. Change the production generator, not generated STL/3MF files.
 2. Run `--check-fit`.
-3. Regenerate Tyrone plus the affected extreme/narrow counties first.
+3. Regenerate Tyrone plus Derry, Louth, Sligo, Cavan, Donegal and Cork first.
 4. Inspect `dimensions_and_validation.json`.
 5. Open the 3MF in Bambu Studio and slice both plates.
-6. Print the fit coupon after changes to switch/socket dimensions.
+6. Reprint the fit coupon only after changes to switch/socket dimensions.
 7. Regenerate all 32 only after the focused checks pass.
 
 Generation deliberately fails on invalid polygons, non-watertight meshes,

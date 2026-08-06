@@ -2,6 +2,11 @@
 
 Generated and checked on 2026-07-25.
 
+This report describes the complete packaged `counties/` revision. A newer
+seven-county candidate with square-shoulder wall and moving-top robustness
+gates is under physical review in `physical-test-revision/`; it must pass
+printing before replacing all 32 packaged projects.
+
 ## Package inventory
 
 - 32 Bambu Studio `.3mf` projects

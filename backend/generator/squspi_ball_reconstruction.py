@@ -24,6 +24,7 @@ from xml.sax.saxutils import escape
 import numpy as np
 import trimesh
 from PIL import Image, ImageDraw
+from scipy.spatial import cKDTree
 from shapely.geometry import LineString, Point, Polygon, box
 
 GENERATOR_DIR = Path(__file__).resolve().parent
@@ -222,6 +223,78 @@ BASE_PEG_FULL_DIAMETER_LENGTH = 0.65
 BASE_PEG_RETENTION_DIAMETERS = (2.25, 2.30, 2.35)
 BASE_PEG_PROCESS_DIAMETERS = (2.20, 2.30, 2.40, 2.50)
 
+# Compact twin-rail integration. The first full-width saddle was rejected
+# because it visibly replaced too much of the source panel. This version fills
+# only the two source upper blind pockets and cuts two short channels inside a
+# tightly bounded connector mask. The hinge axis remains 4.50 mm inward, where
+# an Ø4.40 mm boss clears the untouched spherical shell.
+REAL_KEYED_SOURCE_POCKET_XZ = (3.920, 17.250)
+REAL_KEYED_PANEL_INWARD_OFFSET = 4.50
+REAL_KEYED_FIXED_EAR_DIAMETER = 1.85
+REAL_KEYED_RUNNING_HOLE_DIAMETER = 1.90
+TWIN_RAIL_COUPON_TONGUE_HOLE_DIAMETER = 2.05
+TWIN_RAIL_COUPON_TONGUE_ENTRY_DIAMETER = 2.40
+TWIN_RAIL_COUPON_TONGUE_CHAMFER_DEPTH = 0.50
+TWIN_RAIL_LATCH_HOOK_RADII = (0.32, 0.36, 0.40)
+TWIN_RAIL_LATCH_BEAM_WIDTH = 0.65
+TWIN_RAIL_LATCH_BEAM_HEIGHT = 0.90
+TWIN_RAIL_LATCH_BEAM_LENGTH = 4.15
+HOOK_RAIL_DIAMETER = 3.00
+HOOK_RAIL_RUNNING_CLEARANCE = 0.20
+HOOK_RAIL_HOOK_OUTER_RADIUS = 3.00
+HOOK_RAIL_HOOK_U_RANGE = (3.75, 7.40)
+HOOK_RAIL_MOUTH_WIDTH = 2.65
+HOOK_RAIL_ENTRY_WIDTH = 3.30
+HOOK_RAIL_CAP_DIAMETER = 4.10
+HOOK_RAIL_SUPPORT_INNER_U = 9.05
+HOOK_RAIL_OUTER_U = 10.55
+HOOK_RAIL_SUPPORT_AXIAL_EMBED = (
+    HOOK_RAIL_OUTER_U - HOOK_RAIL_SUPPORT_INNER_U
+)
+HOOK_RAIL_INTEGRATION_RAIL_U_RANGE = (2.39, 8.21)
+HOOK_RAIL_INTEGRATION_ROOT_U_RANGE = (2.40, 3.70)
+HOOK_RAIL_INTEGRATION_CAP_U_RANGE = (7.50, 8.20)
+# Whole-base inversion after the cropped-arm trial proved unassemblable. The
+# source assembly uses the panel's narrow lower connector at the base; the
+# broad upper connector belongs to the link. Flexible hooks therefore live on
+# all six Tough+ base arms and rigid rails replace only the lower panel pockets.
+FULL_BASE_HOOK_U_RANGE = (1.40, 3.20)
+FULL_BASE_HOOK_MOUTH_WIDTH = 2.45
+FULL_BASE_HOOK_ENTRY_WIDTH = 3.10
+FULL_BASE_HOOK_ROOT_HALF_V = 0.90
+FULL_BASE_HOOK_ROOT_W_RANGE = (-3.40, -1.60)
+FULL_BASE_PANEL_RAIL_U_RANGE = (1.10, 4.10)
+FULL_BASE_PANEL_RAIL_ROOT_U_RANGE = (3.40, 4.10)
+FULL_BASE_PANEL_RAIL_ROOT_RADIUS = 2.10
+FULL_BASE_PANEL_HOOK_CAVITY_U_RANGE = (1.20, 3.35)
+FULL_BASE_PANEL_HOOK_CAVITY_RADIUS = 3.55
+FULL_BASE_CLEARANCE_BORE_U_RANGE = (1.00, 4.25)
+FULL_BASE_CLEARANCE_OPENING_U_RANGE = (0.95, 3.40)
+FULL_BASE_CLEARANCE_ROOT_U_RANGE = (3.30, 4.25)
+FULL_BASE_ASSEMBLY_ANGLE_DEG = 30.0
+FULL_BASE_COLLISION_FREE_DEGREES = (20, 45)
+REAL_KEYED_BASE_HINGE_CENTRE = (0.0, 14.76, 4.00)
+REAL_KEYED_COLLISION_FREE_DEGREES = (-45, 75)
+REAL_KEYED_STOP_CLEARANCE = 0.015
+REAL_KEYED_UPPER_POCKET_BOTTOM = (3.655377, 3.936086, 17.250005)
+REAL_KEYED_UPPER_POCKET_MOUTH = (3.980945, 4.881605, 17.250006)
+REAL_KEYED_RAIL_CENTRE_U = 3.95
+REAL_KEYED_CHANNEL_V_RANGE = (-5.00, 0.20)
+REAL_KEYED_CHANNEL_W_RANGE = (-0.30, 2.30)
+REAL_KEYED_CHANNEL_TAIL_WIDTH = 3.30
+REAL_KEYED_CHANNEL_THROAT_WIDTH = 2.40
+REAL_KEYED_PRIMARY_KEY_V_RANGE = (-4.985, -0.185)
+REAL_KEYED_FOLLOWER_KEY_V_RANGE = (-4.835, -0.185)
+REAL_KEYED_KEY_W_RANGE = (-0.05, 2.05)
+REAL_KEYED_PRIMARY_KEY_WIDTHS = (3.00, 2.00)
+REAL_KEYED_FOLLOWER_KEY_WIDTHS = (2.80, 1.80)
+REAL_KEYED_LATCH_CENTRE = (5.42, -4.35, 0.45)
+REAL_KEYED_LATCH_TOOTH_RADIUS = 0.35
+REAL_KEYED_LATCH_NOTCH_RADIUS = 0.50
+REAL_KEYED_EAR_CENTRE_U = 3.20
+REAL_KEYED_EAR_OUTER_RADIUS = 2.18
+REAL_KEYED_BASE_BOSS_RADIUS = 2.25
+
 
 def _union(meshes: list[trimesh.Trimesh]) -> trimesh.Trimesh:
     result = trimesh.boolean.union(meshes, engine="manifold")
@@ -330,6 +403,35 @@ def _cone_between(
     mesh = trimesh.creation.cone(radius=radius, height=length, sections=48)
     transform = trimesh.geometry.align_vectors([0.0, 0.0, 1.0], vector)
     mesh.apply_transform(transform)
+    mesh.apply_translation(start_v)
+    return mesh
+
+
+def _frustum_between(
+    start_radius: float,
+    end_radius: float,
+    start: np.ndarray,
+    end: np.ndarray,
+    *,
+    sections: int = 64,
+) -> trimesh.Trimesh:
+    """Create a closed truncated cone between two arbitrary points."""
+    start_v = np.asarray(start, dtype=float)
+    end_v = np.asarray(end, dtype=float)
+    vector = end_v - start_v
+    length = float(np.linalg.norm(vector))
+    profile = np.asarray(
+        [
+            [0.0, 0.0],
+            [start_radius, 0.0],
+            [end_radius, length],
+            [0.0, length],
+        ]
+    )
+    mesh = trimesh.creation.revolve(profile, sections=sections)
+    mesh.apply_transform(
+        trimesh.geometry.align_vectors([0.0, 0.0, 1.0], vector)
+    )
     mesh.apply_translation(start_v)
     return mesh
 
@@ -1101,6 +1203,2388 @@ def build_keyed_connector_architecture_coupon(
         ("keyed_tough_clevis", insert),
         ("keyed_base_tongue", tongue),
     ]
+
+
+def build_fixed_pin_clevis_variants() -> list[tuple[str, trimesh.Trimesh]]:
+    """Tough+ inserts with one gripping ear and one Ø1.90 running-fit ear.
+
+    The original architecture coupon used Ø1.90 holes through both clevis ears.
+    That allowed a 1.75 mm filament hinge pin to migrate under vertical cycling.
+    These variants keep the tongue-side motion unchanged while fixing the pin
+    in only the left ear.
+    """
+    variants = (
+        (1.80, 1),
+        (1.75, 2),
+        (1.70, 3),
+    )
+    output: list[tuple[str, trimesh.Trimesh]] = []
+
+    for tight_diameter, dot_count in variants:
+        key_profile = Polygon(
+            [
+                (-4.70, 1.40),
+                (4.70, 1.40),
+                (3.90, 5.80),
+                (-3.90, 5.80),
+            ]
+        )
+        key = _extrude_xz(key_profile, 11.0)
+        key.apply_translation([0.0, 0.5, 0.0])
+        bridge = _box((8.40, 3.00, 4.00), (0.0, 7.00, 6.00))
+        ears = [
+            _box((2.00, 10.00, 8.00), (side * 3.20, 13.00, 8.00))
+            for side in (-1.0, 1.0)
+        ]
+        insert = _union([key, bridge, *ears])
+
+        tight_hole = trimesh.creation.cylinder(
+            radius=tight_diameter / 2,
+            segment=np.asarray(
+                [
+                    [-4.5, 13.0, 8.0],
+                    [-1.9, 13.0, 8.0],
+                ]
+            ),
+            sections=64,
+        )
+        running_hole = trimesh.creation.cylinder(
+            radius=0.95,
+            segment=np.asarray(
+                [
+                    [1.9, 13.0, 8.0],
+                    [4.5, 13.0, 8.0],
+                ]
+            ),
+            sections=64,
+        )
+        insert = _difference(insert, [tight_hole, running_hole])
+
+        # Dots sit on the top of the fixed ear, away from the tongue sweep.
+        identifiers = [
+            _cylinder(
+                0.55,
+                0.35,
+                (
+                    -3.20,
+                    15.0 + (index - (dot_count - 1) / 2) * 1.4,
+                    12.175,
+                ),
+                sections=24,
+            )
+            for index in range(dot_count)
+        ]
+        insert = _union([insert, *identifiers])
+        insert = _normalize_to_bed(insert)
+        insert.metadata["name"] = (
+            f"Tough+ fixed-pin clevis {tight_diameter:.2f} mm"
+        )
+        label = f"{tight_diameter:.2f}".replace(".", "_")
+        output.append((f"fixed_pin_clevis_{label}", insert))
+
+    return output
+
+
+def _real_keyed_panel_frame(
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Return hinge, U/V/W axes, and source-pocket local transform."""
+    lower = np.asarray(PANEL_SOCKET_CENTRES_XZ[0], dtype=float)
+    upper = np.asarray(REAL_KEYED_SOURCE_POCKET_XZ, dtype=float)
+    panel_axis = np.asarray(
+        [upper[0] - lower[0], 0.0, upper[1] - lower[1]],
+        dtype=float,
+    )
+    panel_axis /= np.linalg.norm(panel_axis)
+    pin_axis = np.asarray([0.0, 1.0, 0.0])
+    inward_normal = np.cross(pin_axis, panel_axis)
+    inward_normal /= np.linalg.norm(inward_normal)
+    source_centre = np.asarray([upper[0], 0.0, upper[1]])
+    hinge_centre = (
+        source_centre
+        + REAL_KEYED_PANEL_INWARD_OFFSET * inward_normal
+    )
+    transform = np.eye(4)
+    transform[:3, :3] = np.column_stack(
+        [pin_axis, panel_axis, inward_normal]
+    )
+    transform[:3, 3] = source_centre
+    return (
+        hinge_centre,
+        pin_axis,
+        panel_axis,
+        inward_normal,
+        transform,
+    )
+
+
+def _real_keyed_local_mesh(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+    result = mesh.copy()
+    result.apply_transform(_real_keyed_panel_frame()[4])
+    return result
+
+
+def _real_keyed_oriented_box(
+    size: tuple[float, float, float],
+    centre: tuple[float, float, float],
+) -> trimesh.Trimesh:
+    mesh = trimesh.creation.box(extents=size)
+    mesh.apply_translation(centre)
+    return _real_keyed_local_mesh(mesh)
+
+
+def _real_keyed_point(point: tuple[float, float, float]) -> np.ndarray:
+    local = np.asarray([*point, 1.0], dtype=float)
+    return (_real_keyed_panel_frame()[4] @ local)[:3]
+
+
+def _real_keyed_extrusion(
+    profile: Polygon,
+    v_range: tuple[float, float],
+) -> trimesh.Trimesh:
+    depth = v_range[1] - v_range[0]
+    mesh = _extrude_xz(profile, depth)
+    mesh.apply_translation([0.0, sum(v_range) / 2, 0.0])
+    return _real_keyed_local_mesh(mesh)
+
+
+def _real_keyed_extrude_vw(
+    profile: Polygon,
+    u_range: tuple[float, float],
+) -> trimesh.Trimesh:
+    """Extrude a local V/W profile along the pin-axis U direction."""
+    depth = u_range[1] - u_range[0]
+    mesh = trimesh.creation.extrude_polygon(profile, height=depth)
+    vertices = np.asarray(mesh.vertices).copy()
+    mesh.vertices = np.column_stack(
+        [
+            vertices[:, 2] + u_range[0],
+            vertices[:, 0],
+            vertices[:, 1],
+        ]
+    )
+    return _real_keyed_local_mesh(mesh)
+
+
+def _real_keyed_rail_profile(
+    centre_u: float,
+    *,
+    w_range: tuple[float, float],
+    tail_width: float,
+    throat_width: float,
+) -> Polygon:
+    return Polygon(
+        [
+            (centre_u - tail_width / 2, w_range[0]),
+            (centre_u + tail_width / 2, w_range[0]),
+            (centre_u + throat_width / 2, w_range[1]),
+            (centre_u - throat_width / 2, w_range[1]),
+        ]
+    )
+
+
+def build_real_keyed_filled_panel(
+    source_panel: trimesh.Trimesh,
+) -> trimesh.Trimesh:
+    """Fill the two obsolete source pockets without changing the outer shell."""
+    pocket_bottom = np.asarray(
+        REAL_KEYED_UPPER_POCKET_BOTTOM,
+        dtype=float,
+    )
+    pocket_mouth = np.asarray(
+        REAL_KEYED_UPPER_POCKET_MOUTH,
+        dtype=float,
+    )
+    pocket_axis = pocket_mouth - pocket_bottom
+    pocket_axis /= np.linalg.norm(pocket_axis)
+    plugs = []
+    for side in (-1.0, 1.0):
+        mirror = np.asarray([1.0, side, 1.0])
+        plugs.append(
+            trimesh.creation.cylinder(
+                radius=PANEL_LOWER_POCKET_MEASURED_DIAMETER / 2,
+                segment=np.asarray(
+                    [
+                        (pocket_bottom - 0.05 * pocket_axis) * mirror,
+                        pocket_mouth * mirror,
+                    ]
+                ),
+                sections=96,
+            )
+        )
+    filled_panel = _union([source_panel.copy(), *plugs])
+    filled_panel.metadata["name"] = "Source panel with upper pockets filled"
+    return filled_panel
+
+
+def build_real_keyed_panel_receiver(
+    source_panel: trimesh.Trimesh,
+) -> trimesh.Trimesh:
+    """Cut masked twin rails while preserving the source spherical shell."""
+    filled_panel = build_real_keyed_filled_panel(source_panel)
+
+    channels = [
+        _real_keyed_extrusion(
+            _real_keyed_rail_profile(
+                side * REAL_KEYED_RAIL_CENTRE_U,
+                w_range=REAL_KEYED_CHANNEL_W_RANGE,
+                tail_width=REAL_KEYED_CHANNEL_TAIL_WIDTH,
+                throat_width=REAL_KEYED_CHANNEL_THROAT_WIDTH,
+            ),
+            REAL_KEYED_CHANNEL_V_RANGE,
+        )
+        for side in (-1.0, 1.0)
+    ]
+    latch_notch = trimesh.creation.icosphere(
+        subdivisions=3,
+        radius=REAL_KEYED_LATCH_NOTCH_RADIUS,
+    )
+    latch_notch.apply_translation(
+        _real_keyed_point(REAL_KEYED_LATCH_CENTRE)
+    )
+    panel = _difference(filled_panel, [*channels, latch_notch])
+    panel.metadata["name"] = "Source panel with masked twin-rail receiver"
+    return panel
+
+
+def build_real_keyed_clevis_insert(
+    *,
+    include_rigid_latch: bool = True,
+) -> trimesh.Trimesh:
+    """Build the one-piece Tough+ twin-key clevis cartridge."""
+    hinge, pin_axis, _, _, _ = _real_keyed_panel_frame()
+    primary_key = _real_keyed_extrusion(
+        _real_keyed_rail_profile(
+            REAL_KEYED_RAIL_CENTRE_U,
+            w_range=REAL_KEYED_KEY_W_RANGE,
+            tail_width=REAL_KEYED_PRIMARY_KEY_WIDTHS[0],
+            throat_width=REAL_KEYED_PRIMARY_KEY_WIDTHS[1],
+        ),
+        REAL_KEYED_PRIMARY_KEY_V_RANGE,
+    )
+    follower_key = _real_keyed_extrusion(
+        _real_keyed_rail_profile(
+            -REAL_KEYED_RAIL_CENTRE_U,
+            w_range=REAL_KEYED_KEY_W_RANGE,
+            tail_width=REAL_KEYED_FOLLOWER_KEY_WIDTHS[0],
+            throat_width=REAL_KEYED_FOLLOWER_KEY_WIDTHS[1],
+        ),
+        REAL_KEYED_FOLLOWER_KEY_V_RANGE,
+    )
+
+    # Two narrow stalks leave the source skin between the rails untouched.
+    # They join a strengthened rear yoke which routes around, rather than
+    # through, the rotating Ø4.50 mm tongue envelope. Its extra depth extends
+    # away from the pivot so it does not consume the 0.20 mm running clearance.
+    stalks = [
+        _real_keyed_oriented_box(
+            (1.80, 1.40, 1.60),
+            (side * REAL_KEYED_RAIL_CENTRE_U, -1.80, 2.70),
+        )
+        for side in (-1.0, 1.0)
+    ]
+    rear_yoke = _real_keyed_oriented_box(
+        (8.40, 1.65, 1.25),
+        (0.00, -1.83, 2.67),
+    )
+    ears = [
+        trimesh.creation.cylinder(
+            radius=REAL_KEYED_EAR_OUTER_RADIUS,
+            segment=np.asarray(
+                [
+                    hinge
+                    + (side * REAL_KEYED_EAR_CENTRE_U - 1.00) * pin_axis,
+                    hinge
+                    + (side * REAL_KEYED_EAR_CENTRE_U + 1.00) * pin_axis,
+                ]
+            ),
+            sections=96,
+        )
+        for side in (-1.0, 1.0)
+    ]
+    latch_tooth = trimesh.creation.icosphere(
+        subdivisions=3,
+        radius=REAL_KEYED_LATCH_TOOTH_RADIUS,
+    )
+    latch_tooth.apply_translation(
+        _real_keyed_point(REAL_KEYED_LATCH_CENTRE)
+    )
+    solids = [
+        primary_key,
+        follower_key,
+        *stalks,
+        rear_yoke,
+        *ears,
+    ]
+    if include_rigid_latch:
+        solids.append(latch_tooth)
+    insert = _union(solids)
+    boss_clearance = trimesh.creation.cylinder(
+        radius=REAL_KEYED_BASE_BOSS_RADIUS + 0.20,
+        segment=np.asarray(
+            [
+                hinge - 2.19 * pin_axis,
+                hinge + 2.19 * pin_axis,
+            ]
+        ),
+        sections=96,
+    )
+
+    fixed_hole = trimesh.creation.cylinder(
+        radius=REAL_KEYED_FIXED_EAR_DIAMETER / 2,
+        segment=np.asarray(
+            [
+                hinge - 4.60 * pin_axis,
+                hinge - 1.85 * pin_axis,
+            ]
+        ),
+        sections=64,
+    )
+    running_hole = trimesh.creation.cylinder(
+        radius=REAL_KEYED_RUNNING_HOLE_DIAMETER / 2,
+        segment=np.asarray(
+            [
+                hinge + 1.85 * pin_axis,
+                hinge + 4.60 * pin_axis,
+            ]
+        ),
+        sections=64,
+    )
+    fixed_entry_chamfer = _frustum_between(
+        1.10,
+        REAL_KEYED_FIXED_EAR_DIAMETER / 2,
+        hinge - 2.15 * pin_axis,
+        hinge - 2.50 * pin_axis,
+        sections=64,
+    )
+    insert = _difference(
+        insert,
+        [
+            boss_clearance,
+            fixed_hole,
+            running_hole,
+            fixed_entry_chamfer,
+        ],
+    )
+    insert.metadata["name"] = (
+        "Tough+ twin-key clevis with 1.85 mm fixed ear"
+    )
+    return insert
+
+
+def build_monolithic_receiver_clevis(
+    source_panel: trimesh.Trimesh,
+) -> trimesh.Trimesh:
+    """Fuse the reinforced clevis and its two anchor ribs into the panel."""
+    filled_panel = build_real_keyed_filled_panel(source_panel)
+    clevis = build_real_keyed_clevis_insert(include_rigid_latch=False)
+    monolithic = _union([filled_panel, clevis])
+    monolithic.metadata["name"] = "Monolithic reinforced receiver and clevis"
+    return monolithic
+
+
+def _hook_rail_profile() -> Polygon:
+    """Return a C-hook on the original source pin axis."""
+    inner_radius = (
+        HOOK_RAIL_DIAMETER / 2 + HOOK_RAIL_RUNNING_CLEARANCE
+    )
+    outer = Point(0.0, 0.0).buffer(
+        HOOK_RAIL_HOOK_OUTER_RADIUS,
+        resolution=64,
+    )
+    inner = Point(0.0, 0.0).buffer(inner_radius, resolution=64)
+    opening = Polygon(
+        [
+            (
+                -HOOK_RAIL_MOUTH_WIDTH / 2,
+                -0.30,
+            ),
+            (
+                HOOK_RAIL_MOUTH_WIDTH / 2,
+                -0.30,
+            ),
+            (
+                HOOK_RAIL_ENTRY_WIDTH / 2,
+                HOOK_RAIL_HOOK_OUTER_RADIUS + 0.40,
+            ),
+            (
+                -HOOK_RAIL_ENTRY_WIDTH / 2,
+                HOOK_RAIL_HOOK_OUTER_RADIUS + 0.40,
+            ),
+        ]
+    )
+    profile = outer.difference(inner).difference(opening)
+    if not isinstance(profile, Polygon) or not profile.is_valid:
+        raise ValueError("Hook/rail C-hook profile is not one valid polygon")
+    return profile
+
+
+def _hook_rail_mirrored_u_range(
+    u_range: tuple[float, float],
+    side: float,
+) -> tuple[float, float]:
+    if side > 0:
+        return u_range
+    return (-u_range[1], -u_range[0])
+
+
+def _hook_rail_root_opening_profile() -> Polygon:
+    """Slightly overcut the source boss so no old pocket blocks the hook."""
+    return Polygon(
+        [
+            (-(HOOK_RAIL_MOUTH_WIDTH + 0.15) / 2, -0.45),
+            ((HOOK_RAIL_MOUTH_WIDTH + 0.15) / 2, -0.45),
+            (
+                (HOOK_RAIL_ENTRY_WIDTH + 0.15) / 2,
+                HOOK_RAIL_HOOK_OUTER_RADIUS + 0.60,
+            ),
+            (
+                -(HOOK_RAIL_ENTRY_WIDTH + 0.15) / 2,
+                HOOK_RAIL_HOOK_OUTER_RADIUS + 0.60,
+            ),
+        ]
+    )
+
+
+def build_hook_rail_panel(
+    source_panel: trimesh.Trimesh,
+) -> trimesh.Trimesh:
+    """Replace the original upper pin pockets with stronger extended hooks."""
+    hook_profile = _hook_rail_profile()
+    hooks = [
+        _real_keyed_extrude_vw(
+            hook_profile,
+            _hook_rail_mirrored_u_range(
+                HOOK_RAIL_HOOK_U_RANGE,
+                side,
+            ),
+        )
+        for side in (-1.0, 1.0)
+    ]
+    panel = _union([source_panel.copy(), *hooks])
+
+    inner_radius = (
+        HOOK_RAIL_DIAMETER / 2 + HOOK_RAIL_RUNNING_CLEARANCE
+    )
+    bore_profile = Point(0.0, 0.0).buffer(
+        inner_radius + 0.01,
+        resolution=64,
+    )
+    cap_cavity_profile = Point(0.0, 0.0).buffer(
+        HOOK_RAIL_CAP_DIAMETER / 2 + 0.10,
+        resolution=64,
+    )
+    panel = _difference(
+        panel,
+        [
+            _real_keyed_extrude_vw(
+                bore_profile,
+                _hook_rail_mirrored_u_range((3.60, 7.65), side),
+            )
+            for side in (-1.0, 1.0)
+        ],
+    )
+    panel = _difference(
+        panel,
+        [
+            _real_keyed_extrude_vw(
+                cap_cavity_profile,
+                _hook_rail_mirrored_u_range((2.85, 3.78), side),
+            )
+            for side in (-1.0, 1.0)
+        ],
+    )
+    panel = _difference(
+        panel,
+        [
+            _real_keyed_extrude_vw(
+                _hook_rail_root_opening_profile(),
+                _hook_rail_mirrored_u_range((2.80, 5.20), side),
+            )
+            for side in (-1.0, 1.0)
+        ],
+    )
+    panel.metadata["name"] = (
+        "Source panel with extended hooks on original pin axis"
+    )
+    return panel
+
+
+def build_hook_rail_base_coupon() -> trimesh.Trimesh:
+    """Build two longer source-position rail stubs with captive inner caps."""
+    rail_z = 6.00
+    rails = [
+        trimesh.creation.cylinder(
+            radius=HOOK_RAIL_DIAMETER / 2,
+            segment=np.asarray(
+                [
+                    [side * 3.25, 0.0, rail_z],
+                    [side * HOOK_RAIL_OUTER_U, 0.0, rail_z],
+                ]
+            ),
+            sections=96,
+        )
+        for side in (-1.0, 1.0)
+    ]
+    inner_caps = [
+        trimesh.creation.cylinder(
+            radius=HOOK_RAIL_CAP_DIAMETER / 2,
+            segment=np.asarray(
+                [
+                    [side * 3.00, 0.0, rail_z],
+                    [side * 3.70, 0.0, rail_z],
+                ]
+            ),
+            sections=96,
+        )
+        for side in (-1.0, 1.0)
+    ]
+    root_shoulders = [
+        _frustum_between(
+            HOOK_RAIL_DIAMETER / 2 + 0.05,
+            2.10,
+            np.asarray(
+                [side * (HOOK_RAIL_SUPPORT_INNER_U - 0.15), 0.0, rail_z]
+            ),
+            np.asarray(
+                [side * (HOOK_RAIL_SUPPORT_INNER_U + 0.50), 0.0, rail_z]
+            ),
+            sections=96,
+        )
+        for side in (-1.0, 1.0)
+    ]
+    foot = _box((24.0, 10.0, 1.60), (0.0, 0.0, 0.80))
+    side_supports = [
+        _box(
+            (1.80, 5.00, 8.10),
+            (
+                side * (HOOK_RAIL_SUPPORT_INNER_U + 0.90),
+                0.0,
+                4.05,
+            ),
+        )
+        for side in (-1.0, 1.0)
+    ]
+    base = _union(
+        [
+            foot,
+            *side_supports,
+            *rails,
+            *inner_caps,
+            *root_shoulders,
+        ]
+    )
+    base.metadata["name"] = (
+        "Matte paired source-axis rails with full column embedment"
+    )
+    return base
+
+
+def build_hook_rail_material_coupons(
+    source_panel: trimesh.Trimesh,
+) -> list[tuple[str, trimesh.Trimesh]]:
+    """Build one hook mesh and one rail mesh for a controlled material A/B."""
+    full_panel = build_hook_rail_panel(source_panel)
+    crop = _box((16.0, 18.0, 10.0), (2.0, 0.0, 15.5))
+    panel_coupon = _normalize_to_bed(_intersection([full_panel, crop]))
+    panel_coupon.metadata["name"] = "Original-axis extended hook panel"
+    rail_base = _normalize_to_bed(build_hook_rail_base_coupon())
+    validate_mesh("hook_rail_panel_coupon", panel_coupon)
+    validate_mesh("hook_rail_base_coupon", rail_base)
+    return [
+        ("hook_rail_panel_coupon", panel_coupon),
+        ("hook_rail_base_coupon", rail_base),
+    ]
+
+
+def build_hook_rail_integrated_panel(
+    source_panel: trimesh.Trimesh,
+) -> trimesh.Trimesh:
+    """Add the proven Tough+ hooks and deeper real-arm root clearance."""
+    panel = build_hook_rail_panel(source_panel)
+    cap_cavity_profile = Point(0.0, 0.0).buffer(
+        HOOK_RAIL_CAP_DIAMETER / 2 + 0.10,
+        resolution=64,
+    )
+    for side in (-1.0, 1.0):
+        panel = _difference(
+            panel,
+            [
+                _real_keyed_extrude_vw(
+                    cap_cavity_profile,
+                    _hook_rail_mirrored_u_range((2.30, 3.00), side),
+                ),
+                _real_keyed_extrude_vw(
+                    _hook_rail_root_opening_profile(),
+                    _hook_rail_mirrored_u_range((2.25, 3.00), side),
+                ),
+            ],
+        )
+    panel.metadata["name"] = (
+        "Full Tough+ source panel with original-axis extended hooks"
+    )
+    return panel
+
+
+def _hook_rail_integration_rail(
+    side: float,
+    *,
+    centre: np.ndarray,
+) -> trimesh.Trimesh:
+    axis = np.asarray([1.0, 0.0, 0.0])
+    rail = trimesh.creation.cylinder(
+        radius=HOOK_RAIL_DIAMETER / 2,
+        segment=np.asarray(
+            [
+                centre
+                + side * HOOK_RAIL_INTEGRATION_RAIL_U_RANGE[0] * axis,
+                centre
+                + side * HOOK_RAIL_INTEGRATION_RAIL_U_RANGE[1] * axis,
+            ]
+        ),
+        sections=96,
+    )
+    root = trimesh.creation.cylinder(
+        radius=HOOK_RAIL_CAP_DIAMETER / 2,
+        segment=np.asarray(
+            [
+                centre
+                + side * HOOK_RAIL_INTEGRATION_ROOT_U_RANGE[0] * axis,
+                centre
+                + side * HOOK_RAIL_INTEGRATION_ROOT_U_RANGE[1] * axis,
+            ]
+        ),
+        sections=96,
+    )
+    outer_cap = trimesh.creation.cylinder(
+        radius=HOOK_RAIL_CAP_DIAMETER / 2,
+        segment=np.asarray(
+            [
+                centre
+                + side * HOOK_RAIL_INTEGRATION_CAP_U_RANGE[0] * axis,
+                centre
+                + side * HOOK_RAIL_INTEGRATION_CAP_U_RANGE[1] * axis,
+            ]
+        ),
+        sections=96,
+    )
+    return _union([rail, root, outer_cap])
+
+
+def build_hook_rail_integrated_base(
+    selected_source_base: trimesh.Trimesh,
+) -> trimesh.Trimesh:
+    """Extend one real source-arm pin pair into the accepted Matte rails."""
+    centre = np.asarray(REAL_KEYED_BASE_HINGE_CENTRE, dtype=float)
+    rails = [
+        _hook_rail_integration_rail(side, centre=centre)
+        for side in (-1.0, 1.0)
+    ]
+    base = _union([selected_source_base.copy(), *rails])
+    base.metadata["name"] = (
+        "Source base with one original-axis paired-rail arm"
+    )
+    return base
+
+
+def build_hook_rail_full_integration_parts(
+    source_panel: trimesh.Trimesh,
+    selected_source_base: trimesh.Trimesh,
+) -> list[tuple[str, trimesh.Trimesh]]:
+    """Prepare one full panel and one cropped real arm for physical approval."""
+    panel = _normalize_to_bed(build_hook_rail_integrated_panel(source_panel))
+    base = build_hook_rail_integrated_base(selected_source_base)
+    base_crop = _intersection(
+        [
+            base,
+            _box((20.0, 14.0, 10.0), (0.0, 13.0, 5.0)),
+        ]
+    )
+    base_crop = _normalize_to_bed(base_crop)
+    panel.metadata["name"] = "Full Tough+ panel with accepted hooks"
+    base_crop.metadata["name"] = "Cropped real Matte base arm with paired rails"
+    validate_mesh("hook_rail_full_panel", panel)
+    validate_mesh("hook_rail_real_base_arm", base_crop)
+    return [
+        ("hook_rail_full_panel", panel),
+        ("hook_rail_real_base_arm", base_crop),
+    ]
+
+
+def _full_base_lower_panel_frame(
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Return the source panel's actual base-side lower hinge frame."""
+    lower_xz = np.asarray(PANEL_SOCKET_CENTRES_XZ[0], dtype=float)
+    upper_xz = np.asarray(PANEL_SOCKET_CENTRES_XZ[1], dtype=float)
+    origin = np.asarray([lower_xz[0], 0.0, lower_xz[1]])
+    upper = np.asarray([upper_xz[0], 0.0, upper_xz[1]])
+    u_axis = np.asarray([0.0, 1.0, 0.0])
+    v_axis = upper - origin
+    v_axis /= np.linalg.norm(v_axis)
+    w_axis = np.cross(u_axis, v_axis)
+    w_axis /= np.linalg.norm(w_axis)
+    transform = np.eye(4)
+    transform[:3, :3] = np.column_stack([u_axis, v_axis, w_axis])
+    transform[:3, 3] = origin
+    return origin, u_axis, v_axis, w_axis, transform
+
+
+def _full_base_arm_frame(
+    angle_deg: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Return hinge centre and U/V/W axes for one source base arm."""
+    angle = math.radians(float(angle_deg))
+    w_axis = np.asarray([math.cos(angle), math.sin(angle), 0.0])
+    u_axis = np.asarray([-math.sin(angle), math.cos(angle), 0.0])
+    v_axis = np.asarray([0.0, 0.0, 1.0])
+    centre = (
+        REAL_KEYED_BASE_HINGE_CENTRE[1] * w_axis
+        + np.asarray([0.0, 0.0, REAL_KEYED_BASE_HINGE_CENTRE[2]])
+    )
+    return centre, u_axis, v_axis, w_axis
+
+
+def _full_base_oriented_extrude_vw(
+    profile: Polygon,
+    u_range: tuple[float, float],
+    *,
+    centre: np.ndarray,
+    u_axis: np.ndarray,
+    v_axis: np.ndarray,
+    w_axis: np.ndarray,
+) -> trimesh.Trimesh:
+    """Extrude a local V/W profile along an arbitrary hinge U axis."""
+    depth = u_range[1] - u_range[0]
+    mesh = trimesh.creation.extrude_polygon(profile, height=depth)
+    vertices = np.asarray(mesh.vertices).copy()
+    local = np.column_stack(
+        [
+            vertices[:, 2] + u_range[0],
+            vertices[:, 0],
+            vertices[:, 1],
+        ]
+    )
+    mesh.vertices = (
+        centre
+        + local[:, 0, None] * u_axis
+        + local[:, 1, None] * v_axis
+        + local[:, 2, None] * w_axis
+    )
+    return mesh
+
+
+def _full_base_hook_profile() -> Polygon:
+    """Return one rooted Tough+ C-hook opening radially away from the hub."""
+    inner_radius = (
+        HOOK_RAIL_DIAMETER / 2 + HOOK_RAIL_RUNNING_CLEARANCE
+    )
+    outer = Point(0.0, 0.0).buffer(
+        HOOK_RAIL_HOOK_OUTER_RADIUS,
+        resolution=64,
+    )
+    inner = Point(0.0, 0.0).buffer(inner_radius, resolution=64)
+    opening = Polygon(
+        [
+            (-FULL_BASE_HOOK_MOUTH_WIDTH / 2, -0.30),
+            (FULL_BASE_HOOK_MOUTH_WIDTH / 2, -0.30),
+            (
+                FULL_BASE_HOOK_ENTRY_WIDTH / 2,
+                HOOK_RAIL_HOOK_OUTER_RADIUS + 0.40,
+            ),
+            (
+                -FULL_BASE_HOOK_ENTRY_WIDTH / 2,
+                HOOK_RAIL_HOOK_OUTER_RADIUS + 0.40,
+            ),
+        ]
+    )
+    ring = outer.difference(inner).difference(opening)
+    rooted = ring.union(
+        box(
+            -FULL_BASE_HOOK_ROOT_HALF_V,
+            FULL_BASE_HOOK_ROOT_W_RANGE[0],
+            FULL_BASE_HOOK_ROOT_HALF_V,
+            FULL_BASE_HOOK_ROOT_W_RANGE[1],
+        )
+    )
+    if not isinstance(rooted, Polygon) or not rooted.is_valid:
+        raise ValueError("Full-base C-hook profile is not one valid polygon")
+    return rooted
+
+
+def _full_base_source_opening_profile() -> Polygon:
+    """Overcut only the source arm behind each authored hook opening."""
+    throat_half_width = (
+        HOOK_RAIL_DIAMETER / 2 + HOOK_RAIL_RUNNING_CLEARANCE
+    )
+    entry_half_width = throat_half_width + 0.05
+    return Polygon(
+        [
+            (-throat_half_width, -1.55),
+            (throat_half_width, -1.55),
+            (
+                entry_half_width,
+                HOOK_RAIL_HOOK_OUTER_RADIUS + 0.60,
+            ),
+            (
+                -entry_half_width,
+                HOOK_RAIL_HOOK_OUTER_RADIUS + 0.60,
+            ),
+        ]
+    )
+
+
+def _full_base_hook_geometry(
+    angle_deg: float,
+) -> tuple[list[trimesh.Trimesh], list[trimesh.Trimesh]]:
+    """Build the two hooks and source-clearance cutters for one base arm."""
+    centre, u_axis, v_axis, w_axis = _full_base_arm_frame(angle_deg)
+    hook_profile = _full_base_hook_profile()
+    inner_radius = (
+        HOOK_RAIL_DIAMETER / 2 + HOOK_RAIL_RUNNING_CLEARANCE
+    )
+    bore_profile = Point(0.0, 0.0).buffer(
+        inner_radius + 0.01,
+        resolution=64,
+    )
+    root_cavity_profile = Point(0.0, 0.0).buffer(
+        FULL_BASE_PANEL_RAIL_ROOT_RADIUS + 0.10,
+        resolution=64,
+    )
+    hooks = []
+    cutters = []
+    for side in (-1.0, 1.0):
+        def oriented(
+            profile: Polygon,
+            u_range: tuple[float, float],
+        ) -> trimesh.Trimesh:
+            return _full_base_oriented_extrude_vw(
+                profile,
+                _hook_rail_mirrored_u_range(u_range, side),
+                centre=centre,
+                u_axis=u_axis,
+                v_axis=v_axis,
+                w_axis=w_axis,
+            )
+
+        hooks.append(oriented(hook_profile, FULL_BASE_HOOK_U_RANGE))
+        cutters.extend(
+            [
+                oriented(
+                    bore_profile,
+                    FULL_BASE_CLEARANCE_BORE_U_RANGE,
+                ),
+                oriented(
+                    _full_base_source_opening_profile(),
+                    FULL_BASE_CLEARANCE_OPENING_U_RANGE,
+                ),
+                oriented(
+                    root_cavity_profile,
+                    FULL_BASE_CLEARANCE_ROOT_U_RANGE,
+                ),
+            ]
+        )
+    return hooks, cutters
+
+
+def build_full_base_with_hooks(
+    selected_source_base: trimesh.Trimesh,
+) -> trimesh.Trimesh:
+    """Replace all six source peg pairs with outward-accessible Tough+ hooks."""
+    hooks = []
+    cutters = []
+    for angle_deg in BASE_ARM_ANGLES_DEG:
+        arm_hooks, arm_cutters = _full_base_hook_geometry(angle_deg)
+        hooks.extend(arm_hooks)
+        cutters.extend(arm_cutters)
+    cleared_source = _difference(selected_source_base.copy(), cutters)
+    base = _union([cleared_source, *hooks])
+    base.metadata["name"] = (
+        "Full source base with twelve lower-axis Tough+ hooks"
+    )
+    return base
+
+
+def build_lower_panel_with_rails(
+    source_panel: trimesh.Trimesh,
+) -> trimesh.Trimesh:
+    """Replace only the true base-side lower pockets with rigid Matte rails."""
+    origin, u_axis, v_axis, w_axis, transform = (
+        _full_base_lower_panel_frame()
+    )
+    cavity_profile = Point(0.0, 0.0).buffer(
+        FULL_BASE_PANEL_HOOK_CAVITY_RADIUS,
+        resolution=64,
+    )
+    cavity_cutters = [
+        _full_base_oriented_extrude_vw(
+            cavity_profile,
+            _hook_rail_mirrored_u_range(
+                FULL_BASE_PANEL_HOOK_CAVITY_U_RANGE,
+                side,
+            ),
+            centre=origin,
+            u_axis=u_axis,
+            v_axis=v_axis,
+            w_axis=w_axis,
+        )
+        for side in (-1.0, 1.0)
+    ]
+    rails = []
+    roots = []
+    for side in (-1.0, 1.0):
+        rail_u = _hook_rail_mirrored_u_range(
+            FULL_BASE_PANEL_RAIL_U_RANGE,
+            side,
+        )
+        rail = trimesh.creation.cylinder(
+            radius=HOOK_RAIL_DIAMETER / 2,
+            segment=np.asarray(
+                [[rail_u[0], 0.0, 0.0], [rail_u[1], 0.0, 0.0]]
+            ),
+            sections=96,
+        )
+        rail.apply_transform(transform)
+        rails.append(rail)
+
+        root_u = _hook_rail_mirrored_u_range(
+            FULL_BASE_PANEL_RAIL_ROOT_U_RANGE,
+            side,
+        )
+        root = trimesh.creation.cylinder(
+            radius=FULL_BASE_PANEL_RAIL_ROOT_RADIUS,
+            segment=np.asarray(
+                [[root_u[0], 0.0, 0.0], [root_u[1], 0.0, 0.0]]
+            ),
+            sections=96,
+        )
+        root.apply_transform(transform)
+        roots.append(root)
+
+    panel = _union(
+        [
+            _difference(source_panel.copy(), cavity_cutters),
+            *rails,
+            *roots,
+        ]
+    )
+    panel.metadata["name"] = (
+        "Source panel with rigid rails at the true lower base connector"
+    )
+    return panel
+
+
+def build_full_base_hook_test_parts(
+    source_panel: trimesh.Trimesh,
+    selected_source_base: trimesh.Trimesh,
+) -> list[tuple[str, trimesh.Trimesh]]:
+    """Prepare one complete base and one reusable panel for all-arm testing."""
+    base = _normalize_to_bed(
+        build_full_base_with_hooks(selected_source_base)
+    )
+    panel = _normalize_to_bed(build_lower_panel_with_rails(source_panel))
+    base.metadata["name"] = "Complete Tough+ base with all twelve hooks"
+    panel.metadata["name"] = "Matte panel with lower rigid rails"
+    validate_mesh("full_base_tough_hooks", base)
+    validate_mesh("lower_panel_matte_rails", panel)
+    return [
+        ("full_base_tough_hooks", base),
+        ("lower_panel_matte_rails", panel),
+    ]
+
+
+def build_real_keyed_source_base(
+    selected_source_base: trimesh.Trimesh,
+) -> trimesh.Trimesh:
+    """Replace one source peg pair with an Ø4.40 mm pinned tongue."""
+    tip_cutter = _box(
+        (14.00, 11.00, 10.00),
+        (0.00, 15.50, 4.00),
+    )
+    trimmed_base = _difference(
+        selected_source_base.copy(),
+        [tip_cutter],
+    )
+    hinge = np.asarray(REAL_KEYED_BASE_HINGE_CENTRE, dtype=float)
+    boss = trimesh.creation.cylinder(
+        radius=REAL_KEYED_BASE_BOSS_RADIUS,
+        segment=np.asarray(
+            [
+                hinge + np.asarray([-2.00, 0.00, 0.00]),
+                hinge + np.asarray([2.00, 0.00, 0.00]),
+            ]
+        ),
+        sections=96,
+    )
+    handle = _box(
+        (4.00, 6.80, 4.00),
+        (0.00, 11.30, 4.00),
+    )
+    tongue = _union([trimmed_base, boss, handle])
+    through_hole = trimesh.creation.cylinder(
+        radius=REAL_KEYED_RUNNING_HOLE_DIAMETER / 2,
+        segment=np.asarray(
+            [
+                hinge + np.asarray([-3.00, 0.00, 0.00]),
+                hinge + np.asarray([3.00, 0.00, 0.00]),
+            ]
+        ),
+        sections=64,
+    )
+    base = _difference(tongue, [through_hole])
+    base.metadata["name"] = "Source base with one keyed pin tongue"
+    return base
+
+
+def build_twin_rail_tongue_surrogate() -> trimesh.Trimesh:
+    """Build the coupon's Ø4.50 / Ø2.05 running-fit tongue."""
+    hinge = np.zeros(3)
+    pin_axis = np.asarray([1.0, 0.0, 0.0])
+    boss = trimesh.creation.cylinder(
+        radius=REAL_KEYED_BASE_BOSS_RADIUS,
+        segment=np.asarray(
+            [
+                hinge - 2.00 * pin_axis,
+                hinge + 2.00 * pin_axis,
+            ]
+        ),
+        sections=96,
+    )
+    handle = _box((4.00, 7.00, 3.50), (0.0, 4.00, 0.0))
+    tongue = _union([boss, handle])
+    hole = trimesh.creation.cylinder(
+        radius=TWIN_RAIL_COUPON_TONGUE_HOLE_DIAMETER / 2,
+        segment=np.asarray(
+            [
+                hinge - 3.00 * pin_axis,
+                hinge + 3.00 * pin_axis,
+            ]
+        ),
+        sections=64,
+    )
+    entry_radius = TWIN_RAIL_COUPON_TONGUE_ENTRY_DIAMETER / 2
+    hole_radius = TWIN_RAIL_COUPON_TONGUE_HOLE_DIAMETER / 2
+    chamfer_depth = TWIN_RAIL_COUPON_TONGUE_CHAMFER_DEPTH
+    entry_chamfers = [
+        _frustum_between(
+            entry_radius,
+            hole_radius,
+            hinge - 2.10 * pin_axis,
+            hinge - (2.10 - chamfer_depth) * pin_axis,
+            sections=64,
+        ),
+        _frustum_between(
+            entry_radius,
+            hole_radius,
+            hinge + 2.10 * pin_axis,
+            hinge + (2.10 - chamfer_depth) * pin_axis,
+            sections=64,
+        ),
+    ]
+    tongue = _difference(tongue, [hole, *entry_chamfers])
+    tongue.metadata["name"] = "Matte 4.50 mm tongue with 2.05 mm running hole"
+    return tongue
+
+
+def _orient_twin_rail_cartridge_for_print(
+    cartridge: trimesh.Trimesh,
+) -> trimesh.Trimesh:
+    """Place rail tails on the bed with local W as print Z."""
+    result = cartridge.copy()
+    result.apply_transform(np.linalg.inv(_real_keyed_panel_frame()[4]))
+    print_rotation = np.eye(4)
+    print_rotation[:3, :3] = np.asarray(
+        [
+            [0.0, 1.0, 0.0],
+            [-1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0],
+        ]
+    )
+    result.apply_transform(print_rotation)
+    return _normalize_to_bed(result)
+
+
+def _build_twin_rail_compliant_latch_cartridge(
+    hook_radius: float,
+    dot_count: int,
+) -> trimesh.Trimesh:
+    """Replace the rigid rail bump with a relieved Tough+ cantilever."""
+    cartridge = build_real_keyed_clevis_insert(include_rigid_latch=False)
+
+    # Remove the complete outer strip of the primary key. The resulting
+    # 0.40 mm inner slot isolates the beam from the rail body. The beam starts
+    # at rail-floor height so it grows from the bed instead of over support.
+    relief = _real_keyed_oriented_box(
+        (1.60, 4.40, 2.30),
+        (4.90, -2.90, 1.00),
+    )
+    cartridge = _difference(cartridge, [relief])
+
+    beam = _real_keyed_oriented_box(
+        (
+            TWIN_RAIL_LATCH_BEAM_WIDTH,
+            TWIN_RAIL_LATCH_BEAM_LENGTH,
+            TWIN_RAIL_LATCH_BEAM_HEIGHT,
+        ),
+        (4.88, -2.55, 0.40),
+    )
+    hook = trimesh.creation.icosphere(
+        subdivisions=3,
+        radius=hook_radius,
+    )
+    hook.apply_translation(_real_keyed_point(REAL_KEYED_LATCH_CENTRE))
+
+    identifiers = []
+    for index in range(dot_count):
+        dot = trimesh.creation.cylinder(
+            radius=0.22,
+            height=0.30,
+            sections=24,
+        )
+        dot.apply_translation(
+            [
+                -REAL_KEYED_EAR_CENTRE_U,
+                (index - (dot_count - 1) / 2) * 0.48,
+                REAL_KEYED_PANEL_INWARD_OFFSET
+                + REAL_KEYED_EAR_OUTER_RADIUS
+                + 0.02,
+            ]
+        )
+        identifiers.append(_real_keyed_local_mesh(dot))
+
+    cartridge = _union([cartridge, beam, hook, *identifiers])
+    # Manifold can emit near-zero slivers where the spherical hook meets the
+    # beam. Keep the single functional solid and discard sub-micron debris.
+    components = _positive_volume_components(cartridge)
+    if not components:
+        raise ValueError("Compliant latch cartridge produced no solid")
+    cartridge = max(components, key=lambda item: abs(float(item.volume)))
+    cartridge.process(validate=True)
+    cartridge.fix_normals()
+    cartridge.metadata["name"] = (
+        f"Tough+ compliant latch R{hook_radius:.2f} - {dot_count} dots"
+    )
+    return cartridge
+
+
+def build_twin_rail_compliant_latch_variants(
+    source_panel: trimesh.Trimesh,
+) -> list[tuple[str, trimesh.Trimesh]]:
+    """Build three replacement cartridges for the corrected deep notch."""
+    receiver = build_real_keyed_panel_receiver(source_panel)
+    _, _, panel_axis, _, _ = _real_keyed_panel_frame()
+    output = []
+    for dot_count, hook_radius in enumerate(
+        TWIN_RAIL_LATCH_HOOK_RADII,
+        start=1,
+    ):
+        cartridge = _build_twin_rail_compliant_latch_cartridge(
+            hook_radius,
+            dot_count,
+        )
+        authored_overlap = _intersection_volume(receiver, cartridge)
+        if authored_overlap > 1e-4:
+            raise ValueError(
+                f"Compliant latch R{hook_radius:.2f} overlaps receiver "
+                f"by {authored_overlap:.6f} mm3"
+            )
+        hook = trimesh.creation.icosphere(
+            subdivisions=3,
+            radius=hook_radius,
+        )
+        hook.apply_translation(_real_keyed_point(REAL_KEYED_LATCH_CENTRE))
+        withdrawal_probe = hook.copy()
+        withdrawal_probe.apply_translation(0.25 * panel_axis)
+        engagement = _intersection_volume(receiver, withdrawal_probe)
+        if engagement < 0.003:
+            raise ValueError(
+                f"Compliant latch R{hook_radius:.2f} has no withdrawal engagement"
+            )
+
+        printed = _orient_twin_rail_cartridge_for_print(cartridge)
+        label = f"{hook_radius:.2f}".replace(".", "_")
+        printed.metadata["name"] = (
+            f"Tough+ compliant latch R{hook_radius:.2f} - {dot_count} dots"
+        )
+        validate_mesh(f"twin_rail_latch_{label}", printed)
+        output.append((f"twin_rail_latch_{label}", printed))
+    return output
+
+
+def build_twin_rail_latch_matrix(
+    source_panel: trimesh.Trimesh,
+) -> list[tuple[str, trimesh.Trimesh]]:
+    """Build the corrected receiver plus three compliant cartridges."""
+    full_receiver = build_real_keyed_panel_receiver(source_panel)
+    crop = _box((16.0, 18.0, 8.0), (2.0, 0.0, 16.0))
+    receiver = _normalize_to_bed(_intersection([full_receiver, crop]))
+    receiver.metadata["name"] = "Matte corrected deep-notch receiver"
+    validate_mesh("twin_rail_latch_matrix_receiver", receiver)
+    return [
+        ("twin_rail_latch_matrix_receiver", receiver),
+        *build_twin_rail_compliant_latch_variants(source_panel),
+    ]
+
+
+def build_monolithic_receiver_material_coupon(
+    source_panel: trimesh.Trimesh,
+) -> list[tuple[str, trimesh.Trimesh]]:
+    """Crop one exact monolithic mesh for the Matte/Tough+ material A/B."""
+    full_receiver = build_monolithic_receiver_clevis(source_panel)
+    crop = _box((16.0, 18.0, 8.0), (2.0, 0.0, 16.0))
+    coupon = _normalize_to_bed(_intersection([full_receiver, crop]))
+    coupon.metadata["name"] = "Monolithic receiver and clevis material coupon"
+    validate_mesh("monolithic_receiver_clevis_coupon", coupon)
+    return [("monolithic_receiver_clevis_coupon", coupon)]
+
+
+def build_twin_rail_curvature_coupon(
+    source_panel: trimesh.Trimesh,
+) -> list[tuple[str, trimesh.Trimesh]]:
+    """Build the actual-curvature rail/latch coupon and tongue surrogate."""
+    full_panel = build_real_keyed_panel_receiver(source_panel)
+
+    # Preserve the source part's Z-layer orientation while cropping away the
+    # lower two-thirds. Do not add a bed foot: the first foot overlapped the
+    # rail cavities (~4 mm³ each) and blocked cartridge insertion.
+    crop = _box((16.0, 18.0, 8.0), (2.0, 0.0, 16.0))
+    panel_coupon = _normalize_to_bed(_intersection([full_panel, crop]))
+    panel_coupon.metadata["name"] = (
+        "Matte actual-curvature twin-rail receiver coupon"
+    )
+
+    # Print the cartridge with local W vertical. Both rail tails then start on
+    # the bed and narrow upward, while the proven fixed/running pin holes remain
+    # horizontal just as they were in the successful clevis matrix.
+    cartridge = _orient_twin_rail_cartridge_for_print(
+        _build_twin_rail_compliant_latch_cartridge(0.36, 2)
+    )
+    cartridge.metadata["name"] = (
+        "Tough+ compliant twin-rail latch with 1.85 mm fixed ear"
+    )
+
+    # The surrogate reproduces the production hinge interface, but prints on
+    # one pin-axis face so this coupon remains focused on the receiver/latch.
+    tongue = build_twin_rail_tongue_surrogate()
+    tongue_rotation = np.eye(4)
+    tongue_rotation[:3, :3] = np.asarray(
+        [
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [1.0, 0.0, 0.0],
+        ]
+    )
+    tongue.apply_transform(tongue_rotation)
+    tongue = _normalize_to_bed(tongue)
+
+    for name, mesh in (
+        ("twin_rail_curvature_panel", panel_coupon),
+        ("twin_rail_curvature_cartridge", cartridge),
+        ("twin_rail_curvature_tongue", tongue),
+    ):
+        validate_mesh(name, mesh)
+    return [
+        ("twin_rail_curvature_panel", panel_coupon),
+        ("twin_rail_curvature_cartridge", cartridge),
+        ("twin_rail_curvature_tongue", tongue),
+    ]
+
+
+def _real_keyed_panel_to_base_transform() -> np.ndarray:
+    hinge, _, _, _, panel_frame = _real_keyed_panel_frame()
+    # The test pose hangs the panel below the selected +Y base arm. Rotating
+    # both panel parts around the resulting +X pin axis exercises the joint.
+    target_frame = np.column_stack(
+        [
+            np.asarray([1.0, 0.0, 0.0]),
+            np.asarray([0.0, 0.0, 1.0]),
+            np.asarray([0.0, -1.0, 0.0]),
+        ]
+    )
+    rotation = target_frame @ panel_frame[:3, :3].T
+    transform = np.eye(4)
+    transform[:3, :3] = rotation
+    transform[:3, 3] = (
+        np.asarray(REAL_KEYED_BASE_HINGE_CENTRE)
+        - rotation @ hinge
+    )
+    return transform
+
+
+def _intersection_volume(
+    first: trimesh.Trimesh,
+    second: trimesh.Trimesh,
+) -> float:
+    result = trimesh.boolean.intersection(
+        [first, second],
+        engine="manifold",
+    )
+    if result is None or result.is_empty:
+        return 0.0
+    return abs(float(result.volume))
+
+
+def validate_monolithic_receiver_clevis(
+    source_panel: trimesh.Trimesh,
+    monolithic: trimesh.Trimesh,
+    base: trimesh.Trimesh,
+) -> dict:
+    """Validate fused root engagement and the complete pivot sweep."""
+    mesh_validation = validate_mesh("monolithic_receiver_clevis", monolithic)
+    if len(monolithic.split()) != 1:
+        raise ValueError("Monolithic receiver/clevis is not one connected solid")
+
+    filled_panel = build_real_keyed_filled_panel(source_panel)
+    clevis = build_real_keyed_clevis_insert(include_rigid_latch=False)
+    anchor_overlap = _intersection_volume(filled_panel, clevis)
+    if anchor_overlap < 20.0:
+        raise ValueError(
+            f"Monolithic clevis anchors overlap only {anchor_overlap:.4f} mm3"
+        )
+
+    source_removed = trimesh.boolean.difference(
+        [source_panel, monolithic],
+        engine="manifold",
+    )
+    removed_volume = (
+        0.0
+        if source_removed is None or source_removed.is_empty
+        else abs(float(source_removed.volume))
+    )
+    if removed_volume > 1e-3:
+        raise ValueError(
+            f"Monolithic receiver removes {removed_volume:.6f} mm3 of source"
+        )
+
+    moved = monolithic.copy()
+    moved.apply_transform(_real_keyed_panel_to_base_transform())
+    hinge = np.asarray(REAL_KEYED_BASE_HINGE_CENTRE)
+    sweep = []
+    for angle in range(
+        REAL_KEYED_COLLISION_FREE_DEGREES[0],
+        REAL_KEYED_COLLISION_FREE_DEGREES[1] + 1,
+    ):
+        pose = moved.copy()
+        pose.apply_transform(
+            trimesh.transformations.rotation_matrix(
+                math.radians(float(angle)),
+                [1.0, 0.0, 0.0],
+                hinge,
+            )
+        )
+        sweep.append(
+            {
+                "angle_degrees": angle,
+                "base_overlap_mm3": round(
+                    _intersection_volume(pose, base),
+                    6,
+                ),
+            }
+        )
+    maximum_overlap = max(item["base_overlap_mm3"] for item in sweep)
+    if maximum_overlap > 1e-4:
+        raise ValueError(
+            f"Monolithic receiver pivot collision is {maximum_overlap:.6f} mm3"
+        )
+
+    return {
+        "architecture": "single-material monolithic receiver and clevis",
+        "mesh": mesh_validation,
+        "source_material_removed_mm3": round(removed_volume, 6),
+        "material_added_mm3": round(
+            abs(float(monolithic.volume)) - abs(float(source_panel.volume)),
+            6,
+        ),
+        "embedded_anchor_overlap_mm3": round(anchor_overlap, 6),
+        "connected_components": 1,
+        "fixed_ear_diameter_mm": REAL_KEYED_FIXED_EAR_DIAMETER,
+        "running_ear_diameter_mm": REAL_KEYED_RUNNING_HOLE_DIAMETER,
+        "collision_free_range_degrees": list(
+            REAL_KEYED_COLLISION_FREE_DEGREES
+        ),
+        "maximum_pivot_overlap_mm3": round(maximum_overlap, 6),
+        "sweep": sweep,
+    }
+
+
+def validate_hook_rail_architecture(
+    source_panel: trimesh.Trimesh,
+    hook_panel: trimesh.Trimesh,
+    rail_base: trimesh.Trimesh,
+) -> dict:
+    """Validate source-axis snap entry, capture and coupon pivot clearance."""
+    panel_validation = validate_mesh("hook_rail_panel", hook_panel)
+    base_validation = validate_mesh("hook_rail_base", rail_base)
+    if len(hook_panel.split()) != 1 or len(rail_base.split()) != 1:
+        raise ValueError("Hook/rail coupon contains disconnected solids")
+    if HOOK_RAIL_SUPPORT_AXIAL_EMBED < 1.20:
+        raise ValueError("Rail-to-column embedment is below 1.20 mm")
+
+    source_removed = trimesh.boolean.difference(
+        [source_panel, hook_panel],
+        engine="manifold",
+    )
+    removed_volume = (
+        0.0
+        if source_removed is None or source_removed.is_empty
+        else abs(float(source_removed.volume))
+    )
+    source_added = trimesh.boolean.difference(
+        [hook_panel, source_panel],
+        engine="manifold",
+    )
+    added_volume = (
+        0.0
+        if source_added is None or source_added.is_empty
+        else abs(float(source_added.volume))
+    )
+    removed_percent = 100.0 * removed_volume / abs(float(source_panel.volume))
+    if removed_percent > 4.0:
+        raise ValueError(
+            f"Hook panel removes {removed_percent:.3f}% of source material"
+        )
+
+    _, _, _, _, frame = _real_keyed_panel_frame()
+    inverse_frame = np.linalg.inv(frame)
+    changed_vertices = []
+    for changed in (source_removed, source_added):
+        if changed is None or changed.is_empty:
+            continue
+        for component in changed.split(only_watertight=False):
+            if abs(float(component.volume)) < 1e-4:
+                continue
+            changed_vertices.append(
+                trimesh.transform_points(
+                    component.vertices,
+                    inverse_frame,
+                )
+            )
+    if changed_vertices:
+        changed_local = np.vstack(changed_vertices)
+        inside_mask = (
+            (np.abs(changed_local[:, 0]) <= 7.80)
+            & (changed_local[:, 1] >= -3.40)
+            & (changed_local[:, 1] <= 3.50)
+            & (changed_local[:, 2] >= -3.20)
+            & (changed_local[:, 2] <= 3.70)
+        )
+        if not bool(np.all(inside_mask)):
+            outside_count = int(np.count_nonzero(~inside_mask))
+            raise ValueError(
+                f"{outside_count} hook changes fall outside source-pin mask"
+            )
+
+    panel_crop = _intersection(
+        [
+            hook_panel,
+            _box((16.0, 18.0, 10.0), (2.0, 0.0, 15.5)),
+        ]
+    )
+    coupon_pose = panel_crop.copy()
+    coupon_pose.apply_transform(inverse_frame)
+    assembly_transform = np.eye(4)
+    assembly_transform[:3, :3] = np.asarray(
+        [
+            [1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [0.0, -1.0, 0.0],
+        ]
+    )
+    assembly_transform[:3, 3] = [0.0, 0.0, 6.0]
+    coupon_pose.apply_transform(assembly_transform)
+
+    seated_overlap = _intersection_volume(coupon_pose, rail_base)
+    if seated_overlap > 1e-3:
+        raise ValueError(
+            f"Hook and rail overlap {seated_overlap:.6f} mm3 when seated"
+        )
+
+    outward_probe = coupon_pose.copy()
+    outward_probe.apply_translation([0.0, 0.0, 0.40])
+    outward_engagement = _intersection_volume(outward_probe, rail_base)
+    if outward_engagement < 2.0:
+        raise ValueError("C-hooks do not positively oppose outward withdrawal")
+
+    closed_side_probe = coupon_pose.copy()
+    closed_side_probe.apply_translation([0.0, 0.0, -0.40])
+    closed_side_engagement = _intersection_volume(
+        closed_side_probe,
+        rail_base,
+    )
+    if closed_side_engagement < 2.0:
+        raise ValueError("C-hooks do not retain against the closed side")
+
+    snap_path = []
+    for distance in np.arange(0.0, 4.01, 0.10):
+        probe = coupon_pose.copy()
+        probe.apply_translation([0.0, -float(distance), 0.0])
+        snap_path.append(
+            {
+                "translation_mm": round(float(distance), 2),
+                "interference_mm3": round(
+                    _intersection_volume(probe, rail_base),
+                    6,
+                ),
+            }
+        )
+    peak_snap_interference = max(
+        item["interference_mm3"] for item in snap_path
+    )
+    if not 0.10 <= peak_snap_interference <= 1.50:
+        raise ValueError(
+            f"Hook snap-path peak is {peak_snap_interference:.6f} mm3"
+        )
+
+    axial_engagement = {}
+    for label, distance in (("negative", -0.30), ("positive", 0.30)):
+        probe = coupon_pose.copy()
+        probe.apply_translation([distance, 0.0, 0.0])
+        axial_engagement[label] = _intersection_volume(probe, rail_base)
+        if axial_engagement[label] < 1.0:
+            raise ValueError(f"Inner rail caps do not retain axially: {label}")
+
+    coupon_hinge = np.asarray([0.0, 0.0, 6.0])
+    pivot_sweep = []
+    for angle in range(
+        REAL_KEYED_COLLISION_FREE_DEGREES[0],
+        REAL_KEYED_COLLISION_FREE_DEGREES[1] + 1,
+        5,
+    ):
+        pose = coupon_pose.copy()
+        pose.apply_transform(
+            trimesh.transformations.rotation_matrix(
+                math.radians(float(angle)),
+                [1.0, 0.0, 0.0],
+                coupon_hinge,
+            )
+        )
+        pivot_sweep.append(
+            {
+                "angle_degrees": angle,
+                "base_overlap_mm3": round(
+                    _intersection_volume(pose, rail_base),
+                    6,
+                ),
+            }
+        )
+    maximum_pivot_overlap = max(
+        item["base_overlap_mm3"] for item in pivot_sweep
+    )
+    if maximum_pivot_overlap > 1e-3:
+        raise ValueError(
+            f"Hook/rail coupon pivot overlap is "
+            f"{maximum_pivot_overlap:.6f} mm3"
+        )
+
+    return {
+        "architecture": (
+            "extended C-hooks at original source pin pockets with paired rails"
+        ),
+        "panel_mesh": panel_validation,
+        "rail_base_mesh": base_validation,
+        "source_material_removed_mm3": round(removed_volume, 6),
+        "source_material_removed_percent": round(removed_percent, 4),
+        "source_material_added_mm3": round(added_volume, 6),
+        "rail_diameter_mm": HOOK_RAIL_DIAMETER,
+        "rail_support_axial_embed_mm": round(
+            HOOK_RAIL_SUPPORT_AXIAL_EMBED,
+            4,
+        ),
+        "rail_support_top_cover_mm": 0.60,
+        "rail_root_shoulder_outer_radius_mm": 2.10,
+        "hook_inner_diameter_mm": round(
+            2
+            * (
+                HOOK_RAIL_DIAMETER / 2
+                + HOOK_RAIL_RUNNING_CLEARANCE
+            ),
+            4,
+        ),
+        "hook_wall_mm": round(
+            HOOK_RAIL_HOOK_OUTER_RADIUS
+            - HOOK_RAIL_DIAMETER / 2
+            - HOOK_RAIL_RUNNING_CLEARANCE,
+            4,
+        ),
+        "radial_running_clearance_mm": HOOK_RAIL_RUNNING_CLEARANCE,
+        "hook_axial_width_mm": round(
+            HOOK_RAIL_HOOK_U_RANGE[1] - HOOK_RAIL_HOOK_U_RANGE[0],
+            4,
+        ),
+        "mouth_width_mm": HOOK_RAIL_MOUTH_WIDTH,
+        "mouth_undercut_per_side_mm": round(
+            (HOOK_RAIL_DIAMETER - HOOK_RAIL_MOUTH_WIDTH) / 2,
+            4,
+        ),
+        "seated_overlap_mm3": round(seated_overlap, 6),
+        "outward_probe_engagement_mm3": round(outward_engagement, 6),
+        "closed_side_probe_engagement_mm3": round(
+            closed_side_engagement,
+            6,
+        ),
+        "axial_cap_engagement_mm3": {
+            label: round(value, 6)
+            for label, value in axial_engagement.items()
+        },
+        "peak_snap_path_interference_mm3": round(
+            peak_snap_interference,
+            6,
+        ),
+        "maximum_pivot_overlap_mm3": round(
+            maximum_pivot_overlap,
+            6,
+        ),
+        "snap_path": snap_path,
+        "pivot_sweep": pivot_sweep,
+    }
+
+
+def validate_hook_rail_full_integration(
+    source_panel: trimesh.Trimesh,
+    selected_source_base: trimesh.Trimesh,
+    integrated_panel: trimesh.Trimesh,
+    integrated_base: trimesh.Trimesh,
+) -> dict:
+    """Validate the full Tough+ panel and real Matte base-arm rail roots."""
+    panel_validation = validate_mesh(
+        "hook_rail_integrated_panel",
+        integrated_panel,
+    )
+    base_validation = validate_mesh(
+        "hook_rail_integrated_base",
+        integrated_base,
+    )
+    if len(integrated_panel.split()) != 1 or len(integrated_base.split()) != 1:
+        raise ValueError("Integrated hook/rail parts are disconnected")
+
+    source_removed = trimesh.boolean.difference(
+        [source_panel, integrated_panel],
+        engine="manifold",
+    )
+    source_added = trimesh.boolean.difference(
+        [integrated_panel, source_panel],
+        engine="manifold",
+    )
+    removed_volume = (
+        0.0
+        if source_removed is None or source_removed.is_empty
+        else abs(float(source_removed.volume))
+    )
+    added_volume = (
+        0.0
+        if source_added is None or source_added.is_empty
+        else abs(float(source_added.volume))
+    )
+    removed_percent = 100.0 * removed_volume / abs(float(source_panel.volume))
+    if removed_percent > 5.0:
+        raise ValueError(
+            f"Integrated hook panel removes {removed_percent:.3f}% of source"
+        )
+
+    centre = np.asarray(REAL_KEYED_BASE_HINGE_CENTRE, dtype=float)
+    root_overlaps = {}
+    for side, label in ((-1.0, "negative"), (1.0, "positive")):
+        rail = _hook_rail_integration_rail(side, centre=centre)
+        overlap = _intersection_volume(rail, selected_source_base)
+        root_overlaps[label] = overlap
+        if overlap < 4.0:
+            raise ValueError(
+                f"{label} production rail root overlaps only {overlap:.4f} mm3"
+            )
+
+    panel_crop = _intersection(
+        [
+            integrated_panel,
+            _box((16.0, 18.0, 10.0), (2.0, 0.0, 15.5)),
+        ]
+    )
+    _, _, _, _, frame = _real_keyed_panel_frame()
+    panel_pose = panel_crop.copy()
+    panel_pose.apply_transform(np.linalg.inv(frame))
+    assembly_transform = np.eye(4)
+    assembly_transform[:3, :3] = np.asarray(
+        [
+            [1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [0.0, -1.0, 0.0],
+        ]
+    )
+    assembly_transform[:3, 3] = [0.0, 0.0, 6.0]
+    panel_pose.apply_transform(assembly_transform)
+
+    coupon_centre = np.asarray([0.0, 0.0, 6.0])
+    rail_pair = [
+        _hook_rail_integration_rail(side, centre=coupon_centre)
+        for side in (-1.0, 1.0)
+    ]
+
+    def rail_overlap(mesh: trimesh.Trimesh) -> float:
+        return sum(_intersection_volume(mesh, rail) for rail in rail_pair)
+
+    seated_overlap = rail_overlap(panel_pose)
+    if seated_overlap > 1e-3:
+        raise ValueError(
+            f"Integrated panel/rail seated overlap is {seated_overlap:.6f} mm3"
+        )
+
+    axial_capture = {}
+    for label, shift in (("negative", -0.30), ("positive", 0.30)):
+        probe = panel_pose.copy()
+        probe.apply_translation([shift, 0.0, 0.0])
+        axial_capture[label] = rail_overlap(probe)
+        if axial_capture[label] < 3.0:
+            raise ValueError(f"Integrated rail caps do not capture {label}")
+
+    pivot_sweep = []
+    for angle in range(
+        REAL_KEYED_COLLISION_FREE_DEGREES[0],
+        REAL_KEYED_COLLISION_FREE_DEGREES[1] + 1,
+        5,
+    ):
+        pose = panel_pose.copy()
+        pose.apply_transform(
+            trimesh.transformations.rotation_matrix(
+                math.radians(float(angle)),
+                [1.0, 0.0, 0.0],
+                coupon_centre,
+            )
+        )
+        pivot_sweep.append(
+            {
+                "angle_degrees": angle,
+                "rail_overlap_mm3": round(rail_overlap(pose), 6),
+            }
+        )
+    maximum_pivot_overlap = max(
+        item["rail_overlap_mm3"] for item in pivot_sweep
+    )
+    if maximum_pivot_overlap > 1e-3:
+        raise ValueError(
+            f"Integrated rail pivot overlap is {maximum_pivot_overlap:.6f} mm3"
+        )
+
+    return {
+        "panel_material": "Bambu PLA Tough+",
+        "base_material": "Bambu PLA Matte",
+        "panel_mesh": panel_validation,
+        "base_mesh": base_validation,
+        "source_material_removed_mm3": round(removed_volume, 6),
+        "source_material_removed_percent": round(removed_percent, 4),
+        "source_material_added_mm3": round(added_volume, 6),
+        "rail_root_overlap_mm3": {
+            label: round(value, 6)
+            for label, value in root_overlaps.items()
+        },
+        "seated_overlap_mm3": round(seated_overlap, 6),
+        "axial_cap_capture_mm3": {
+            label: round(value, 6)
+            for label, value in axial_capture.items()
+        },
+        "maximum_pivot_overlap_mm3": round(
+            maximum_pivot_overlap,
+            6,
+        ),
+        "pivot_sweep": pivot_sweep,
+    }
+
+
+def _full_base_panel_pose(
+    panel: trimesh.Trimesh,
+    angle_deg: float,
+) -> trimesh.Trimesh:
+    """Place the lower panel connector on the positive-Y source base arm."""
+    frame = _full_base_lower_panel_frame()[4]
+    pose = panel.copy()
+    pose.apply_transform(np.linalg.inv(frame))
+    u_axis = np.asarray([1.0, 0.0, 0.0])
+    v_axis = np.asarray([0.0, 1.0, 0.0])
+    w_axis = np.asarray([0.0, 0.0, 1.0])
+    rotation = trimesh.transformations.rotation_matrix(
+        math.radians(float(angle_deg)),
+        u_axis,
+    )[:3, :3]
+    transform = np.eye(4)
+    transform[:3, :3] = np.column_stack(
+        [u_axis, rotation @ v_axis, rotation @ w_axis]
+    )
+    transform[:3, 3] = np.asarray(REAL_KEYED_BASE_HINGE_CENTRE)
+    pose.apply_transform(transform)
+    return pose
+
+
+def validate_full_base_hook_architecture(
+    source_panel: trimesh.Trimesh,
+    selected_source_base: trimesh.Trimesh,
+    panel: trimesh.Trimesh,
+    base: trimesh.Trimesh,
+) -> dict:
+    """Validate the true lower-axis panel rails against all six base arms."""
+    panel_validation = validate_mesh("lower_panel_matte_rails", panel)
+    base_validation = validate_mesh("full_base_tough_hooks", base)
+    if len(panel.split()) != 1 or len(base.split()) != 1:
+        raise ValueError("Full-base hook test contains disconnected solids")
+
+    source_panel_removed = trimesh.boolean.difference(
+        [source_panel, panel],
+        engine="manifold",
+    )
+    source_panel_added = trimesh.boolean.difference(
+        [panel, source_panel],
+        engine="manifold",
+    )
+    panel_removed_volume = (
+        0.0
+        if source_panel_removed is None or source_panel_removed.is_empty
+        else abs(float(source_panel_removed.volume))
+    )
+    panel_added_volume = (
+        0.0
+        if source_panel_added is None or source_panel_added.is_empty
+        else abs(float(source_panel_added.volume))
+    )
+    panel_removed_percent = (
+        100.0 * panel_removed_volume / abs(float(source_panel.volume))
+    )
+    if panel_removed_percent > 3.0:
+        raise ValueError(
+            f"Lower rail panel removes {panel_removed_percent:.3f}% of source"
+        )
+    if not np.allclose(panel.bounds, source_panel.bounds, atol=1e-4):
+        raise ValueError("Lower rail conversion changes the panel silhouette")
+
+    source_base_removed = trimesh.boolean.difference(
+        [selected_source_base, base],
+        engine="manifold",
+    )
+    source_base_added = trimesh.boolean.difference(
+        [base, selected_source_base],
+        engine="manifold",
+    )
+    base_removed_volume = (
+        0.0
+        if source_base_removed is None or source_base_removed.is_empty
+        else abs(float(source_base_removed.volume))
+    )
+    base_added_volume = (
+        0.0
+        if source_base_added is None or source_base_added.is_empty
+        else abs(float(source_base_added.volume))
+    )
+    base_removed_percent = (
+        100.0 * base_removed_volume / abs(float(selected_source_base.volume))
+    )
+    if base_removed_percent > 15.0:
+        raise ValueError(
+            f"Full hook base removes {base_removed_percent:.3f}% of source"
+        )
+
+    hook_groups = []
+    all_hooks = []
+    all_cutters = []
+    for angle_deg in BASE_ARM_ANGLES_DEG:
+        hooks, cutters = _full_base_hook_geometry(angle_deg)
+        hook_groups.append(hooks)
+        all_hooks.extend(hooks)
+        all_cutters.extend(cutters)
+    cleared_source = _difference(selected_source_base.copy(), all_cutters)
+    root_overlaps = [
+        _intersection_volume(hook, cleared_source)
+        for hook in all_hooks
+    ]
+    if min(root_overlaps) < 0.50:
+        raise ValueError(
+            f"Minimum full-base hook root overlap is {min(root_overlaps):.4f} mm3"
+        )
+
+    adjacent_overlap = 0.0
+    for index, group in enumerate(hook_groups):
+        neighbour = hook_groups[(index + 1) % len(hook_groups)]
+        adjacent_overlap = max(
+            adjacent_overlap,
+            sum(
+                _intersection_volume(first, second)
+                for first in group
+                for second in neighbour
+            ),
+        )
+    if adjacent_overlap > 1e-4:
+        raise ValueError(
+            f"Adjacent full-base hooks overlap {adjacent_overlap:.6f} mm3"
+        )
+
+    origin, _, _, _, transform = _full_base_lower_panel_frame()
+    rail_root_overlaps = []
+    for side in (-1.0, 1.0):
+        root_u = _hook_rail_mirrored_u_range(
+            FULL_BASE_PANEL_RAIL_ROOT_U_RANGE,
+            side,
+        )
+        root = trimesh.creation.cylinder(
+            radius=FULL_BASE_PANEL_RAIL_ROOT_RADIUS,
+            segment=np.asarray(
+                [[root_u[0], 0.0, 0.0], [root_u[1], 0.0, 0.0]]
+            ),
+            sections=96,
+        )
+        root.apply_transform(transform)
+        rail_root_overlaps.append(_intersection_volume(root, source_panel))
+    if min(rail_root_overlaps) < 5.0:
+        raise ValueError(
+            "Lower panel rail root embeds less than 5.00 mm3 in source"
+        )
+
+    panel_pose = _full_base_panel_pose(
+        panel,
+        FULL_BASE_ASSEMBLY_ANGLE_DEG,
+    )
+    seated_overlap = _intersection_volume(panel_pose, base)
+    if seated_overlap > 1e-3:
+        raise ValueError(
+            f"Full-base hook/rail seated overlap is {seated_overlap:.6f} mm3"
+        )
+
+    snap_path = []
+    for distance in np.arange(0.0, 8.01, 0.10):
+        probe = panel_pose.copy()
+        probe.apply_translation([0.0, float(distance), 0.0])
+        source_interference = _intersection_volume(probe, cleared_source)
+        snap_path.append(
+            {
+                "translation_mm": round(float(distance), 2),
+                "interference_mm3": round(
+                    _intersection_volume(probe, base),
+                    6,
+                ),
+                "non_hook_base_interference_mm3": round(
+                    source_interference,
+                    6,
+                ),
+            }
+        )
+    peak_snap_interference = max(
+        item["interference_mm3"] for item in snap_path
+    )
+    if not 0.30 <= peak_snap_interference <= 1.20:
+        raise ValueError(
+            f"Full-panel snap-path peak is {peak_snap_interference:.6f} mm3"
+        )
+    if snap_path[-1]["interference_mm3"] > 1e-3:
+        raise ValueError("Full panel has no collision-free external start pose")
+    maximum_non_hook_interference = max(
+        item["non_hook_base_interference_mm3"] for item in snap_path
+    )
+    if maximum_non_hook_interference > 1e-4:
+        raise ValueError(
+            "Full-panel insertion contacts non-hook base material by "
+            f"{maximum_non_hook_interference:.6f} mm3"
+        )
+
+    axial_capture = {}
+    for label, shift in (("negative", -0.30), ("positive", 0.30)):
+        probe = panel_pose.copy()
+        probe.apply_translation([shift, 0.0, 0.0])
+        axial_capture[label] = _intersection_volume(probe, base)
+        if axial_capture[label] < 2.0:
+            raise ValueError(f"Full-base rail root does not capture {label}")
+
+    pivot_sweep = []
+    for angle in range(
+        FULL_BASE_COLLISION_FREE_DEGREES[0],
+        FULL_BASE_COLLISION_FREE_DEGREES[1] + 1,
+    ):
+        pose = _full_base_panel_pose(panel, float(angle))
+        pivot_sweep.append(
+            {
+                "angle_degrees": angle,
+                "base_overlap_mm3": round(
+                    _intersection_volume(pose, base),
+                    6,
+                ),
+            }
+        )
+    maximum_pivot_overlap = max(
+        item["base_overlap_mm3"] for item in pivot_sweep
+    )
+    if maximum_pivot_overlap > 1e-3:
+        raise ValueError(
+            f"Full-base pivot overlap is {maximum_pivot_overlap:.6f} mm3"
+        )
+
+    return {
+        "architecture": (
+            "Tough+ hooks on all six source base arms with rigid Matte rails "
+            "at the panel's true lower connector"
+        ),
+        "base_material": "Bambu PLA Tough+",
+        "panel_material": "Bambu PLA Matte",
+        "base_mesh": base_validation,
+        "panel_mesh": panel_validation,
+        "source_base_material_removed_mm3": round(base_removed_volume, 6),
+        "source_base_material_removed_percent": round(base_removed_percent, 4),
+        "source_base_material_added_mm3": round(base_added_volume, 6),
+        "source_panel_material_removed_mm3": round(
+            panel_removed_volume,
+            6,
+        ),
+        "source_panel_material_removed_percent": round(
+            panel_removed_percent,
+            4,
+        ),
+        "source_panel_material_added_mm3": round(panel_added_volume, 6),
+        "minimum_hook_root_overlap_mm3": round(min(root_overlaps), 6),
+        "maximum_adjacent_hook_overlap_mm3": round(adjacent_overlap, 6),
+        "minimum_panel_rail_root_overlap_mm3": round(
+            min(rail_root_overlaps),
+            6,
+        ),
+        "rail_diameter_mm": HOOK_RAIL_DIAMETER,
+        "hook_inner_diameter_mm": round(
+            2
+            * (
+                HOOK_RAIL_DIAMETER / 2
+                + HOOK_RAIL_RUNNING_CLEARANCE
+            ),
+            4,
+        ),
+        "hook_axial_width_mm": round(
+            FULL_BASE_HOOK_U_RANGE[1] - FULL_BASE_HOOK_U_RANGE[0],
+            4,
+        ),
+        "hook_mouth_width_mm": FULL_BASE_HOOK_MOUTH_WIDTH,
+        "hook_mouth_undercut_per_side_mm": round(
+            (HOOK_RAIL_DIAMETER - FULL_BASE_HOOK_MOUTH_WIDTH) / 2,
+            4,
+        ),
+        "seated_overlap_mm3": round(seated_overlap, 6),
+        "peak_snap_path_interference_mm3": round(
+            peak_snap_interference,
+            6,
+        ),
+        "maximum_non_hook_insertion_overlap_mm3": round(
+            maximum_non_hook_interference,
+            6,
+        ),
+        "axial_capture_mm3": {
+            label: round(value, 6)
+            for label, value in axial_capture.items()
+        },
+        "collision_free_range_degrees": list(
+            FULL_BASE_COLLISION_FREE_DEGREES
+        ),
+        "maximum_pivot_overlap_mm3": round(maximum_pivot_overlap, 6),
+        "snap_path": snap_path,
+        "pivot_sweep": pivot_sweep,
+    }
+
+
+def validate_real_keyed_joint(
+    source_panel: trimesh.Trimesh,
+    panel: trimesh.Trimesh,
+    insert: trimesh.Trimesh,
+    base: trimesh.Trimesh,
+) -> dict:
+    """Validate fidelity, stop registration, pin walls, and pivot sweep."""
+    _, _, panel_axis, _, panel_frame = _real_keyed_panel_frame()
+
+    source_removed = trimesh.boolean.difference(
+        [source_panel, panel],
+        engine="manifold",
+    )
+    source_added = trimesh.boolean.difference(
+        [panel, source_panel],
+        engine="manifold",
+    )
+    removed_volume = (
+        0.0
+        if source_removed is None or source_removed.is_empty
+        else abs(float(source_removed.volume))
+    )
+    added_volume = (
+        0.0
+        if source_added is None or source_added.is_empty
+        else abs(float(source_added.volume))
+    )
+    removed_percent = 100.0 * removed_volume / abs(float(source_panel.volume))
+    added_percent = 100.0 * added_volume / abs(float(source_panel.volume))
+    if removed_percent > 3.5:
+        raise ValueError(
+            f"Twin-rail panel removes {removed_percent:.3f}% of source volume"
+        )
+    if not np.allclose(panel.bounds, source_panel.bounds, atol=1e-4):
+        raise ValueError("Twin-rail receiver changes the source panel silhouette")
+
+    inverse_frame = np.linalg.inv(panel_frame)
+    changed_vertices = []
+    for changed in (source_removed, source_added):
+        if changed is None or changed.is_empty:
+            continue
+        for component in changed.split(only_watertight=False):
+            # Booleaning the tessellated STL can create remote numerical
+            # slivers below one cubic micron. They are not authored changes.
+            if abs(float(component.volume)) < 1e-4:
+                continue
+            local = trimesh.transform_points(
+                component.vertices,
+                inverse_frame,
+            )
+            changed_vertices.append(local)
+    if changed_vertices:
+        changed_local = np.vstack(changed_vertices)
+        inside_mask = (
+            (np.abs(changed_local[:, 0]) <= 6.10)
+            & (changed_local[:, 1] >= -5.75)
+            & (changed_local[:, 1] <= 3.50)
+            & (changed_local[:, 2] >= -2.40)
+            & (changed_local[:, 2] <= 2.90)
+        )
+        if not bool(np.all(inside_mask)):
+            outside_count = int(np.count_nonzero(~inside_mask))
+            raise ValueError(
+                f"{outside_count} changed vertices fall outside connector mask"
+            )
+
+    authored_overlap = _intersection_volume(panel, insert)
+    if authored_overlap > 1e-4:
+        raise ValueError(
+            f"Panel/cartridge authored overlap is {authored_overlap:.6f} mm3"
+        )
+
+    def stop_overlap(shift: float) -> float:
+        probe = insert.copy()
+        probe.apply_translation(-shift * panel_axis)
+        return _intersection_volume(panel, probe)
+
+    low = 0.0
+    high = 0.08
+    if stop_overlap(high) < 1e-5:
+        raise ValueError("Primary rail does not register on its closed stop")
+    for _ in range(18):
+        middle = (low + high) / 2
+        if stop_overlap(middle) >= 1e-5:
+            high = middle
+        else:
+            low = middle
+    stop_contact = high
+    if stop_contact > 0.03:
+        raise ValueError(
+            f"Stop leaves {stop_contact:.4f} mm hinge-hole misregistration"
+        )
+
+    # Probe only the production hook. The former whole-cartridge probe could
+    # count unrelated ear/shell contact and falsely report a working latch.
+    latch_hook = trimesh.creation.icosphere(
+        subdivisions=3,
+        radius=TWIN_RAIL_LATCH_HOOK_RADII[1],
+    )
+    latch_hook.apply_translation(_real_keyed_point(REAL_KEYED_LATCH_CENTRE))
+    if _intersection_volume(panel, latch_hook) > 1e-4:
+        raise ValueError("Twin-rail hook overlaps its notch when seated")
+    latch_probe = latch_hook.copy()
+    latch_probe.apply_translation(0.25 * panel_axis)
+    latch_engagement = _intersection_volume(panel, latch_probe)
+    if latch_engagement < 0.005:
+        raise ValueError("Twin-rail latch has no positive withdrawal engagement")
+
+    fixed_ear_ligament = (
+        REAL_KEYED_EAR_OUTER_RADIUS
+        - REAL_KEYED_FIXED_EAR_DIAMETER / 2
+    )
+    running_ear_ligament = (
+        REAL_KEYED_EAR_OUTER_RADIUS
+        - REAL_KEYED_RUNNING_HOLE_DIAMETER / 2
+    )
+    if min(fixed_ear_ligament, running_ear_ligament) < 1.20:
+        raise ValueError("Clevis ear has less than 1.20 mm radial ligament")
+    tongue_ligament = (
+        REAL_KEYED_BASE_BOSS_RADIUS
+        - REAL_KEYED_RUNNING_HOLE_DIAMETER / 2
+    )
+    if tongue_ligament < 1.20:
+        raise ValueError("Base tongue has less than 1.20 mm radial ligament")
+
+    panel_pose = panel.copy()
+    insert_pose = insert.copy()
+    transform = _real_keyed_panel_to_base_transform()
+    panel_pose.apply_transform(transform)
+    insert_pose.apply_transform(transform)
+    hinge = np.asarray(REAL_KEYED_BASE_HINGE_CENTRE)
+
+    assembled_overlap = {
+        "panel_insert_mm3": _intersection_volume(panel_pose, insert_pose),
+        "panel_base_mm3": _intersection_volume(panel_pose, base),
+        "insert_base_mm3": _intersection_volume(insert_pose, base),
+    }
+    base_points = base.vertices[
+        :: max(1, len(base.vertices) // 1500)
+    ]
+    base_tree = cKDTree(base_points)
+
+    def clearance_to_base(moved: trimesh.Trimesh) -> float:
+        moving_points = moved.vertices[
+            :: max(1, len(moved.vertices) // 1500)
+        ]
+        forward = base_tree.query(moving_points, workers=-1)[0]
+        reverse = cKDTree(moving_points).query(
+            base_points,
+            workers=-1,
+        )[0]
+        return float(min(np.min(forward), np.min(reverse)))
+
+    def evaluate_angle(angle: float) -> dict:
+        rotation = trimesh.transformations.rotation_matrix(
+            math.radians(float(angle)),
+            [1.0, 0.0, 0.0],
+            hinge,
+        )
+        moved_panel = panel_pose.copy()
+        moved_insert = insert_pose.copy()
+        moved_panel.apply_transform(rotation)
+        moved_insert.apply_transform(rotation)
+        panel_overlap = _intersection_volume(moved_panel, base)
+        insert_overlap = _intersection_volume(moved_insert, base)
+        moving = trimesh.util.concatenate([moved_panel, moved_insert])
+        return {
+            "angle_degrees": round(float(angle), 3),
+            "panel_base_overlap_mm3": round(panel_overlap, 6),
+            "insert_base_overlap_mm3": round(insert_overlap, 6),
+            "sampled_clearance_mm": round(clearance_to_base(moving), 5),
+        }
+
+    coarse_angles = np.arange(
+        REAL_KEYED_COLLISION_FREE_DEGREES[0],
+        REAL_KEYED_COLLISION_FREE_DEGREES[1] + 0.5,
+        1.0,
+    )
+    coarse = [evaluate_angle(float(angle)) for angle in coarse_angles]
+    lowest = sorted(
+        coarse,
+        key=lambda item: item["sampled_clearance_mm"],
+    )[:5]
+    refined_angles = set(float(value) for value in coarse_angles)
+    for item in lowest:
+        centre = float(item["angle_degrees"])
+        for angle in np.arange(centre - 1.0, centre + 1.001, 0.10):
+            if (
+                REAL_KEYED_COLLISION_FREE_DEGREES[0]
+                <= angle
+                <= REAL_KEYED_COLLISION_FREE_DEGREES[1]
+            ):
+                refined_angles.add(round(float(angle), 3))
+        for angle in np.arange(centre - 0.20, centre + 0.201, 0.05):
+            if (
+                REAL_KEYED_COLLISION_FREE_DEGREES[0]
+                <= angle
+                <= REAL_KEYED_COLLISION_FREE_DEGREES[1]
+            ):
+                refined_angles.add(round(float(angle), 3))
+    coarse_by_angle = {
+        float(item["angle_degrees"]): item
+        for item in coarse
+    }
+    sweep = [
+        coarse_by_angle.get(angle) or evaluate_angle(angle)
+        for angle in sorted(refined_angles)
+    ]
+
+    maximum_overlap = max(
+        [
+            *assembled_overlap.values(),
+            *[
+                item[key]
+                for item in sweep
+                for key in (
+                    "panel_base_overlap_mm3",
+                    "insert_base_overlap_mm3",
+                )
+            ],
+        ]
+    )
+    if maximum_overlap > 1e-4:
+        raise ValueError(
+            f"Real keyed joint collision volume is {maximum_overlap:.6f} mm3"
+        )
+    return {
+        "source_fidelity": {
+            "source_volume_mm3": round(abs(float(source_panel.volume)), 6),
+            "candidate_volume_mm3": round(abs(float(panel.volume)), 6),
+            "removed_volume_mm3": round(removed_volume, 6),
+            "removed_percent": round(removed_percent, 4),
+            "added_volume_mm3": round(added_volume, 6),
+            "added_percent": round(added_percent, 4),
+            "bounds_unchanged": True,
+            "changes_inside_connector_mask": True,
+        },
+        "architecture": "masked twin-rail one-piece clevis cartridge",
+        "fixed_ear_diameter_mm": REAL_KEYED_FIXED_EAR_DIAMETER,
+        "running_hole_diameter_mm": REAL_KEYED_RUNNING_HOLE_DIAMETER,
+        "filament_pin_diameter_mm": 1.75,
+        "panel_hinge_inward_offset_mm": REAL_KEYED_PANEL_INWARD_OFFSET,
+        "authored_stop_clearance_mm": REAL_KEYED_STOP_CLEARANCE,
+        "measured_stop_contact_mm": round(stop_contact, 5),
+        "hinge_registration_error_at_stop_mm": round(stop_contact, 5),
+        "fixed_ear_radial_ligament_mm": round(fixed_ear_ligament, 4),
+        "running_ear_radial_ligament_mm": round(
+            running_ear_ligament,
+            4,
+        ),
+        "tongue_radial_ligament_mm": round(tongue_ligament, 4),
+        "rail_clearance_per_side_mm": {
+            "primary_tail": round(
+                (
+                    REAL_KEYED_CHANNEL_TAIL_WIDTH
+                    - REAL_KEYED_PRIMARY_KEY_WIDTHS[0]
+                )
+                / 2,
+                4,
+            ),
+            "primary_throat": round(
+                (
+                    REAL_KEYED_CHANNEL_THROAT_WIDTH
+                    - REAL_KEYED_PRIMARY_KEY_WIDTHS[1]
+                )
+                / 2,
+                4,
+            ),
+            "follower_tail": round(
+                (
+                    REAL_KEYED_CHANNEL_TAIL_WIDTH
+                    - REAL_KEYED_FOLLOWER_KEY_WIDTHS[0]
+                )
+                / 2,
+                4,
+            ),
+            "follower_throat": round(
+                (
+                    REAL_KEYED_CHANNEL_THROAT_WIDTH
+                    - REAL_KEYED_FOLLOWER_KEY_WIDTHS[1]
+                )
+                / 2,
+                4,
+            ),
+        },
+        "rail_floor_clearance_mm": round(
+            REAL_KEYED_KEY_W_RANGE[0]
+            - REAL_KEYED_CHANNEL_W_RANGE[0],
+            4,
+        ),
+        "authored_minimum_outer_skin_mm": 1.50,
+        "latch_withdrawal_probe": {
+            "translation_mm": 0.25,
+            "engagement_volume_mm3": round(latch_engagement, 6),
+            "physical_release_force_required": "coupon gate",
+        },
+        "panel_insert_authored_overlap_mm3": round(authored_overlap, 6),
+        "closed_stop_probe": {
+            "zero_shift_overlap_mm3": round(stop_overlap(0.0), 6),
+            "contact_overlap_mm3": round(stop_overlap(stop_contact), 6),
+        },
+        "collision_free_range_degrees": list(
+            REAL_KEYED_COLLISION_FREE_DEGREES
+        ),
+        "assembled_overlap_mm3": {
+            key: round(value, 6)
+            for key, value in assembled_overlap.items()
+        },
+        "sweep": sweep,
+    }
 
 
 def compare_surfaces(
@@ -1953,6 +4437,378 @@ def build_coupon_3mf(
     return output_path
 
 
+def build_twin_rail_curvature_project(
+    coupon_dir: Path,
+    output_path: Path,
+) -> Path:
+    """Package only the approved actual-curvature rail/latch test."""
+    return build_coupon_3mf(
+        output_path=Path(output_path),
+        plate_title="Twin-rail actual-curvature latch coupon v3",
+        objects=[
+            (
+                "Matte actual-curvature twin-rail receiver",
+                Path(coupon_dir) / "twin_rail_curvature_panel.stl",
+                1,
+            ),
+            (
+                "Tough+ twin-rail cartridge - 1.85 mm fixed ear",
+                Path(coupon_dir) / "twin_rail_curvature_cartridge.stl",
+                2,
+            ),
+            (
+                "Matte 4.50 mm tongue - 2.05 mm chamfered hole",
+                Path(coupon_dir) / "twin_rail_curvature_tongue.stl",
+                1,
+            ),
+        ],
+        positions=[
+            (52.0, 52.0, 0.0),
+            (128.0, 204.0, 0.0),
+            (204.0, 52.0, 0.0),
+        ],
+        enable_support=True,
+        filament_profiles=(
+            "Bambu PLA Matte @BBL P2S",
+            "Bambu PLA Tough+ @BBL P2S",
+        ),
+        filament_ids=("GFA01", "GFA10"),
+        filament_colours=("#FFFFFF", "#F97316"),
+        process_overrides={
+            "layer_height": "0.16",
+            "wall_loops": "5",
+            "wall_generator": "arachne",
+            "sparse_infill_density": "20%",
+            "sparse_infill_pattern": "gyroid",
+            "outer_wall_line_width": "0.40",
+            "inner_wall_line_width": "0.42",
+            "outer_wall_speed": "40",
+            "inner_wall_speed": "80",
+            "small_perimeter_speed": "30",
+            "brim_type": "outer_only",
+            "brim_width": "3",
+            "print_sequence": "by object",
+        },
+    )
+
+
+def build_twin_rail_latch_matrix_project(
+    coupon_dir: Path,
+    output_path: Path,
+) -> Path:
+    """Package the corrected receiver and three compliant latch strengths."""
+    return build_coupon_3mf(
+        output_path=Path(output_path),
+        plate_title="Twin-rail compliant latch matrix v4 - strengthened bridge",
+        objects=[
+            (
+                "Matte corrected deep-notch receiver",
+                Path(coupon_dir) / "twin_rail_latch_matrix_receiver.stl",
+                1,
+            ),
+            (
+                "Tough+ easy latch R0.32 - one dot",
+                Path(coupon_dir) / "twin_rail_latch_0_32.stl",
+                2,
+            ),
+            (
+                "Tough+ balanced latch R0.36 - two dots",
+                Path(coupon_dir) / "twin_rail_latch_0_36.stl",
+                2,
+            ),
+            (
+                "Tough+ strong latch R0.40 - three dots",
+                Path(coupon_dir) / "twin_rail_latch_0_40.stl",
+                2,
+            ),
+        ],
+        positions=[
+            (50.0, 50.0, 0.0),
+            (50.0, 205.0, 0.0),
+            (205.0, 50.0, 0.0),
+            (205.0, 205.0, 0.0),
+        ],
+        enable_support=True,
+        filament_profiles=(
+            "Bambu PLA Matte @BBL P2S",
+            "Bambu PLA Tough+ @BBL P2S",
+        ),
+        filament_ids=("GFA01", "GFA10"),
+        filament_colours=("#FFFFFF", "#F97316"),
+        process_overrides={
+            "layer_height": "0.16",
+            "wall_loops": "5",
+            "wall_generator": "arachne",
+            "sparse_infill_density": "20%",
+            "sparse_infill_pattern": "gyroid",
+            "outer_wall_line_width": "0.40",
+            "inner_wall_line_width": "0.42",
+            "outer_wall_speed": "40",
+            "inner_wall_speed": "80",
+            "small_perimeter_speed": "30",
+            "brim_type": "outer_only",
+            "brim_width": "3",
+            "print_sequence": "by object",
+        },
+    )
+
+
+def build_monolithic_receiver_material_project(
+    coupon_dir: Path,
+    output_path: Path,
+) -> Path:
+    """Package two identical monolithic coupons with different filaments."""
+    mesh_path = Path(coupon_dir) / "monolithic_receiver_clevis_coupon.stl"
+    return build_coupon_3mf(
+        output_path=Path(output_path),
+        plate_title="Monolithic receiver material A-B - Matte and Tough+",
+        objects=[
+            (
+                "Monolithic receiver and clevis - Matte control",
+                mesh_path,
+                1,
+            ),
+            (
+                "Monolithic receiver and clevis - Tough+ candidate",
+                mesh_path,
+                2,
+            ),
+        ],
+        positions=[
+            (52.0, 52.0, 0.0),
+            (204.0, 204.0, 0.0),
+        ],
+        enable_support=True,
+        filament_profiles=(
+            "Bambu PLA Matte @BBL P2S",
+            "Bambu PLA Tough+ @BBL P2S",
+        ),
+        filament_ids=("GFA01", "GFA10"),
+        filament_colours=("#FFFFFF", "#F97316"),
+        process_overrides={
+            "layer_height": "0.16",
+            "wall_loops": "5",
+            "wall_generator": "arachne",
+            "sparse_infill_density": "20%",
+            "sparse_infill_pattern": "gyroid",
+            "outer_wall_line_width": "0.40",
+            "inner_wall_line_width": "0.42",
+            "outer_wall_speed": "40",
+            "inner_wall_speed": "80",
+            "small_perimeter_speed": "30",
+            "brim_type": "outer_only",
+            "brim_width": "3",
+            "print_sequence": "by object",
+        },
+    )
+
+
+def build_hook_rail_material_project(
+    coupon_dir: Path,
+    output_path: Path,
+) -> Path:
+    """Package original-axis Matte/Tough+ hooks with fresh Matte rails."""
+    panel_path = Path(coupon_dir) / "hook_rail_panel_coupon.stl"
+    rail_path = Path(coupon_dir) / "hook_rail_base_coupon.stl"
+    return build_coupon_3mf(
+        output_path=Path(output_path),
+        plate_title="Original pin-axis hook rail A-B v2 - full supports",
+        objects=[
+            (
+                "Original-axis extended hooks - Matte control",
+                panel_path,
+                1,
+            ),
+            (
+                "Full-support original-axis rail base A - Matte",
+                rail_path,
+                1,
+            ),
+            (
+                "Full-support original-axis rail base B - Matte",
+                rail_path,
+                1,
+            ),
+            (
+                "Original-axis extended hooks - Tough+ candidate",
+                panel_path,
+                2,
+            ),
+        ],
+        positions=[
+            (50.0, 50.0, 0.0),
+            (50.0, 205.0, 0.0),
+            (205.0, 50.0, 0.0),
+            (205.0, 205.0, 0.0),
+        ],
+        enable_support=True,
+        filament_profiles=(
+            "Bambu PLA Matte @BBL P2S",
+            "Bambu PLA Tough+ @BBL P2S",
+        ),
+        filament_ids=("GFA01", "GFA10"),
+        filament_colours=("#FFFFFF", "#F97316"),
+        process_overrides={
+            "layer_height": "0.16",
+            "wall_loops": "5",
+            "wall_generator": "arachne",
+            "sparse_infill_density": "20%",
+            "sparse_infill_pattern": "gyroid",
+            "outer_wall_line_width": "0.40",
+            "inner_wall_line_width": "0.42",
+            "outer_wall_speed": "40",
+            "inner_wall_speed": "80",
+            "small_perimeter_speed": "30",
+            "brim_type": "outer_only",
+            "brim_width": "3",
+            "print_sequence": "by object",
+        },
+    )
+
+
+def build_hook_rail_full_integration_project(
+    coupon_dir: Path,
+    output_path: Path,
+) -> Path:
+    """Package the approved Tough+ panel with one real Matte base arm."""
+    panel_path = Path(coupon_dir) / "hook_rail_full_panel.stl"
+    base_path = Path(coupon_dir) / "hook_rail_real_base_arm.stl"
+    return build_coupon_3mf(
+        output_path=Path(output_path),
+        plate_title="Full panel and real base-arm hook rail integration",
+        objects=[
+            (
+                "Cropped real base arm with paired rails - Matte",
+                base_path,
+                1,
+            ),
+            (
+                "Full source panel with extended hooks - Tough+",
+                panel_path,
+                2,
+            ),
+        ],
+        positions=[
+            (65.0, 128.0, 0.0),
+            (190.0, 128.0, 0.0),
+        ],
+        enable_support=True,
+        filament_profiles=(
+            "Bambu PLA Matte @BBL P2S",
+            "Bambu PLA Tough+ @BBL P2S",
+        ),
+        filament_ids=("GFA01", "GFA10"),
+        filament_colours=("#FFFFFF", "#F97316"),
+        process_overrides={
+            "layer_height": "0.16",
+            "wall_loops": "5",
+            "wall_generator": "arachne",
+            "sparse_infill_density": "20%",
+            "sparse_infill_pattern": "gyroid",
+            "outer_wall_line_width": "0.40",
+            "inner_wall_line_width": "0.42",
+            "outer_wall_speed": "40",
+            "inner_wall_speed": "80",
+            "small_perimeter_speed": "30",
+            "brim_type": "outer_only",
+            "brim_width": "3",
+            "print_sequence": "by object",
+        },
+    )
+
+
+def build_full_base_hook_test_project(
+    coupon_dir: Path,
+    output_path: Path,
+) -> Path:
+    """Package the panel first, then the complete Tough+ base."""
+    return build_coupon_3mf(
+        output_path=Path(output_path),
+        plate_title="Full base lower-hook and panel-rail test",
+        objects=[
+            (
+                "Matte panel - high-adhesion lower rigid rails",
+                Path(coupon_dir) / "lower_panel_matte_rails.stl",
+                1,
+            ),
+            (
+                "Complete Tough+ base - twelve lower-axis hooks",
+                Path(coupon_dir) / "full_base_tough_hooks.stl",
+                2,
+            ),
+        ],
+        positions=[
+            (194.0, 128.0, 0.0),
+            (62.0, 128.0, 0.0),
+        ],
+        enable_support=True,
+        filament_profiles=(
+            "Bambu PLA Matte @BBL P2S",
+            "Bambu PLA Tough+ @BBL P2S",
+        ),
+        filament_ids=("GFA01", "GFA10"),
+        filament_colours=("#FFFFFF", "#F97316"),
+        process_overrides={
+            "layer_height": "0.16",
+            "wall_loops": "5",
+            "wall_generator": "arachne",
+            "sparse_infill_density": "20%",
+            "sparse_infill_pattern": "gyroid",
+            "outer_wall_line_width": "0.40",
+            "inner_wall_line_width": "0.42",
+            "outer_wall_speed": "40",
+            "inner_wall_speed": "80",
+            "small_perimeter_speed": "30",
+            "brim_type": "outer_only",
+            "brim_width": "8",
+            "brim_object_gap": "0",
+            "initial_layer_speed": "25",
+            "initial_layer_infill_speed": "30",
+            "print_sequence": "by object",
+        },
+    )
+
+
+def build_lower_panel_adhesion_project(
+    coupon_dir: Path,
+    output_path: Path,
+) -> Path:
+    """Package a panel-only reprint with maximum first-layer adhesion."""
+    return build_coupon_3mf(
+        output_path=Path(output_path),
+        plate_title="Lower rail panel high-adhesion reprint",
+        objects=[
+            (
+                "Matte lower rail panel - 8 mm attached brim",
+                Path(coupon_dir) / "lower_panel_matte_rails.stl",
+                1,
+            ),
+        ],
+        positions=[(128.0, 128.0, 0.0)],
+        enable_support=True,
+        filament_profile="Bambu PLA Matte @BBL P2S",
+        filament_id="GFA01",
+        filament_colour="#FFFFFF",
+        process_overrides={
+            "layer_height": "0.16",
+            "wall_loops": "5",
+            "wall_generator": "arachne",
+            "sparse_infill_density": "20%",
+            "sparse_infill_pattern": "gyroid",
+            "outer_wall_line_width": "0.40",
+            "inner_wall_line_width": "0.42",
+            "outer_wall_speed": "40",
+            "inner_wall_speed": "80",
+            "small_perimeter_speed": "30",
+            "brim_type": "outer_only",
+            "brim_width": "8",
+            "brim_object_gap": "0",
+            "initial_layer_speed": "25",
+            "initial_layer_infill_speed": "30",
+        },
+    )
+
+
 def build_coupon_projects(coupon_dir: Path, output_dir: Path) -> list[Path]:
     """Write the printable P2S Matte PLA coupon projects."""
     coupon_dir = Path(coupon_dir)
@@ -2478,6 +5334,86 @@ def build_coupon_projects(coupon_dir: Path, output_dir: Path) -> list[Path]:
             },
         )
     )
+    written.append(
+        build_coupon_3mf(
+            output_path=output_dir / "Squspi_Fixed_Pin_Clevis_Matrix_P2S.3mf",
+            plate_title="Tough+ fixed filament pin clevis matrix",
+            objects=[
+                (
+                    "Fixed ear 1.80 mm - one dot - test first",
+                    coupon_dir / "fixed_pin_clevis_1_80.stl",
+                    1,
+                ),
+                (
+                    "Fixed ear 1.75 mm - two dots",
+                    coupon_dir / "fixed_pin_clevis_1_75.stl",
+                    1,
+                ),
+                (
+                    "Fixed ear 1.70 mm - three dots",
+                    coupon_dir / "fixed_pin_clevis_1_70.stl",
+                    1,
+                ),
+            ],
+            positions=[
+                (70.0, 128.0, 0.0),
+                (128.0, 128.0, 0.0),
+                (186.0, 128.0, 0.0),
+            ],
+            enable_support=True,
+            filament_profile="Bambu PLA Tough+ @BBL P2S",
+            filament_id="GFA10",
+            filament_colour="#FFFFFF",
+            process_overrides={
+                "layer_height": "0.16",
+                "wall_generator": "arachne",
+                "outer_wall_line_width": "0.40",
+                "inner_wall_line_width": "0.42",
+                "outer_wall_speed": "50",
+                "inner_wall_speed": "100",
+                "small_perimeter_speed": "50",
+            },
+        )
+    )
+    written.append(
+        build_twin_rail_curvature_project(
+            coupon_dir,
+            output_dir / "Squspi_Twin_Rail_Curvature_Coupon_P2S.3mf",
+        )
+    )
+    written.append(
+        build_twin_rail_latch_matrix_project(
+            coupon_dir,
+            output_dir / "Squspi_Twin_Rail_Latch_Matrix_v4_P2S.3mf",
+        )
+    )
+    written.append(
+        build_monolithic_receiver_material_project(
+            coupon_dir,
+            output_dir / "Squspi_Monolithic_Receiver_Material_AB_P2S.3mf",
+        )
+    )
+    written.append(
+        build_hook_rail_material_project(
+            coupon_dir,
+            output_dir
+            / "Squspi_Original_Pin_Axis_Hook_Rail_AB_v2_P2S.3mf",
+        )
+    )
+    written.append(
+        build_full_base_hook_test_project(
+            coupon_dir,
+            output_dir
+            / "Squspi_Full_Base_Lower_Hooks_Panel_Rails_P2S.3mf",
+        )
+    )
+    written.append(
+        build_lower_panel_adhesion_project(
+            coupon_dir,
+            output_dir
+            / "Squspi_Lower_Rail_Panel_High_Adhesion_P2S.3mf",
+        )
+    )
     return written
 
 
@@ -2517,6 +5453,40 @@ def generate(source_dir: Path, output_dir: Path) -> Path:
     source_core_parametric_pin_link = build_source_core_parametric_pin_link(
         references["link"]
     )
+    real_keyed_panel = build_real_keyed_panel_receiver(references["panel"])
+    real_keyed_insert = _build_twin_rail_compliant_latch_cartridge(0.36, 2)
+    real_keyed_base = build_real_keyed_source_base(selected_source_base)
+    real_keyed_validation = validate_real_keyed_joint(
+        references["panel"],
+        real_keyed_panel,
+        real_keyed_insert,
+        real_keyed_base,
+    )
+    monolithic_receiver = build_monolithic_receiver_clevis(
+        references["panel"]
+    )
+    monolithic_validation = validate_monolithic_receiver_clevis(
+        references["panel"],
+        monolithic_receiver,
+        real_keyed_base,
+    )
+    hook_rail_panel = build_hook_rail_panel(references["panel"])
+    hook_rail_base = build_hook_rail_base_coupon()
+    hook_rail_validation = validate_hook_rail_architecture(
+        references["panel"],
+        hook_rail_panel,
+        hook_rail_base,
+    )
+    full_base_hooks = build_full_base_with_hooks(selected_source_base)
+    lower_panel_rails = build_lower_panel_with_rails(
+        references["panel"]
+    )
+    full_base_hook_validation = validate_full_base_hook_architecture(
+        references["panel"],
+        selected_source_base,
+        lower_panel_rails,
+        full_base_hooks,
+    )
     hybrid_panel_sector_validation = validate_source_sector_assembly(
         references["link"],
         source_envelope_panel,
@@ -2537,6 +5507,20 @@ def generate(source_dir: Path, output_dir: Path) -> Path:
             "source_core_parametric_pin_link",
             source_core_parametric_pin_link,
         ),
+        validate_mesh("twin_rail_review_panel", real_keyed_panel),
+        validate_mesh("twin_rail_review_cartridge", real_keyed_insert),
+        validate_mesh("twin_rail_review_base", real_keyed_base),
+        validate_mesh("monolithic_receiver_clevis", monolithic_receiver),
+        validate_mesh("hook_rail_panel", hook_rail_panel),
+        validate_mesh("hook_rail_base", hook_rail_base),
+        validate_mesh(
+            "full_base_tough_hooks",
+            full_base_hooks,
+        ),
+        validate_mesh(
+            "lower_panel_matte_rails",
+            lower_panel_rails,
+        ),
     ]
     parametric_button.export(candidate_dir / "button_baseline.stl")
     parametric_base.export(candidate_dir / "base_baseline.stl")
@@ -2547,6 +5531,22 @@ def generate(source_dir: Path, output_dir: Path) -> Path:
     source_envelope_panel.export(candidate_dir / "panel_source_envelope.stl")
     source_core_parametric_pin_link.export(
         candidate_dir / "link_source_core_parametric_pins.stl"
+    )
+    real_keyed_panel.export(candidate_dir / "twin_rail_review_panel.stl")
+    real_keyed_insert.export(
+        candidate_dir / "twin_rail_review_cartridge.stl"
+    )
+    real_keyed_base.export(candidate_dir / "twin_rail_review_base.stl")
+    monolithic_receiver.export(
+        candidate_dir / "monolithic_receiver_clevis.stl"
+    )
+    hook_rail_panel.export(candidate_dir / "hook_rail_panel.stl")
+    hook_rail_base.export(candidate_dir / "hook_rail_base.stl")
+    full_base_hooks.export(
+        candidate_dir / "full_base_tough_hooks.stl"
+    )
+    lower_panel_rails.export(
+        candidate_dir / "lower_panel_matte_rails.stl"
     )
     references["link"].export(coupon_dir / "hybrid_source_link.stl")
     source_envelope_panel.export(coupon_dir / "hybrid_reconstructed_panel.stl")
@@ -2568,6 +5568,15 @@ def generate(source_dir: Path, output_dir: Path) -> Path:
         *build_base_retention_variants(selected_source_base),
         *build_base_peg_process_gauge(selected_source_base),
         *build_keyed_connector_architecture_coupon(),
+        *build_fixed_pin_clevis_variants(),
+        *build_twin_rail_curvature_coupon(references["panel"]),
+        *build_twin_rail_latch_matrix(references["panel"]),
+        *build_monolithic_receiver_material_coupon(references["panel"]),
+        *build_hook_rail_material_coupons(references["panel"]),
+        *build_full_base_hook_test_parts(
+            references["panel"],
+            selected_source_base,
+        ),
     ]
     coupon_validation = []
     for filename, mesh in coupon_meshes:
@@ -2581,7 +5590,7 @@ def generate(source_dir: Path, output_dir: Path) -> Path:
 
     report = {
         "project": "Squspi ball reconstruction",
-        "stage": "parametric baseline candidates + fit coupons",
+        "stage": "full Tough+ base hooks and lower Matte panel rails",
         "units": "mm",
         "source_directory": str(source_dir),
         "source_files": {name: path.name for name, path in source_paths.items()},
@@ -2669,6 +5678,10 @@ def generate(source_dir: Path, output_dir: Path) -> Path:
         },
         "hybrid_panel_sector": hybrid_panel_sector_validation,
         "hybrid_link_sector": hybrid_link_sector_validation,
+        "real_keyed_joint": real_keyed_validation,
+        "monolithic_receiver_clevis": monolithic_validation,
+        "hook_rail_architecture": hook_rail_validation,
+        "full_base_hook_architecture": full_base_hook_validation,
         "coupon_validation": coupon_validation,
         "p2s_projects": {
             "printer_profile": "Bambu Lab P2S 0.4 nozzle",
@@ -2677,10 +5690,10 @@ def generate(source_dir: Path, output_dir: Path) -> Path:
             "directory": str(project_dir),
         },
         "next_gate": (
-            "Print the combined upper-to-lower vertical chain using two selected "
-            "source-arm bases, two exact-profile buttons, unchanged source panels, "
-            "and the accepted measured-pin link. Verify both hub stacks remain free "
-            "while the chain completes its full fold without binding or damage."
+            "Print the complete Tough+ base and one Matte panel with rigid "
+            "rails at its true lower connector. Test the same panel on all "
+            "six arms, then complete 200 pivot cycles and 20 outward "
+            "hand-loads on the weakest arm before releasing a full set."
         ),
     }
     report_path = output_dir / "reconstruction_report.json"

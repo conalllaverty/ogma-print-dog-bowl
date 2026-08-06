@@ -19,3 +19,20 @@ _to_delete/
 
 # Transient 3MF written while rewriting project settings in place.
 *.tmp.3mf
+
+# macOS/FUSE artefacts left by editing files over the remote-device bridge.
+.fuse_hidden*
+
+# Intermediate 3MF plates rewritten on every generator run — not source.
+backend/generator/bambu_work/
+
+# Derived Fusion mesh exports (OBJ/MTL dumps + a zip of themselves). 256 MB, stored
+# four times over, and regenerable from backend/generator/boucle_lamp_fusion.py.
+# The printable deliverables under production/ and coupons/ ARE tracked.
+design/**/fusion/
+*.obj
+*.mtl
+
+# macOS duplicate-on-copy artefacts ("… 2", "… 3")
+* [0-9]/
+* [0-9].*

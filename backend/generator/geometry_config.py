@@ -99,7 +99,7 @@ class HexParams:
     rb_out: float = COOPER.wall_outer_r
     rt_out: float = COOPER.wall_outer_r
     wall_inner_r: float = COOPER.wall_inner_r
-    support_start_z: float = 60.0
+    support_start_z: float = 58.0
     groove_depth: float = 1.0
     groove_gap: float = 2.7
     groove_chamfer: float = 1.30
@@ -109,9 +109,14 @@ class HexParams:
     pattern_edge_band: float = 5.0
     pattern_border_width: float = 1.4
     pattern_border_depth: float = 0.45
-    edge_bevel: float = 0.45
-    edge_bevel_height: float = 1.2
-    letter_center_z: float = 40.5
+    name_keepout_margin: float = 1.5
+    top_edge_bead: float = 0.45
+    top_edge_height: float = 1.2
+    bottom_edge_chamfer: float = 0.35
+    bottom_edge_height: float = 1.2
+    # The staggered whole-cell keepout around Z39 has its visual midpoint near
+    # Z37; use that optical centre so top/bottom letter clearance is balanced.
+    letter_center_z: float = 37.0
 
 
 HEX = HexParams()

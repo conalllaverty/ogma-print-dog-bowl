@@ -44,25 +44,48 @@ BODY_HEIGHT = 19.5
 CAP_LENGTH = 58.0
 CAP_WIDTH = 34.0
 CAP_HEIGHT = 10.3
-CAP_WALL = 1.8
-CAP_RIM_LIP = 1.4
-CAP_REST_RIM_Z = 19.0
-TARGET_OVERALL_HEIGHT = 29.7
+CAP_LOWER_WALL = 1.3
+CAP_OUTER_EXPONENT = 4.2
+CAP_CAVITY_EXPONENT = 4.2
+CAP_VERTICAL_CLEARANCE_HEIGHT = 7.2
+CAP_STRIPE_DEPTH = 0.60
+CAP_STRIPE_MIN_Z = 8.00
+MIN_RESIDUAL_WALL = 0.60
 
 SWITCH_UPPER = 15.60
 SWITCH_LOWER = 13.95
 SWITCH_OPENING = 14.10
+SWITCH_HOUSING_HEIGHT = 11.60
+SWITCH_LOWER_BODY_HEIGHT = 5.00
 SWITCH_CENTRE_PIN_D = 3.85
 SWITCH_CONTACT_SPACING = 5.08
 SWITCH_PIN_CLEARANCE_FLOOR = 1.8
 SWITCH_SHOULDER_DROP = 1.0
+SWITCH_MOUNT_WIDE = 16.40
+SWITCH_MOUNT_NARROW_Z = 10.8 - SWITCH_SHOULDER_DROP
+SWITCH_MOUNT_WIDE_Z = 12.2 - SWITCH_SHOULDER_DROP
 
 MX_CROSS_MAJOR = 4.20
 MX_CROSS_MINOR = 1.55
 MX_SOCKET_DEPTH = 5.00
 MX_SOCKET_BOSS_D = 5.86
 MX_STEM_HEIGHT = 3.60
-CAP_SKIRT_EXTENSION = 1.20
+MX_SOCKET_OPENING_Z = 0.65
+
+SWITCH_SEAT_Z = SWITCH_MOUNT_NARROW_Z + (
+    (SWITCH_UPPER - SWITCH_OPENING)
+    / (SWITCH_MOUNT_WIDE - SWITCH_OPENING)
+    * (SWITCH_MOUNT_WIDE_Z - SWITCH_MOUNT_NARROW_Z)
+)
+CAP_REST_RIM_Z = (
+    SWITCH_SEAT_Z
+    + SWITCH_HOUSING_HEIGHT
+    - SWITCH_LOWER_BODY_HEIGHT
+    - MX_SOCKET_OPENING_Z
+)
+MIN_SWITCH_SIDE_HIDE = 2.0
+EYE_TOP_Z = 11.30
+TARGET_OVERALL_HEIGHT = CAP_REST_RIM_Z + CAP_HEIGHT + 0.60
 
 FILAMENTS = [
     ("Ivory White", "#FFFFFF"),
@@ -202,67 +225,44 @@ def _lofted_solid(
     return mesh
 
 
-def _salmon_dome_levels(
-    *,
-    length: float,
-    width: float,
-    height: float,
-    z0: float = 0.0,
-) -> list[tuple[float, float, float]]:
-    """Printable nigiri dome profile as (z, length, width) loft levels."""
+def _salmon_outer_levels(*, top_offset: float = 0.0) -> list[tuple[float, float, float]]:
+    """Nigiri dome with a broad, support-free top-down printing surface."""
     return [
-        (z0, length, width),
-        (z0 + max(1.0, height * 0.12), length * 0.995, width * 0.995),
-        (z0 + height * 0.45, length * 0.96, width * 0.94),
-        (z0 + height * 0.75, length * 0.86, width * 0.82),
-        (z0 + height, length * 0.68, width * 0.62),
+        (0.0, CAP_LENGTH, CAP_WIDTH),
+        (1.2, CAP_LENGTH, CAP_WIDTH),
+        (CAP_VERTICAL_CLEARANCE_HEIGHT, 56.8, 32.8),
+        (8.8, 54.0, 30.0),
+        (CAP_HEIGHT - top_offset, 51.0, 27.0),
+    ]
+
+
+def _salmon_cavity_levels(*, grow: float = 0.0) -> list[tuple[float, float, float]]:
+    """Inner void of the cap; `grow` dilates it to reserve a wall allowance."""
+    cavity_length = CAP_LENGTH - 2.0 * CAP_LOWER_WALL
+    cavity_width = CAP_WIDTH - 2.0 * CAP_LOWER_WALL
+    levels = [
+        (-1.0, cavity_length, cavity_width),
+        (1.2, cavity_length, cavity_width),
+        (CAP_VERTICAL_CLEARANCE_HEIGHT, 54.6, 30.6),
+        (8.7, 46.0, 24.5),
+    ]
+    if grow == 0.0:
+        return levels
+    return [
+        (z + grow if z > 0.0 else z - grow, length + 2.0 * grow, width + 2.0 * grow)
+        for z, length, width in levels
     ]
 
 
 def _salmon_shell(*, top_offset: float = 0.0) -> trimesh.Trimesh:
-    """Thin-walled hollow nigiri cap printed rim-down.
-
-    Earlier revisions used a filled pillow with only a shallow dish. That left a
-    thick border and dense underside that could not seat onto the switch. This
-    version is a real keycap-style shell: ~1.8 mm walls, deep open cavity, and a
-    short bed-contact rim lip.
-    """
-    outer_height = CAP_HEIGHT - top_offset
+    """Hollow cap with a squarer cavity clear through the full switch stroke."""
     outer = _lofted_solid(
-        _salmon_dome_levels(
-            length=CAP_LENGTH,
-            width=CAP_WIDTH,
-            height=outer_height,
-            z0=0.0,
-        ),
-        exponent=3.2,
+        _salmon_outer_levels(top_offset=top_offset),
+        exponent=CAP_OUTER_EXPONENT,
     )
 
-    cavity_height = max(3.0, outer_height - CAP_WALL)
-    cavity = _lofted_solid(
-        _salmon_dome_levels(
-            length=CAP_LENGTH - 2.0 * CAP_WALL,
-            width=CAP_WIDTH - 2.0 * CAP_WALL,
-            height=cavity_height,
-            z0=CAP_RIM_LIP - 0.05,
-        ),
-        exponent=3.2,
-    )
-    # Open the cavity through the bed so the rim is a true lip, not a sealed
-    # bottom skin that the slicer fills as solid layers.
-    cavity_open = _boolean_union(
-        [
-            cavity,
-            _lofted_solid(
-                [
-                    (-1.0, CAP_LENGTH - 2.0 * CAP_WALL, CAP_WIDTH - 2.0 * CAP_WALL),
-                    (CAP_RIM_LIP + 0.2, CAP_LENGTH - 2.0 * CAP_WALL, CAP_WIDTH - 2.0 * CAP_WALL),
-                ],
-                exponent=3.2,
-            ),
-        ]
-    )
-    return _boolean_difference(outer, [cavity_open])
+    cavity = _lofted_solid(_salmon_cavity_levels(), exponent=CAP_CAVITY_EXPONENT)
+    return _boolean_difference(outer, [cavity])
 
 
 def _mx_cross_cutter(
@@ -360,9 +360,9 @@ def build_rice_body() -> tuple[trimesh.Trimesh, trimesh.Trimesh, trimesh.Trimesh
             (0.0, BODY_LENGTH, BODY_WIDTH),
             (1.2, BODY_LENGTH, BODY_WIDTH),
             (4.0, BODY_LENGTH, BODY_WIDTH),
-            (14.0, 53.5, 29.5),
-            (17.5, 50.5, 27.5),
-            (BODY_HEIGHT, 42.0, 22.0),
+            (12.8, 53.7, 29.7),
+            (16.0, 51.5, 28.3),
+            (BODY_HEIGHT, 48.0, 26.0),
         ],
         exponent=4.2,
     )
@@ -372,9 +372,9 @@ def build_rice_body() -> tuple[trimesh.Trimesh, trimesh.Trimesh, trimesh.Trimesh
     switch_cavity = _lofted_solid(
         [
             (SWITCH_PIN_CLEARANCE_FLOOR, SWITCH_OPENING, SWITCH_OPENING),
-            (10.8 - SWITCH_SHOULDER_DROP, SWITCH_OPENING, SWITCH_OPENING),
-            (12.2 - SWITCH_SHOULDER_DROP, 16.4, 16.4),
-            (BODY_HEIGHT + 2.0, 16.4, 16.4),
+            (SWITCH_MOUNT_NARROW_Z, SWITCH_OPENING, SWITCH_OPENING),
+            (SWITCH_MOUNT_WIDE_Z, SWITCH_MOUNT_WIDE, SWITCH_MOUNT_WIDE),
+            (BODY_HEIGHT + 2.0, SWITCH_MOUNT_WIDE, SWITCH_MOUNT_WIDE),
         ],
         exponent=30.0,
     )
@@ -388,6 +388,10 @@ def build_rice_body() -> tuple[trimesh.Trimesh, trimesh.Trimesh, trimesh.Trimesh
     # Keep one-layer-deep overlap between the parent body and AMS face parts.
     # Bambu resolves grouped multipart overlap by part/extruder and therefore
     # recognises the colour regions as supported instead of floating islands.
+    # Clipping to the body keeps the flat-extruded features flush with the
+    # curved front instead of leaving slivers hanging off the surface.
+    black = _boolean_intersection([black, body])
+    cheeks = _boolean_intersection([cheeks, body])
     body.metadata["name"] = "Ivory rice body"
     black.metadata["name"] = "Charcoal smile and eyes"
     cheeks.metadata["name"] = "Sakura Pink cheeks"
@@ -396,22 +400,10 @@ def build_rice_body() -> tuple[trimesh.Trimesh, trimesh.Trimesh, trimesh.Trimesh
 
 def build_salmon_button() -> tuple[trimesh.Trimesh, trimesh.Trimesh]:
     outer = _salmon_shell()
-    raised = _salmon_shell(top_offset=-0.60)
-    stripe_floor = _salmon_shell(top_offset=0.20)
-    top_skin = _boolean_difference(raised, [stripe_floor])
-
-    stripe_slabs = []
-    for x, width in ((-20.0, 2.2), (-10.0, 2.4), (0.0, 2.5), (10.0, 2.4), (20.0, 2.2)):
-        stripe = _box((width, 40.0, 20.0), (x, 0, CAP_HEIGHT * 0.55))
-        stripe.apply_transform(
-            trimesh.transformations.rotation_matrix(math.radians(-18.0), [0, 0, 1])
-        )
-        stripe_slabs.append(stripe)
-    stripes = _boolean_intersection([top_skin, _boolean_union(stripe_slabs)])
 
     # Projecting keycap-style boss into the hollow cavity, open toward the bed
     # so it can press onto the MX stem. Dimensions match the proven coupon.
-    boss_bottom = 0.70
+    boss_bottom = MX_SOCKET_OPENING_Z + 0.05
     boss_top = CAP_HEIGHT - 0.40
     boss = _cylinder(
         MX_SOCKET_BOSS_D / 2,
@@ -426,8 +418,45 @@ def build_salmon_button() -> tuple[trimesh.Trimesh, trimesh.Trimesh]:
         MX_SOCKET_DEPTH,
         z0=boss_bottom - 0.05,
     )
-
     button = _boolean_difference(button, [socket])
+
+    # Colour stripes must be an inlay carved out of the finished cap. Deriving
+    # them from an enlarged shell left ribs standing proud of the real surface,
+    # which printed as floating walls with open gaps beside them.
+    eroded = _lofted_solid(
+        [
+            (z - CAP_STRIPE_DEPTH, length - 2.0 * CAP_STRIPE_DEPTH, width - 2.0 * CAP_STRIPE_DEPTH)
+            for z, length, width in _salmon_outer_levels()
+        ],
+        exponent=CAP_OUTER_EXPONENT,
+    )
+    stripe_skin = _boolean_difference(button, [eroded])
+
+    stripe_slabs = []
+    for x, width in ((-20.0, 2.2), (-10.0, 2.4), (0.0, 2.5), (10.0, 2.4), (20.0, 2.2)):
+        stripe = _box((width, 40.0, 20.0), (x, 0, CAP_HEIGHT * 0.55))
+        stripe.apply_transform(
+            trimesh.transformations.rotation_matrix(math.radians(-18.0), [0, 0, 1])
+        )
+        stripe_slabs.append(stripe)
+    stripe_region = _boolean_intersection(
+        [
+            _boolean_union(stripe_slabs),
+            _box((CAP_LENGTH + 4.0, CAP_WIDTH + 4.0, 20.0), (0, 0, CAP_STRIPE_MIN_Z + 10.0)),
+        ]
+    )
+    # Reserve a solid orange wall behind the inlay. Without this the stripe
+    # breaks through into the cavity on the sloped shoulder, where an offset
+    # measured along Z and XY exceeds the true surface-normal distance.
+    cavity_guard = _lofted_solid(
+        _salmon_cavity_levels(grow=MIN_RESIDUAL_WALL),
+        exponent=CAP_CAVITY_EXPONENT,
+    )
+    stripes = _boolean_difference(
+        _boolean_intersection([stripe_skin, stripe_region]),
+        [cavity_guard],
+    )
+
     button.metadata["name"] = "Mandarin Orange salmon button"
     stripes.metadata["name"] = "Sakura Pink salmon stripes"
     return button, stripes
@@ -515,6 +544,93 @@ def _validate_mesh(name: str, mesh: trimesh.Trimesh) -> dict:
     }
 
 
+def _flip_cap_for_print(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+    """Place the salmon cap top-down with its cavity open upward."""
+    flipped = mesh.copy()
+    flipped.apply_transform(
+        trimesh.transformations.rotation_matrix(math.pi, [1, 0, 0])
+    )
+    flipped.apply_translation((0.0, 0.0, -float(flipped.bounds[0][2])))
+    return flipped
+
+
+def _validate_inlay_containment(
+    name: str,
+    inlay: trimesh.Trimesh,
+    parent: trimesh.Trimesh,
+) -> dict:
+    """AMS colour parts must sit wholly inside their host solid.
+
+    Any volume outside the host prints as an unsupported floating wall with an
+    open gap beside it, which is what produced the holes in the striped cap.
+    """
+    stray = trimesh.boolean.difference([inlay, parent], engine="manifold")
+    stray_volume = 0.0 if stray is None else abs(float(stray.volume))
+    if stray_volume > 1e-3:
+        raise ValueError(
+            f"{name} has {stray_volume:.3f} mm3 outside its host solid"
+        )
+    return {
+        "name": name,
+        "volume_mm3": round(float(inlay.volume), 3),
+        "volume_outside_host_mm3": round(stray_volume, 6),
+    }
+
+
+def _validate_assembly_envelope(
+    body: trimesh.Trimesh,
+    button: trimesh.Trimesh,
+) -> dict:
+    """Reject cap geometry that exposes the switch or clashes through travel."""
+    switch_side_hide = BODY_HEIGHT - CAP_REST_RIM_Z
+    eye_clearance_rest = CAP_REST_RIM_Z - EYE_TOP_Z
+    eye_clearance_pressed = CAP_REST_RIM_Z - 4.0 - EYE_TOP_Z
+    if switch_side_hide < MIN_SWITCH_SIDE_HIDE:
+        raise ValueError(
+            f"Switch side hide {switch_side_hide:.3f} mm is below "
+            f"{MIN_SWITCH_SIDE_HIDE:.3f} mm"
+        )
+    if eye_clearance_rest < 2.0:
+        raise ValueError(
+            f"Resting cap-to-eye clearance {eye_clearance_rest:.3f} mm is too small"
+        )
+
+    max_collision = 0.0
+    worst_case: tuple[float, float, float] | None = None
+    for offset_x in (-0.5, 0.0, 0.5):
+        for offset_y in (-0.5, 0.0, 0.5):
+            for travel in (4.0, 4.3):
+                positioned = button.copy()
+                positioned.apply_translation(
+                    [offset_x, offset_y, CAP_REST_RIM_Z - travel]
+                )
+                overlap = trimesh.boolean.intersection(
+                    [body, positioned],
+                    engine="manifold",
+                )
+                collision = 0.0 if overlap is None else abs(float(overlap.volume))
+                if collision > max_collision:
+                    max_collision = collision
+                    worst_case = (offset_x, offset_y, travel)
+    if max_collision > 1e-4:
+        raise ValueError(
+            f"Cap/body collision {max_collision:.6f} mm3 at {worst_case}"
+        )
+
+    return {
+        "switch_seat_z": round(SWITCH_SEAT_Z, 3),
+        "cap_rest_rim_z": round(CAP_REST_RIM_Z, 3),
+        "switch_side_hide": round(switch_side_hide, 3),
+        "minimum_switch_side_hide": MIN_SWITCH_SIDE_HIDE,
+        "eye_top_z": EYE_TOP_Z,
+        "eye_clearance_rest": round(eye_clearance_rest, 3),
+        "eye_clearance_pressed": round(eye_clearance_pressed, 3),
+        "validated_travel": 4.3,
+        "validated_xy_offset": 0.5,
+        "maximum_collision_mm3": round(max_collision, 6),
+    }
+
+
 def _model_settings(
     objects: list[tuple[str, Path, int]],
     meshes: list[trimesh.Trimesh],
@@ -547,14 +663,10 @@ def _model_settings(
         if group_index == 2:
             group_overrides.update(
                 {
-                    "enable_support": "1",
-                    "support_type": "normal(auto)",
-                    "support_style": "default",
-                    "support_threshold_angle": "30",
-                    "support_top_z_distance": "0.24",
-                    "support_interface_top_layers": "3",
-                    "support_interface_spacing": "0.35",
-                    "support_object_xy_distance": "0.50",
+                    "enable_support": "0",
+                    "brim_type": "no_brim",
+                    "brim_width": "0",
+                    "outer_wall_speed": "40",
                 }
             )
         lines.extend(
@@ -816,13 +928,21 @@ def generate(job_dir: Path) -> Path:
     button, stripes = build_salmon_button()
     button = _stl_safe_mesh(button)
     coupon = build_switch_coupon()
+    assembly_validation = _validate_assembly_envelope(body, button)
+    inlay_validation = [
+        _validate_inlay_containment("Sakura Pink salmon stripes", stripes, button),
+        _validate_inlay_containment("Charcoal face", face, body),
+        _validate_inlay_containment("Sakura Pink cheeks", cheeks, body),
+    ]
+    button_for_print = _flip_cap_for_print(button)
+    stripes_for_print = _flip_cap_for_print(stripes)
 
     named_meshes = [
         ("rice_body", body),
         ("charcoal_face", face),
         ("sakura_cheeks", cheeks),
-        ("salmon_button", button),
-        ("sakura_stripes", stripes),
+        ("salmon_button", button_for_print),
+        ("sakura_stripes", stripes_for_print),
         ("switch_fit_coupon", coupon),
     ]
     validation = []
@@ -857,11 +977,17 @@ def generate(job_dir: Path) -> Path:
         },
         "switch": {
             "type": "Outemu (Gaote) Blue, 3-pin, 50 gf",
-            "upper_body": SWITCH_UPPER,
-            "lower_body": SWITCH_LOWER,
+            "upper_body_width": SWITCH_UPPER,
+            "lower_body_width": SWITCH_LOWER,
+            "housing_height": SWITCH_HOUSING_HEIGHT,
+            "lower_body_height": SWITCH_LOWER_BODY_HEIGHT,
             "mount_opening": SWITCH_OPENING,
-            "mount_transition": "14.10 to 16.40 mm support-safe tapered shoulder",
+            "mount_transition": (
+                f"{SWITCH_OPENING:.2f} to {SWITCH_MOUNT_WIDE:.2f} mm "
+                "support-safe tapered shoulder"
+            ),
             "mount_shoulder_drop": SWITCH_SHOULDER_DROP,
+            "calculated_seat_z": round(SWITCH_SEAT_Z, 3),
             "centre_pin_diameter": SWITCH_CENTRE_PIN_D,
             "contact_spacing": SWITCH_CONTACT_SPACING,
             "pin_clearance_floor_z": SWITCH_PIN_CLEARANCE_FLOOR,
@@ -873,13 +999,20 @@ def generate(job_dir: Path) -> Path:
             "mx_socket_depth": MX_SOCKET_DEPTH,
             "mx_socket_boss_diameter": MX_SOCKET_BOSS_D,
             "mx_stem_height": MX_STEM_HEIGHT,
-            "salmon_wall_thickness": CAP_WALL,
-            "salmon_rim_lip": CAP_RIM_LIP,
-            "salmon_skirt_extension": CAP_SKIRT_EXTENSION,
+            "salmon_lower_wall_thickness": CAP_LOWER_WALL,
+            "salmon_cavity_opening": [
+                CAP_LENGTH - 2.0 * CAP_LOWER_WALL,
+                CAP_WIDTH - 2.0 * CAP_LOWER_WALL,
+            ],
+            "salmon_outer_exponent": CAP_OUTER_EXPONENT,
+            "salmon_cavity_exponent": CAP_CAVITY_EXPONENT,
+            "vertical_clearance_height": CAP_VERTICAL_CLEARANCE_HEIGHT,
             "collision_free_travel": 4.0,
             "bottom_out": "provided by switch travel; rice body remains clear",
             "lateral_guides": "none; intentional playful cap wobble",
         },
+        "assembly_envelope": assembly_validation,
+        "ams_inlays": inlay_validation,
         "coupon": {
             "plate_openings": [13.95, 14.10, 14.25],
             "reference_socket": {

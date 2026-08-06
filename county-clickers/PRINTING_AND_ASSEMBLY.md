@@ -9,13 +9,12 @@
 
 ## Before printing a county
 
-1. Print `counties/_fit_coupon/switch_fit_coupon.stl`.
-2. Test the three square openings: 13.95, 14.10 and 14.25 mm.
-3. Use the smallest opening that admits the lower switch housing without force.
-4. Test the projecting MX socket on the switch stem.
+The current Outemu/Gaote switch opening and MX socket have already passed
+physical fit testing. County projects use the confirmed 14.10 mm opening.
 
-The county projects currently use the tested 14.10 mm opening. Printer
-calibration, material shrinkage and first-layer expansion can affect fit.
+Use `counties/_fit_coupon/switch_fit_coupon.stl` only when changing printer,
+material, switch supplier, socket dimensions or opening dimensions. Printer
+calibration and material shrinkage can affect fit.
 
 ## Recommended print setup
 

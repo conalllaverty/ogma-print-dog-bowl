@@ -1,0 +1,613 @@
+{
+  "product": "Bouclé Stack complete ready-to-print lamp",
+  "printer": "Bambu Lab P2S, 0.4 mm nozzle",
+  "filament": "Bone White Matte shells/rings; Jade White PLA Basic diffuser; Dark Chocolate Matte leg frame/cradle",
+  "parts": 8,
+  "plates": 8,
+  "fuzzy_skin": {
+    "key": "production",
+    "label": "coarse ceramic / sandstone",
+    "thickness_mm": 0.3,
+    "point_distance_mm": 0.8,
+    "noise_type": "classic",
+    "generator_mode": "displacement",
+    "feature_size_mm": 1.0,
+    "octaves": 4,
+    "persistence": 0.5
+  },
+  "strategy": "One object per plate removes the long inter-object travel moves that caused strings on the physical coupon plates.",
+  "stringing_controls": {
+    "objects_per_plate": 1,
+    "combined_project_plates": 8,
+    "retraction_mm": 0.8,
+    "retraction_speed_mm_s": 30,
+    "retract_on_layer_change": true,
+    "wipe_mm": 2.0,
+    "avoid_crossing_wall": true,
+    "unlimited_wall_avoidance_detour": true,
+    "infill_retraction_reduction": "Disabled project-wide in the combined 3MF; disabled on ring, leg-frame and cradle fallbacks",
+    "prime_tower": false
+  },
+  "shells": [
+    {
+      "shell": "shell_a",
+      "plate": 1,
+      "diameter_mm": 146.51,
+      "height_mm": 71.93,
+      "volume_cm3": 37.54,
+      "wall_thickness_mm": 1.6,
+      "locating_register": false,
+      "clocking_notch": null,
+      "lower_rim_clocking_notch": {
+        "phase_deg": 36.0,
+        "key_width_mm": 3.0,
+        "key_depth_mm": 0.55,
+        "key_height_mm": 4.0,
+        "tip_width_mm": 2.4,
+        "groove_width_joint_frame_mm": 3.8,
+        "groove_width_shell_frame_mm": 4.32,
+        "groove_depth_mm": 0.9,
+        "local_rim_height_mm": 43.61,
+        "open_notch_height_mm": 5.8,
+        "tangential_clearance_total_mm": 0.8,
+        "radial_clearance_mm": 0.35,
+        "wall_remaining_behind_mm": 0.7,
+        "open_to_oblique_rim": true
+      },
+      "fuzzy_paint": {
+        "painted_faces": 93783,
+        "total_faces": 228104,
+        "painted_outer_area_fraction": 0.857,
+        "smooth_base_band_mm": 4.0,
+        "smooth_rim_band_mm": 4.0,
+        "wall_thickness_mm": 1.6,
+        "minimum_wall_after_fuzzy_mm": 1.3,
+        "key": "production",
+        "label": "coarse ceramic / sandstone",
+        "thickness_mm": 0.3,
+        "point_distance_mm": 0.8,
+        "noise_type": "classic",
+        "generator_mode": "displacement",
+        "feature_size_mm": 1.0,
+        "octaves": 4,
+        "persistence": 0.5
+      }
+    },
+    {
+      "shell": "shell_b",
+      "plate": 2,
+      "diameter_mm": 125.79,
+      "height_mm": 64.97,
+      "volume_cm3": 29.01,
+      "wall_thickness_mm": 1.6,
+      "locating_register": true,
+      "clocking_notch": {
+        "phase_deg": 0.0,
+        "key_width_mm": 3.0,
+        "key_depth_mm": 1.0,
+        "key_height_mm": 3.2,
+        "tip_width_mm": 2.4,
+        "groove_width_mm": 3.8,
+        "groove_depth_mm": 1.4,
+        "tangential_clearance_total_mm": 0.8,
+        "radial_clearance_mm": 0.4,
+        "top_clearance_mm": 0.8,
+        "register_material_behind_mm": 2.6,
+        "maximum_angular_play_deg": 0.4
+      },
+      "lower_rim_clocking_notch": {
+        "phase_deg": 36.0,
+        "key_width_mm": 3.0,
+        "key_depth_mm": 0.55,
+        "key_height_mm": 4.0,
+        "tip_width_mm": 2.4,
+        "groove_width_joint_frame_mm": 3.8,
+        "groove_width_shell_frame_mm": 4.74,
+        "groove_depth_mm": 0.9,
+        "local_rim_height_mm": 59.86,
+        "open_notch_height_mm": 6.98,
+        "tangential_clearance_total_mm": 0.8,
+        "radial_clearance_mm": 0.35,
+        "wall_remaining_behind_mm": 0.7,
+        "open_to_oblique_rim": true
+      },
+      "fuzzy_paint": {
+        "painted_faces": 39594,
+        "total_faces": 103374,
+        "painted_outer_area_fraction": 0.744,
+        "smooth_base_band_mm": 4.0,
+        "smooth_rim_band_mm": 4.0,
+        "wall_thickness_mm": 1.6,
+        "minimum_wall_after_fuzzy_mm": 1.3,
+        "key": "production",
+        "label": "coarse ceramic / sandstone",
+        "thickness_mm": 0.3,
+        "point_distance_mm": 0.8,
+        "noise_type": "classic",
+        "generator_mode": "displacement",
+        "feature_size_mm": 1.0,
+        "octaves": 4,
+        "persistence": 0.5
+      }
+    },
+    {
+      "shell": "shell_c",
+      "plate": 3,
+      "diameter_mm": 113.54,
+      "height_mm": 66.47,
+      "volume_cm3": 23.86,
+      "wall_thickness_mm": 1.2,
+      "locating_register": true,
+      "clocking_notch": {
+        "phase_deg": 0.0,
+        "key_width_mm": 3.0,
+        "key_depth_mm": 1.0,
+        "key_height_mm": 3.2,
+        "tip_width_mm": 2.4,
+        "groove_width_mm": 3.8,
+        "groove_depth_mm": 1.4,
+        "tangential_clearance_total_mm": 0.8,
+        "radial_clearance_mm": 0.4,
+        "top_clearance_mm": 0.8,
+        "register_material_behind_mm": 2.6,
+        "maximum_angular_play_deg": 0.496
+      },
+      "lower_rim_clocking_notch": null,
+      "fuzzy_paint": {
+        "painted_faces": 48100,
+        "total_faces": 119566,
+        "painted_outer_area_fraction": 0.813,
+        "smooth_base_band_mm": 4.0,
+        "smooth_rim_band_mm": 4.0,
+        "wall_thickness_mm": 1.2,
+        "minimum_wall_after_fuzzy_mm": 0.9,
+        "key": "production",
+        "label": "coarse ceramic / sandstone",
+        "thickness_mm": 0.3,
+        "point_distance_mm": 0.8,
+        "noise_type": "classic",
+        "generator_mode": "displacement",
+        "feature_size_mm": 1.0,
+        "octaves": 4,
+        "persistence": 0.5
+      }
+    }
+  ],
+  "rings": [
+    {
+      "joint": "A→B",
+      "plate": 4,
+      "diameter_mm": 146.19,
+      "height_mm": 30.0,
+      "volume_cm3": 66.71,
+      "print_orientation": "upper-shell axis vertical, continuous bond band and webs down",
+      "architecture": "straight continuous full-depth bond skirt + bed-rooted central collar + twenty straight radial webs",
+      "bore_radius": 54.04,
+      "collar_radius": 57.04,
+      "seat_radius": 59.29,
+      "web": 3.0,
+      "bond_band_depth": 22.0,
+      "glue_tab_count": 0,
+      "outer_skirt_arc_degrees": 360.0,
+      "radial_web_count": 20,
+      "radial_web_thickness": 1.2,
+      "radial_web_height": 22.0,
+      "collar_bottom_z": -26.0,
+      "annular_light_path_obstruction_fraction": 0.0602,
+      "steep_unsupported_underside_area_mm2": 0.155,
+      "seat_inboard_of_outer_surface": 12.26,
+      "light_window": [
+        59.29,
+        69.96
+      ],
+      "upper_shell_clocking": {
+        "phase_deg": 0.0,
+        "key_width_mm": 3.0,
+        "key_depth_mm": 1.0,
+        "key_height_mm": 3.2,
+        "tip_width_mm": 2.4,
+        "groove_width_mm": 3.8,
+        "groove_depth_mm": 1.4,
+        "tangential_clearance_total_mm": 0.8,
+        "radial_clearance_mm": 0.4,
+        "top_clearance_mm": 0.8,
+        "register_material_behind_mm": 2.6,
+        "maximum_angular_play_deg": 0.4
+      },
+      "lower_shell_clocking": {
+        "phase_deg": 36.0,
+        "key_width_mm": 3.0,
+        "key_depth_mm": 0.55,
+        "key_height_mm": 4.0,
+        "tip_width_mm": 2.4,
+        "groove_width_joint_frame_mm": 3.8,
+        "groove_width_shell_frame_mm": 4.32,
+        "groove_depth_mm": 0.9,
+        "local_rim_height_mm": 43.61,
+        "open_notch_height_mm": 5.8,
+        "tangential_clearance_total_mm": 0.8,
+        "radial_clearance_mm": 0.35,
+        "wall_remaining_behind_mm": 0.7,
+        "open_to_oblique_rim": true
+      },
+      "fit_validation": {
+        "interference_mm3": {
+          "lower shell": 0.0,
+          "upper shell": 0.0
+        },
+        "assembled_slot_mm": 4.0,
+        "seat_height_error_mm": 0.0,
+        "nominal_skirt_clearance_per_side": 0.25,
+        "nominal_register_clearance_per_side": 0.25,
+        "register_engagement_height": 4.0,
+        "upper_shell_clocking": {
+          "phase_deg": 0.0,
+          "key_width_mm": 3.0,
+          "key_depth_mm": 1.0,
+          "key_height_mm": 3.2,
+          "tip_width_mm": 2.4,
+          "groove_width_mm": 3.8,
+          "groove_depth_mm": 1.4,
+          "tangential_clearance_total_mm": 0.8,
+          "radial_clearance_mm": 0.4,
+          "top_clearance_mm": 0.8,
+          "register_material_behind_mm": 2.6,
+          "maximum_angular_play_deg": 0.4
+        },
+        "lower_shell_clocking": {
+          "phase_deg": 36.0,
+          "key_width_mm": 3.0,
+          "key_depth_mm": 0.55,
+          "key_height_mm": 4.0,
+          "tip_width_mm": 2.4,
+          "groove_width_joint_frame_mm": 3.8,
+          "groove_width_shell_frame_mm": 4.32,
+          "groove_depth_mm": 0.9,
+          "local_rim_height_mm": 43.61,
+          "open_notch_height_mm": 5.8,
+          "tangential_clearance_total_mm": 0.8,
+          "radial_clearance_mm": 0.35,
+          "wall_remaining_behind_mm": 0.7,
+          "open_to_oblique_rim": true
+        },
+        "clocking_geometry_validation": {
+          "key_volume_mm3": 14.322,
+          "key_volume_captured_by_ring_mm3": 14.322,
+          "missing_key_volume_mm3": 0.0,
+          "key_to_grooved_shell_overlap_mm3": 0.0,
+          "lower_key_volume_mm3": 15.3202,
+          "lower_key_volume_captured_by_ring_mm3": 15.3202,
+          "missing_lower_key_volume_mm3": 2e-06,
+          "lower_key_to_grooved_shell_overlap_mm3": 0.0,
+          "passed": true
+        }
+      }
+    },
+    {
+      "joint": "B→C",
+      "plate": 5,
+      "diameter_mm": 133.15,
+      "height_mm": 13.0,
+      "volume_cm3": 18.12,
+      "print_orientation": "upper-shell axis vertical, central collar and skirt down",
+      "architecture": "5 mm continuous outer band + central collar + five radial webs",
+      "bore_radius": 42.99,
+      "collar_radius": 45.99,
+      "seat_radius": 48.24,
+      "web": 3.0,
+      "outer_band_height": 5.0,
+      "short_side_clearance_to_lower_register": 1.19,
+      "outer_skirt_arc_degrees": 360.0,
+      "radial_web_count": 5,
+      "radial_web_thickness": 1.6,
+      "radial_web_height": 5.0,
+      "steep_unsupported_underside_area_mm2": 0.0,
+      "seat_inboard_of_outer_surface": 12.34,
+      "light_window": [
+        48.24,
+        58.98
+      ],
+      "upper_shell_clocking": {
+        "phase_deg": 0.0,
+        "key_width_mm": 3.0,
+        "key_depth_mm": 1.0,
+        "key_height_mm": 3.2,
+        "tip_width_mm": 2.4,
+        "groove_width_mm": 3.8,
+        "groove_depth_mm": 1.4,
+        "tangential_clearance_total_mm": 0.8,
+        "radial_clearance_mm": 0.4,
+        "top_clearance_mm": 0.8,
+        "register_material_behind_mm": 2.6,
+        "maximum_angular_play_deg": 0.496
+      },
+      "lower_shell_clocking": {
+        "phase_deg": 36.0,
+        "key_width_mm": 3.0,
+        "key_depth_mm": 0.55,
+        "key_height_mm": 4.0,
+        "tip_width_mm": 2.4,
+        "groove_width_joint_frame_mm": 3.8,
+        "groove_width_shell_frame_mm": 4.74,
+        "groove_depth_mm": 0.9,
+        "local_rim_height_mm": 59.86,
+        "open_notch_height_mm": 6.98,
+        "tangential_clearance_total_mm": 0.8,
+        "radial_clearance_mm": 0.35,
+        "wall_remaining_behind_mm": 0.7,
+        "open_to_oblique_rim": true
+      },
+      "fit_validation": {
+        "interference_mm3": {
+          "lower shell": 0.0,
+          "upper shell": 0.0
+        },
+        "assembled_slot_mm": 4.0,
+        "seat_height_error_mm": 0.0,
+        "nominal_skirt_clearance_per_side": 0.25,
+        "nominal_register_clearance_per_side": 0.25,
+        "register_engagement_height": 4.0,
+        "upper_shell_clocking": {
+          "phase_deg": 0.0,
+          "key_width_mm": 3.0,
+          "key_depth_mm": 1.0,
+          "key_height_mm": 3.2,
+          "tip_width_mm": 2.4,
+          "groove_width_mm": 3.8,
+          "groove_depth_mm": 1.4,
+          "tangential_clearance_total_mm": 0.8,
+          "radial_clearance_mm": 0.4,
+          "top_clearance_mm": 0.8,
+          "register_material_behind_mm": 2.6,
+          "maximum_angular_play_deg": 0.496
+        },
+        "lower_shell_clocking": {
+          "phase_deg": 36.0,
+          "key_width_mm": 3.0,
+          "key_depth_mm": 0.55,
+          "key_height_mm": 4.0,
+          "tip_width_mm": 2.4,
+          "groove_width_joint_frame_mm": 3.8,
+          "groove_width_shell_frame_mm": 4.74,
+          "groove_depth_mm": 0.9,
+          "local_rim_height_mm": 59.86,
+          "open_notch_height_mm": 6.98,
+          "tangential_clearance_total_mm": 0.8,
+          "radial_clearance_mm": 0.35,
+          "wall_remaining_behind_mm": 0.7,
+          "open_to_oblique_rim": true
+        },
+        "clocking_geometry_validation": {
+          "key_volume_mm3": 14.322,
+          "key_volume_captured_by_ring_mm3": 14.322,
+          "missing_key_volume_mm3": 0.0,
+          "key_to_grooved_shell_overlap_mm3": 0.0,
+          "lower_key_volume_mm3": 15.3203,
+          "lower_key_volume_captured_by_ring_mm3": 15.3202,
+          "missing_lower_key_volume_mm3": 1.2e-05,
+          "lower_key_to_grooved_shell_overlap_mm3": 0.0,
+          "passed": true
+        }
+      }
+    }
+  ],
+  "diffuser_baffle": {
+    "coupon": "production LED diffuser baffle",
+    "disc_diameter": 76.0,
+    "disc_thickness": 1.2,
+    "post_count": 3,
+    "post_height": 30.0,
+    "locator_pegs": {
+      "count": 3,
+      "diameter": 3.0,
+      "engagement": 2.0,
+      "phases_deg": [
+        60.0,
+        180.0,
+        300.0
+      ]
+    },
+    "print_orientation": "diffuser disc on bed, posts and reduced locator tips up; flip for assembly",
+    "acceptance": "All three posts are straight and equal-height, the disc stays flat, all three locator tips enter the cradle sockets without force or rocking, and when placed over the powered module no LED die is directly visible from normal seated eye height.",
+    "plate": 6,
+    "volume_cm3": 8.03,
+    "optical_role": "thin glare diffuser; install disc 30 mm above LED",
+    "filament": "Bambu PLA Basic · Jade White",
+    "filament_profile": "Bambu PLA Basic @BBL P2S"
+  },
+  "leg_frame": {
+    "part": "plinth and leg frame",
+    "assembled_orientation": "feet on floor",
+    "print_orientation": "top seat on bed, legs upward",
+    "connected_components": 1,
+    "cradle_stop": {
+      "contact_width_mm": 0.6,
+      "initial_inward_step_mm": 0.8,
+      "bore_ramp_angle_deg": 45.0,
+      "bore_ramp_height_mm": 1.9,
+      "sacrificial_support": false
+    },
+    "top_seat_height": 4.0,
+    "leg_phases_deg": [
+      90.0,
+      210.0,
+      330.0
+    ],
+    "front_leg_phases_deg": [
+      210.0,
+      330.0
+    ],
+    "cable_phase_deg": 110.0,
+    "rear_leg_phase_deg": 90.0,
+    "cable_to_rear_leg_deg": 20.0,
+    "front_open_midpoint_deg": 270.0,
+    "angular_material_margin_deg": 7.4,
+    "cradle_bore_clearance_mm": 0.2,
+    "volume_cm3": 70.89,
+    "plate": 7,
+    "diameter_mm": 146.41,
+    "height_mm": 82.0
+  },
+  "led_cradle": {
+    "coupon": "LED cradle",
+    "kit": "Bambu Lab LED Lamp Kit-001 (MH001)",
+    "cradle_diameter": 93.6,
+    "retaining_flange_diameter": 99.0,
+    "retaining_flange_height": 4.0,
+    "flange_underside_ramp": {
+      "angle_deg": 45.0,
+      "height": 1.9,
+      "top_diameter": 97.4,
+      "final_lip": 0.8,
+      "plinth_ramp_radial_clearance": 0.2
+    },
+    "anti_rotation_key": [
+      2.0,
+      8.0
+    ],
+    "anti_rotation_key_ramp": {
+      "angle_deg": 45.0,
+      "height": 2.0,
+      "full_depth_height": 2.0
+    },
+    "anti_rotation_key_phase_deg": 290.0,
+    "coupon_height": 28.0,
+    "pocket_diameter": 60.4,
+    "pocket_depth": 8.5,
+    "pocket_floor_thickness": 19.5,
+    "tape_pad_diameter": 40.0,
+    "diffuser_locator_sockets": {
+      "count": 3,
+      "diameter": 3.6,
+      "depth": 2.4,
+      "peg_clearance_total": 0.6,
+      "bottom_clearance": 0.4,
+      "phases_deg": [
+        60.0,
+        180.0,
+        300.0
+      ],
+      "installed_peg_phases_deg": [
+        60.0,
+        180.0,
+        300.0
+      ],
+      "phase_alignment_error_deg": 0.0,
+      "minimum_led_pocket_web": 2.0,
+      "minimum_outer_web": 11.0,
+      "cable_material_margin": 20.85
+    },
+    "cable_slot": {
+      "width": 6.8,
+      "floor_z": 19.5,
+      "open_to_top": true,
+      "phase_deg": 110.0,
+      "assembly": "Lay the attached cable sideways into the slot while lowering the LED; never thread the switch or USB plug through the part."
+    },
+    "screw_mounting": {
+      "generated": false,
+      "reason": "Hole centres and safe engagement are unmeasured. Generic radial slots would cut through the D40 tape pad, weakening the known retention method. Add real blind pilots only after measuring."
+    },
+    "volume_mm3": 170871.8,
+    "acceptance": "The measured module drops into the pocket with its light face at the intended height, the tape pad lies flat, the attached cable lays sideways into the open-top slot without pinching, and the retaining flange seats flush in the plinth gauge. All three diffuser pegs enter the blind sockets by hand, seat on their Ø6 post shoulders without rocking, and lift out without tools. Use screws only after measuring their hole spacing and safe engagement depth.",
+    "plate": 8,
+    "volume_cm3": 170.87
+  },
+  "base_validation": {
+    "cradle_body_clearance_total": 0.4,
+    "cradle_flange_clearance_total": 0.4,
+    "cradle_flange_stop_width": 0.6,
+    "bore_ramp_angle_deg": 45.0,
+    "shoulder_to_flange_vertical_error": 0.0,
+    "shell_wall_supported_width": 1.6,
+    "shell_wall_width": 1.6,
+    "shell_a_seat_groove": {
+      "shell_outer_diameter": 112.0,
+      "shell_inner_diameter": 108.8,
+      "flare_outer_diameter_at_groove_top": 113.03,
+      "groove_outer_diameter": 113.53,
+      "groove_inner_diameter": 108.3,
+      "groove_depth": 1.0,
+      "radial_clearance_per_side": 0.25,
+      "outer_land_width": 1.23,
+      "remaining_seat_under_groove": 3.0,
+      "cradle_flange_pass_clearance_total": 9.8,
+      "bond_target": "Shell A wall to fixed plinth seat only"
+    },
+    "local_cable_slot_bridge_span": 6.8,
+    "anti_rotation_key_clearance": 0.4,
+    "base_cradle_collision_volume_mm3": 0.0,
+    "diffuser_cradle_collision_volume_mm3": 0.0,
+    "diffuser_locator_clearance_total_mm": 0.6,
+    "diffuser_locator_bottom_clearance_mm": 0.4,
+    "cable_phase_deg": 110.0,
+    "passed": true
+  },
+  "complete_stack_validation": {
+    "component_count": 5,
+    "pair_count": 10,
+    "collision_volume_mm3": {
+      "Shell A vs Shell B": 0.0,
+      "Shell A vs Shell C": 0.0,
+      "Shell A vs A-B ring": 0.0,
+      "Shell A vs B-C ring": 0.0,
+      "Shell B vs Shell C": 0.0,
+      "Shell B vs A-B ring": 0.0013,
+      "Shell B vs B-C ring": 0.0,
+      "Shell C vs A-B ring": 0.0,
+      "Shell C vs B-C ring": 0.0008,
+      "A-B ring vs B-C ring": 0.0
+    },
+    "passed": true
+  },
+  "shell_c_base_interface_validation": {
+    "height_mm": 4.0,
+    "reference_wall_mm": 1.6,
+    "optical_wall_mm": 1.2,
+    "reference_only_volume_mm3": 0.0,
+    "thin_only_volume_mm3": 0.0,
+    "passed": true
+  },
+  "assembly_order": [
+    "Leg frame — print inverted; no sacrificial support removal",
+    "Stand the frame on its three feet",
+    "Dry-fit LED cradle, diffuser and Shell A — confirm the shell drops into the 1.0 mm seat groove and the cradle flange still passes through Shell A's opening",
+    "Remove the cradle and diffuser before bonding",
+    "Bond Shell A into the plinth locate groove only — wipe a thin epoxy film on the groove floor; do not glue the cradle",
+    "After cure, reinstall the cradle and diffuser through Shell A",
+    "A→B halo ring — align its outward skirt tab with Shell A's open rim notch",
+    "Shell B — align its inner register notch with the tapered ring tab",
+    "B→C halo ring — align its outward skirt tab with Shell B's open rim notch",
+    "Shell C — align its inner register notch with the tapered ring tab"
+  ],
+  "filament_id": "matte-bone-white",
+  "filament_hex": "#CBC6B8",
+  "filaments": {
+    "shells_and_rings": {
+      "id": "matte-bone-white",
+      "hex": "#CBC6B8",
+      "profile": "Bambu PLA Matte @BBL P2S"
+    },
+    "diffuser": {
+      "name": "Bambu PLA Basic · Jade White",
+      "hex": "#FFFFFF",
+      "profile": "Bambu PLA Basic @BBL P2S"
+    },
+    "leg_frame_and_cradle": {
+      "id": "matte-dark-chocolate",
+      "hex": "#4D3324",
+      "profile": "Bambu PLA Matte @BBL P2S"
+    }
+  },
+  "projects": [
+    "plates/01_Shell_A_P2S.3mf",
+    "plates/02_Shell_B_P2S.3mf",
+    "plates/03_Shell_C_P2S.3mf",
+    "plates/04_Halo_ring_A_to_B_P2S.3mf",
+    "plates/05_Halo_ring_B_to_C_P2S.3mf",
+    "plates/06_LED_diffuser_baffle_P2S.3mf",
+    "plates/07_Leg_frame_P2S.3mf",
+    "plates/08_LED_cradle_P2S.3mf"
+  ],
+  "combined_project": "Boucle_Stack_Lamp_All_Plates_P2S.3mf"
+}

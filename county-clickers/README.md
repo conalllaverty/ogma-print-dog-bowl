@@ -4,6 +4,8 @@ Print-ready standalone MX-switch clickers for all 32 Irish counties.
 
 ## Start here
 
+- `physical-test-revision/` — latest seven-county candidate awaiting physical approval
+- `keychain/` — 2D Tyrone concept and compact-switch design notes
 - `counties/<county>/<County>_County_Clicker_P2S.3mf` — ready-to-open Bambu Studio project
 - `COUNTY_FILES.md` — direct links to all 32 projects
 - `PRINTING_AND_ASSEMBLY.md` — printing, parts and assembly
@@ -32,6 +34,10 @@ Each county folder also includes:
 
 These are standalone handheld pieces. Narrow counties are enlarged for the
 mechanism and the set is not intended to tessellate into a map.
+
+The production generator now includes square-shoulder wall and moving-top
+robustness gates. The complete `counties/` package remains the prior revision
+until the focused projects in `physical-test-revision/` pass physical tests.
 
 ## County list
 

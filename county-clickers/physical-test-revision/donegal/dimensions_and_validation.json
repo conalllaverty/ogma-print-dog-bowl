@@ -1,0 +1,195 @@
+{
+  "project": "Donegal County Clicker",
+  "series": "Standalone Ireland county clickers",
+  "units": "mm",
+  "sizing": {
+    "reference_county": "Tyrone",
+    "reference_width_mm": 62.0,
+    "size_boosted": true,
+    "size_scale_factor": 1.110276,
+    "scale_reasons": [
+      "moving_top_area"
+    ],
+    "placement_center_mm": [
+      107.11,
+      239.127
+    ]
+  },
+  "filaments": [
+    {
+      "slot": 1,
+      "name": "Donegal Gold",
+      "hex": "#F0C400"
+    },
+    {
+      "slot": 2,
+      "name": "Donegal Green",
+      "hex": "#009A44"
+    }
+  ],
+  "shell": {
+    "outer_size": [
+      85.63,
+      70.613,
+      23.5
+    ],
+    "inscribed_radius_mm": 14.891,
+    "cap_inset": 2.65,
+    "pocket_inset": 1.4,
+    "moving_side_clearance": 1.25,
+    "min_side_clearance_mm": 1.2
+  },
+  "moving_top": {
+    "released_height_above_shell": 2.5,
+    "full_switch_travel": 4.0,
+    "print_orientation": "top face-down; MX socket boss points upward",
+    "robustness": {
+      "cap_area_retention_percent": 45.0,
+      "cap_perimeter_retention_percent": 31.229,
+      "fragile_lobe_trimmed_percent": 0.0,
+      "neck_test_width_mm": 1.2,
+      "core_component_count": 1,
+      "secondary_core_area_percent": 0.0,
+      "min_area_retention_percent": 45.0
+    }
+  },
+  "switch": {
+    "type": "Outemu (Gaote) Blue, 3-pin, 50 gf",
+    "centre_xy": [
+      -5.443,
+      0.49
+    ],
+    "mount_opening": 14.1,
+    "shoulder_size": 16.4,
+    "lower_opening_wall_mm": 7.538,
+    "shoulder_wall_mm": 6.388,
+    "minimum_shoulder_wall_mm": 1.5,
+    "centre_strategy": "square-shoulder clearance optimization"
+  },
+  "boundary_source_fidelity": {
+    "ok": true,
+    "dataset": "Counties \u2013 National Statutory Boundaries \u2013 2019",
+    "publisher": "Tailte \u00c9ireann",
+    "licence": "Creative Commons Attribution 4.0",
+    "iou": 0.994086,
+    "accuracy_percent_iou": 99.409,
+    "hausdorff_distance_mm_at_print_scale": 0.08,
+    "generated_to_source_area_ratio": 1.000569,
+    "size_scale_factor_excluded_from_comparison": 1.110276,
+    "min_iou": 0.99,
+    "max_hausdorff_mm": 0.1
+  },
+  "fit_checks": {
+    "county": "Donegal",
+    "ok": true,
+    "issues": [],
+    "clearance": {
+      "cap_inside_pocket": true,
+      "cap_outside_pocket_area_mm2": 0.0,
+      "min_side_clearance_mm": 1.2484,
+      "p10_side_clearance_mm": 1.25,
+      "median_side_clearance_mm": 1.25,
+      "exact_min_side_clearance_mm": 1.2477,
+      "target_side_clearance_mm": 1.25,
+      "min_allowed_side_clearance_mm": 1.2
+    },
+    "cap_inscribed_radius_mm": 12.373,
+    "mx_boss_edge_clearance_mm": 9.319,
+    "shell_inscribed_radius_mm": 14.891,
+    "switch_cavity": {
+      "centre_strategy": "square-shoulder clearance optimization",
+      "centre_shift_from_circle_polylabel_mm": 0.996,
+      "lower_opening_wall_mm": 7.538,
+      "shoulder_wall_mm": 6.388,
+      "min_shoulder_wall_mm": 1.5,
+      "shoulder_size_mm": 16.4
+    },
+    "moving_top_robustness": {
+      "cap_area_retention_percent": 45.0,
+      "cap_perimeter_retention_percent": 31.229,
+      "fragile_lobe_trimmed_percent": 0.0,
+      "neck_test_width_mm": 1.2,
+      "core_component_count": 1,
+      "secondary_core_area_percent": 0.0,
+      "min_area_retention_percent": 45.0
+    },
+    "boundary_source_fidelity": {
+      "ok": true,
+      "dataset": "Counties \u2013 National Statutory Boundaries \u2013 2019",
+      "publisher": "Tailte \u00c9ireann",
+      "licence": "Creative Commons Attribution 4.0",
+      "iou": 0.994086,
+      "accuracy_percent_iou": 99.409,
+      "hausdorff_distance_mm_at_print_scale": 0.08,
+      "generated_to_source_area_ratio": 1.000569,
+      "size_scale_factor_excluded_from_comparison": 1.110276,
+      "min_iou": 0.99,
+      "max_hausdorff_mm": 0.1
+    },
+    "travel_cap_overlap": {
+      "released": {
+        "assembled_z": 19.0,
+        "cap_shell_overlap_mm3": 0.0
+      },
+      "mid": {
+        "assembled_z": 17.0,
+        "cap_shell_overlap_mm3": 0.0
+      },
+      "pressed": {
+        "assembled_z": 15.0,
+        "cap_shell_overlap_mm3": 0.0
+      }
+    },
+    "decisions_needed": []
+  },
+  "validation": [
+    {
+      "name": "donegal_shell",
+      "vertices": 4419,
+      "faces": 8834,
+      "watertight": true,
+      "volume_mm3": 35946.38,
+      "bounds_mm": {
+        "min": [
+          -42.815,
+          -35.306,
+          0.0
+        ],
+        "max": [
+          42.815,
+          35.306,
+          23.5
+        ],
+        "size": [
+          85.63,
+          70.613,
+          23.5
+        ]
+      }
+    },
+    {
+      "name": "donegal_top",
+      "vertices": 1861,
+      "faces": 3718,
+      "watertight": true,
+      "volume_mm3": 4256.242,
+      "bounds_mm": {
+        "min": [
+          -38.198,
+          -17.138,
+          0.0
+        ],
+        "max": [
+          18.336,
+          31.563,
+          7.0
+        ],
+        "size": [
+          56.535,
+          48.701,
+          7.0
+        ]
+      }
+    }
+  ]
+}

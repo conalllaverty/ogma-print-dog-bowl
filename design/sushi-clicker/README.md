@@ -47,9 +47,21 @@ Bambu Studio:
 - Flushing multiplier: **1.4**
 - Pink → Ivory and Charcoal → Ivory purge volumes remain high
 
-Plate 2 is a thin-walled hollow salmon cap (~1.8 mm walls) with a projecting MX
-boss. Normal automatic support fills the open underside during printing and is
-removed afterward. The sealed rice body does not generate internal support.
+Plate 2 is a hollow salmon cap with a 1.3 mm lower skirt and a projecting MX
+boss. Its squarer 55.4 × 31.4 mm cavity stays nearly vertical through the first
+7.2 mm, clearing the tapered rice shoulder throughout the switch stroke. It is
+packaged top-down with the cavity open upward, supports and brim disabled, and
+a 40 mm/s outer wall. The bed-facing top is a broad 51 × 27 mm surface; its two
+transition stages expand at 45° or gentler. This removes both the broad internal
+ceiling bridge that opened two through-holes when printed cavity-down and the
+steep overhang/brim damage from the first top-down revision. The sealed rice
+body does not generate internal support.
+
+Every AMS colour part is contained within its host solid and finishes flush
+with the surface. The generator fails if any colour part has volume outside its
+host. The stripes are 0.6 mm deep and always leave at least 0.6 mm of solid
+orange between the pink and the cap cavity, which is why they stop short of the
+thin-walled shoulder instead of running to the rim.
 
 ## Print the coupon first
 
@@ -62,9 +74,16 @@ known-working CritterCRAFT Dumpling model: a 5.86 mm round boss with a
 4.20 × 1.55 mm cross cavity, 5.00 mm deep. The salmon button uses the same
 socket geometry.
 
-The production switch shoulder is 1.0 mm lower than the first prototype, and
-the salmon socket is recessed 1.2 mm farther into the cap. Together these let
-the salmon skirt sit about 2.2 mm lower around the rice body.
+The production switch shoulder is 1.0 mm lower than the first prototype. The
+upper rice shoulder is also tapered inward to provide clearance for the cap's
+intentional lateral wobble at full switch travel. Its visible taper starts at
+Z12.8—1.5 mm above the eyes—and finishes on a broad 48 × 26 mm top plateau,
+avoiding the steep pyramid profile of the earlier prototype.
+
+The assembled switch stack is derived from the supplied 11.60 mm housing,
+5.00 mm lower body and the tapered mount. At rest, the salmon rim overlaps the
+rice top by at least 2 mm so the switch is hidden from every side view. Generation
+fails if this concealment or the full-travel collision envelope regresses.
 
 ## Assembly
 
