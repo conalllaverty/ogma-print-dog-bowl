@@ -18,12 +18,21 @@ import cooper_bowl_design as design  # noqa: E402
 import build_bambu_project as bambu  # noqa: E402
 import hex_bowl_design as hex_design  # noqa: E402
 import wave_bowl_design as wave_design  # noqa: E402
+from paint_fuzzy_skin import COOPER_PAINTER  # noqa: E402
 from geometry_config import (  # noqa: E402
     STYLE_COOPER,
     STYLE_HEX,
     STYLE_META,
     STYLE_WAVE,
     STYLES,
+)
+from ogma.filaments import (  # noqa: E402
+    DEFAULT_LETTERS,
+    DEFAULT_STAND,
+    PALETTE_PATH,
+    Filament,
+    load_palette,
+    resolve_filament,
 )
 
 
@@ -36,32 +45,7 @@ FONT_STYLES = (
     "playful",
     "condensed",
 )
-DEFAULT_STAND = "matte-caramel"
-DEFAULT_LETTERS = "matte-ivory-white"
 DEFAULT_STYLE = STYLE_COOPER
-PALETTE_PATH = BACKEND_DIR / "data" / "filament_palette.json"
-
-
-@dataclass(frozen=True)
-class Filament:
-    id: str
-    name: str
-    hex: str
-
-
-def load_palette(path: Path = PALETTE_PATH) -> dict[str, Filament]:
-    data = json.loads(path.read_text())
-    return {
-        item["id"]: Filament(id=item["id"], name=item["name"], hex=item["hex"].upper())
-        for item in data["filaments"]
-    }
-
-
-def resolve_filament(filament_id: str, palette: dict[str, Filament] | None = None) -> Filament:
-    palette = palette or load_palette()
-    if filament_id not in palette:
-        raise ValueError(f"Unknown filament '{filament_id}'. Use a Bambu PLA Matte swatch id.")
-    return palette[filament_id]
 
 
 @dataclass
@@ -161,6 +145,7 @@ def generate(
             template_path=GENERATOR_DIR / "blank_project.3mf",
             dims_root=job_dir,
             fuzzy_enabled=fuzzy_enabled,
+            painter=COOPER_PAINTER,
         )
 
     dims_path = job_dir / "dimensions_and_validation.json"

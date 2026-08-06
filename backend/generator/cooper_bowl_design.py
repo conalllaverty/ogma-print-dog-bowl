@@ -18,6 +18,8 @@ from shapely import union_all
 from shapely.affinity import scale as scale_geometry
 from shapely.geometry import box
 
+from ogma.geom import unwrap_cylinder_u as _unwrap_cylinder_u
+
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "cooper_dog_bowl"
@@ -644,9 +646,7 @@ def paw_cutters() -> list[trimesh.Trimesh]:
 
 def unwrap_cylinder_u(x, y, r_mid: float = PAW_PAINT_R_MID, seam_deg: float = PAW_PAINT_SEAM_DEG):
     """Map XY to unwrapped arc-length u; seam through the plaque (pad-free)."""
-    th = np.degrees(np.arctan2(y, x))
-    th = np.where(th < seam_deg, th + 360.0, th)
-    return np.radians(th) * r_mid
+    return _unwrap_cylinder_u(x, y, r_mid=r_mid, seam_deg=seam_deg)
 
 
 def paw_paint_silhouettes(

@@ -16,7 +16,7 @@ from xml.sax.saxutils import escape
 import numpy as np
 import trimesh
 
-from paint_fuzzy_skin import assert_paint_ok, paint_mask_for_mesh
+from ogma.paint import FuzzyPainter
 
 
 ROOT = Path(__file__).resolve().parent
@@ -438,8 +438,14 @@ def build_project(
     template_path: Path | None = None,
     dims_root: Path | None = None,
     fuzzy_enabled: bool = True,
+    painter: FuzzyPainter | None = None,
 ) -> Path:
-    """Package meshes into a 4-plate Bambu 3MF with Matte PLA filament colours."""
+    """Package meshes into a 4-plate Bambu 3MF with Matte PLA filament colours.
+
+    `painter` supplies the fuzzy-skin facet mask and its verification. It is
+    required whenever fuzzy_enabled is True — this module deliberately knows
+    nothing about paw silhouettes, so it cannot supply a default.
+    """
     global OUTPUT, WORK, TEMPLATE
     mesh_dir = Path(mesh_dir)
     output_path = Path(output_path)
@@ -462,7 +468,14 @@ def build_project(
     panel = meshes[1]
     panel_paint = None
     if fuzzy_enabled:
-        panel_paint = paint_mask_for_mesh(
+        if painter is None:
+            # Loud rather than silent: defaulting to "no paint" here would ship a
+            # smooth panel that still looks correct in every geometric check.
+            raise ValueError(
+                "fuzzy_enabled=True requires a painter "
+                "(pass paint_fuzzy_skin.COOPER_PAINTER for the Cooper panel)"
+            )
+        panel_paint = painter.mask(
             np.asarray(panel.vertices),
             np.asarray(panel.faces),
             dims_root,
@@ -565,7 +578,7 @@ def build_project(
         if fuzzy_enabled and panel_paint is not None:
             obj2 = packaged.read("3D/Objects/object_2.model").decode()
             cfg = packaged.read("Metadata/model_settings.config").decode()
-            assert_paint_ok(
+            painter.verify(
                 obj2,
                 cfg,
                 panel_paint,

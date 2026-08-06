@@ -47,7 +47,7 @@ if str(GENERATOR_DIR) not in sys.path:
 
 import build_bambu_project as bambu  # noqa: E402
 import boucle_lamp_config as cfg  # noqa: E402
-from pipeline import load_palette, resolve_filament  # noqa: E402
+from ogma.filaments import load_palette, resolve_filament  # noqa: E402
 
 SHELL_FILAMENT = "matte-bone-white"
 BASE_FILAMENT = "matte-dark-chocolate"

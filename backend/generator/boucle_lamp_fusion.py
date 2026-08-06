@@ -25,7 +25,7 @@ if str(GENERATOR_DIR) not in sys.path:
 
 import boucle_lamp_assembly as assembly  # noqa: E402
 import boucle_lamp_coupons as coupons  # noqa: E402
-from pipeline import load_palette, resolve_filament  # noqa: E402
+from ogma.filaments import load_palette, resolve_filament  # noqa: E402
 
 
 OBJ_NAME = "Boucle_Stack_Lamp_Fusion_Assembly.obj"

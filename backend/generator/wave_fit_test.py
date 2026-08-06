@@ -28,7 +28,7 @@ if str(GENERATOR_DIR) not in sys.path:
 
 import build_bambu_project as bambu  # noqa: E402
 from geometry_config import WAVE, wave_derived  # noqa: E402
-from pipeline import DEFAULT_STAND, load_palette, resolve_filament  # noqa: E402
+from ogma.filaments import DEFAULT_STAND, load_palette, resolve_filament  # noqa: E402
 
 
 COUPON_HEIGHT = 12.0

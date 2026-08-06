@@ -32,7 +32,7 @@ import build_bambu_project as bambu  # noqa: E402
 import golf_tee_lamp as production  # noqa: E402
 import golf_tee_lamp_config as cfg  # noqa: E402
 import golf_tee_lamp_geometry as geo  # noqa: E402
-from pipeline import load_palette, resolve_filament  # noqa: E402
+from ogma.filaments import load_palette, resolve_filament  # noqa: E402
 
 BALL_COLOUR = [255, 255, 255, 220]
 TEE_COLOUR = [174, 131, 91, 255]

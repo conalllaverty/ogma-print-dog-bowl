@@ -25,14 +25,13 @@ import trimesh
 
 import build_bambu_project as bambu
 import cooper_bowl_design as design
-from pipeline import (
+from ogma.filaments import (
     DEFAULT_LETTERS,
     DEFAULT_STAND,
-    FONT_STYLES,
-    GenerateResult,
     load_palette,
     resolve_filament,
 )
+from pipeline import FONT_STYLES, GenerateResult
 
 
 def _letter_test_bounds() -> tuple[float, float, float]:

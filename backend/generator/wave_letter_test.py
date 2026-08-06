@@ -23,13 +23,13 @@ if str(GENERATOR_DIR) not in sys.path:
 import cooper_bowl_design as design  # noqa: E402
 import wave_bowl_design as wave  # noqa: E402
 from letter_test import build_letter_test_project  # noqa: E402
-from pipeline import (  # noqa: E402
+from ogma.filaments import (  # noqa: E402
     DEFAULT_LETTERS,
     DEFAULT_STAND,
-    FONT_STYLES,
     load_palette,
     resolve_filament,
 )
+from pipeline import FONT_STYLES  # noqa: E402
 
 
 COUPON_MARGIN_X = 8.0

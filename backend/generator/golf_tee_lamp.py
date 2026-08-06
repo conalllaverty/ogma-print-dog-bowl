@@ -44,7 +44,7 @@ if str(GENERATOR_DIR) not in sys.path:
 import build_bambu_project as bambu  # noqa: E402
 import golf_tee_lamp_config as cfg  # noqa: E402
 import golf_tee_lamp_geometry as geo  # noqa: E402
-from pipeline import load_palette, resolve_filament  # noqa: E402
+from ogma.filaments import load_palette, resolve_filament  # noqa: E402
 
 TEE_FILAMENT = cfg.TEE_FILAMENT_ID
 GRASS_FILAMENT = cfg.BASE_FILAMENT_ID

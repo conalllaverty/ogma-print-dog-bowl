@@ -36,7 +36,7 @@ import boucle_lamp_config as cfg  # noqa: E402
 import boucle_lamp_coupons as coupons  # noqa: E402
 import boucle_lamp_shade as shade  # noqa: E402
 import build_bambu_project as bambu  # noqa: E402
-from pipeline import load_palette, resolve_filament  # noqa: E402
+from ogma.filaments import load_palette, resolve_filament  # noqa: E402
 
 # Preview resolution. The printed parts use 288 sections and the full profile.
 # This is picked to keep the exported files a sane size — going finer is not
