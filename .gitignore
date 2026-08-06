@@ -12,3 +12,10 @@ backend/generator/cooper_dog_bowl/
 dist/
 web/out/
 .cursor/
+
+# Scratch folder for files awaiting manual deletion (the remote-device bridge
+# cannot unlink files on the user's disk, so they get moved here instead).
+_to_delete/
+
+# Transient 3MF written while rewriting project settings in place.
+*.tmp.3mf

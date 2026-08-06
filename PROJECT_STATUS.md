@@ -99,7 +99,9 @@ the corrected throat remains physically unverified. The revised cable path,
 bayonet,
 ballast and lit-glow gates also remain open.
 
-Standalone Oggie Spin work lives under `design/modular-spinner/`. The complete
+Standalone Oggie Spin work lives under `design/modular-spinner/`, now split into
+`active/` (the Broken Ring Illusion -- the only live design) and `archive/`
+(everything superseded). The complete
 nine-plate P2S prototype now includes the Ø40 core, pressed outer-race ring, two
 removable three-lug thumb pads, five short wrap-around clip-lock colour segments,
 and a fully printed Tough+ split-collet/receiver cartridge. The first long petal
@@ -110,7 +112,27 @@ tools and trapped the arms. The matched core/arm revision retires friction ribs,
 rigid detents and legacy barb recesses. Each arm now uses a three-rail tongue
 (central dovetail ~0.16 mm/side plus two tapered guide rails ~0.22 mm/side) and
 an integrated underside Matte PLA battery-cover cantilever clip that snaps into
-a core OD pocket; press the tip radially outward to release, then lift. A true
+a core OD pocket; press the tip radially outward to release, then lift.
+
+**Arm latch -- FIXED (rebuilt on a tapered cantilever snap-tab).** Reported
+symptom was: the clips are too tight and hard to remove. Root cause is not the mechanism -- the beam is soft on paper (0.92 N,
+0.69% strain). Five modelling defects weld the cantilever to the wrap: the stem
+block swallows the hook and jams 0.50 mm into un-pocketed core, the release pad
+is unioned into un-relieved wrap, a 0.25 mm skin caps the clip with an
+unprintable 0.05 mm gap, the 37 deg entry ramp does not exist in the mesh, and
+release travel margin is 0.00 mm. Note this is the THIRD latch generation to
+fail on removal (solid-slide + friction ribs was hard to remove; the 0.13 mm
+rigid side detent required tools). The replacement is a 34 deg tapered cantilever (1.05 -> 0.525 x 4.50 mm),
+0.45 mm engagement, 0.70 mm release travel with 0.25 mm margin, a real 30 deg
+entry ramp and a 45 deg retention face giving a 2.14 N straight-pull release.
+Surface strain 0.56%; the tab bottoms out at 0.90 mm (0.72%) so it cannot be
+over-flexed by hand. Seated interference with the core is 0.000 mm3 on all five
+arms. Change 0 also landed: wrap clearance 0.12 -> 0.30 mm, 45 deg lead-in
+chamfers on the wrap bore and core top edge, and a bottom-edge relief on the
+core OD for elephant foot. The validator no longer masks the hook zone and now
+walks the beam span asserting open air on both faces. Diagnosis, as-built
+numbers and the rated alternatives are in
+`design/modular-spinner/ARM-RETENTION-REVIEW.md`. Physical gates remain open. A true
 lofted 0.4 mm slot-mouth lead-in is paired with the arm's 0.4 mm tongue lead-in,
 while 0.12 mm wrap clearance limits slap. New cores and arms are a matched pair
 — do not claim old-arm or old-core compatibility.

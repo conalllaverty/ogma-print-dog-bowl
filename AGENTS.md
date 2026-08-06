@@ -49,16 +49,30 @@ required pliers to fit and is superseded; both pads must install by hand. The
 five arms must retain their identical 100% grid infill and 2 wall-loop
 overrides; do not restore weight pods, 5-wall arms, or mix mechanical slicer
 settings across colours. The R188 is the only non-printed part. The matched
-core/arm revision uses a three-rail tongue (central dovetail ~0.16 mm/side,
-two guide rails ~0.22 mm/side) plus an integrated underside Matte PLA
-battery-cover cantilever clip into a core OD pocket. Do not restore friction
-ribs, rigid side detents, Pinch-Lok flex rails/barbs, or legacy barb recesses.
+core/arm revision uses **one solid dovetail tongue** (R14.00–20.75, uniform
+0.18 mm/side) that passes the **full 14 mm height right through the core**, with
+a tapered cantilever barb at the tongue's inner tip snapping into an **open
+recess in the core's underside**. The three-rail split is retired: physical
+testing said it does not work, and three rails meant three tolerance stacks and
+three thin features that can shave. The underside battery-cover clip is retired
+too — it had five separate welding defects and a 0.00 mm release margin. The
+slot's old 2 mm bottom shelf is gone; a 45° push-through ledge (x 18.00→19.40,
+1.30 mm rise) is what now stops the arm from sliding out the far side. Do not
+restore friction ribs, rigid side detents, Pinch-Lok flex rails/barbs, legacy
+barb recesses, the three-rail tongue, or the 2 mm slot shelf.
 New cores and arms are a matched pair — do not claim old-arm or old-core
 compatibility. Wrap radial clearance is
-0.12 mm; keep the arm's 0.4 mm bottom lead-in and the core's continuously
-lofted 0.4 mm slot-mouth lead-in. Export wrap segments print-flipped with the flush top
-face on the bed; wrap-bottom-down turns the slot tongue into an unsupported
-overhang above the 2 mm shelf. Do not restore
+0.30 mm (0.12 mm was too tight); keep the arm's 0.4 mm bottom lead-in and the
+core's continuously lofted 0.4 mm slot-mouth lead-in. **Export arms flush top
+face UP — do not flip them.** The old flip existed to dodge an overhang above
+the retired 2 mm shelf; with the shelf gone it instead lifts the clip beam's
+first layer 10.35 mm into the air, which is the floating cantilever Bambu Studio
+rejected. `_flip_arm_for_print()` is deliberately a no-op. Any "flip" written as
+a −1 axis scale is a **reflection**, not a rotation: it keeps the model
+self-consistent so every interference check still passes, while the exported
+part is a mirror image and the chiral snap clip lands on the wrong side. That
+shipped once. `printability.assert_rigid()` now rejects any transform with a
+negative determinant; route every orientation change through it. Do not restore
 the earlier long petal arms after physical testing showed easy lift/rattle and
 uneven one-side lock. Do not call the complete 3MF production-ready
 until the retaining ring, Tough+ collet, all five arm clip locks, both thumb locks
@@ -69,8 +83,35 @@ diametral clearance and relies on the separate pressed outer-race ring for axial
 capture.
 `backend/generator/oggie_spin_broken_rings.py` owns the optical winner: keep the
 proven 15/20/25 dash rings at R15.5 / R18.5 / R22.5 (1.1 mm width, 52% duty,
-0.32 mm flush Ivory inlays), add underside `BR` only, and reuse the matched
-three-rail + underside-clip mechanism. Do not add a fourth ring.
+0.32 mm flush Ivory inlays), and reuse the matched through-slot
+tongue + far-face snap-clip mechanism. The underside `BR` identifier is
+**removed** (`IDENTIFIER = None`) — Broken Ring is the only live design, so it
+distinguished nothing and read as noise. Do not add a fourth ring.
+**Every part must clear `backend/generator/printability.py` before export.**
+It sections each mesh at every layer height and diffs each footprint against the
+one below, the way a slicer does. Geometric validators in this repo compare the
+model to itself, so they are blind to anything that only exists once a part is
+oriented on a bed — which is precisely the class of defect that kept reaching
+the slicer. The key measure is **anchor ratio**, the fraction of a new region's
+outline sitting on the layer below; distance-to-support cannot tell a bridge
+from a cantilever. Under 18% is blocking and `generate()` raises rather than
+writing a mesh. It is calibrated on the old flipped arm, which it blocks.
+
+**Force figures must come from `clip_forces()` in `oggie_spin_complete.py`, never
+from prose.** Two revisions carried a 2.20 N pull-off the geometry never
+supported — derived from the barb's total 0.65 mm protrusion instead of the
+0.45 mm deflection the core's retaining lip actually demands. As built it is
+1.42 N. Related standing rule: compare bending stress to **flexural strength**,
+never strain to tensile elongation at break; that error once reported a 12:1
+margin where the real one was under 2:1.
+
+**Print `oggie_spin_sanity_plate.py` before any nine-plate run.** It is a core
+sector plus one arm, 6.7 g and about 15 minutes, and it re-loads the exported
+STLs from disk and assembles them with rotations only. Four full revisions of
+this joint were built on arithmetic alone; a mirrored export, a missing
+push-through stop and a floating cantilever all reached the slicer or the bed,
+and every one would have been caught by one arm against one slot.
+
 `backend/generator/oggie_spin_optical_variants.py` owns seven separate
 core-and-arm optical experiments under `design/modular-spinner/optical-variants/`:
 full-body vortex (`VX`), spiral (`SP`), chevron (`CH`), strobe (`ST`), opposing
