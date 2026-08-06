@@ -115,7 +115,19 @@ The module graph has the shared toolkit depending on the dog bowl, rather than t
 | **C** | `county_clicker` → `sushi_clicker` | The MX-switch geometry lives in whichever clicker was written first. |
 | **D** | `golf_tee_lamp_geometry` → `boucle_lamp_coupons` | Same pattern: shared lamp maths parked in the older lamp. |
 
-These four seams are the entire cost of the monorepo restructure. Cut them and the rest is `git mv`.
+**Outcome.** A and B are cut and verified byte-neutral. C and D were investigated and
+**deliberately not cut** — they are not toolkit-leaking-into-products, they are two designs in one
+product family sharing internals (two clickers; two lamps that use the same Bambu LED kit parts).
+Forcing an extraction there would move ~3,300 lines for no architectural gain. The fix is structural:
+one `products/clickers/` and one `products/lamps/` in §1.3, each with its own internal shared module.
+
+**A trap found while investigating them.** `_union` and `_difference` are each defined **five times**
+across five modules — and have **four distinct implementations**. Some handle a list result from the
+boolean engine, some call `merge_vertices()`, one validates watertightness and takes a name. They
+look like copy-paste duplication and are not. Deduplicating them onto one implementation would
+silently change geometry in four products. Any consolidation needs per-product golden tests first,
+and today only the dog bowl has them. Same for `_cylinder`: three definitions, three different
+signatures. **Do not "clean these up" without goldens.**
 
 ### The bowl product itself — where it really stands
 
@@ -201,7 +213,7 @@ is the hard-won part). Recommendation: **keep `.3mf`, drop `.stl` and `.glb`, ke
 the 2 MB render dumps.** That takes tracked content from 72 MB to about 30 MB. Add a
 `LICENSE` file in the same commit.
 
-### 1.2 — Cut the four import seams (~1 day)
+### ~~1.2 — Cut the four import seams~~ ✅ **A and B DONE 2026-08-06 (`f06832b`); C and D reclassified**
 
 This is the only genuinely engineering-shaped part of the restructure. Do it **before** moving files,
 so each seam is a small reviewable diff against a familiar tree.
@@ -288,7 +300,7 @@ Oggie Spin latch history to `products/oggie-spin/AGENTS.md`, and so on. What sta
 20-line index. The per-product `AGENTS.md` files keep the "do not restore X" constraint lists
 verbatim; those are expensively-earned and must not be paraphrased.
 
-### 1.4 — Make styles pluggable (~2 days) — **the highest-leverage item here**
+### ~~1.4 — Make styles pluggable~~ ✅ **DONE 2026-08-06 (`d44fd93`)**
 
 Replace the five-file edit with a single style module implementing one protocol:
 
@@ -313,14 +325,41 @@ of a 785-line module, and it's also what makes that module genuinely generic: to
 functions are bowl-style-specific, which is why calling it "the shared 3MF writer" is only half true. `STYLE_CATALOG` and
 `STYLE_META` derive from the registry, so the API and the web UI update themselves.
 
-Acceptance test: adding a new style touches exactly one new file plus one registry line, and
-regenerating cooper/wave/hex produces byte-identical meshes to today.
+**Both acceptance criteria met.** Registering a throwaway style — one new file, one line in
+`styles/__init__._MODULES` — put it in the API catalogue, the CLI `--style` choices and the web
+configurator, and it generated a valid 3MF with no other edit. Regenerating cooper/wave/hex is
+byte-identical: 58 meshes and 124 3MF member files unchanged.
 
-### 1.5 — Minimum test harness (~1 day)
+Shipped as `backend/generator/styles/` (`base.py` + one module per style). `geometry_config` keeps
+geometry only; the catalogue moved to the registry, and that split is load-bearing — `styles/wave.py`
+imports `wave_bowl_design` which imports `geometry_config`, so `geometry_config` importing the
+registry would be circular. The API serves `supports_fuzzy` per style and `page.tsx` reads it rather
+than testing `style === "cooper"`.
 
-There are no tests. `letter_test.py`, `wave_fit_test.py` and `wave_letter_test.py` are *physical*
-coupon generators, not software tests — good things, wrongly named, and they belong in
-`products/dog-bowl/tests/` as `coupons/`.
+**Correction:** the "five files" claim above was slightly wrong — `STYLE_CATALOG` already derived
+from `STYLE_META`, so the real edit surface was four sites.
+
+**Still owed:** `build_bambu_project` keeps three near-identical builders (152 / 100 / 87 lines) and
+three `configure_*_objects`. They differ in plate composition, not just parameters, so collapsing
+them onto `style.plates` is a separate change wanting its own verification pass.
+
+### ~~1.5 — Minimum test harness~~ ◐ **PARTLY DONE 2026-08-06 — `tests/` shipped in `f06832b`**
+
+`tests/goldens.py` and `tests/smoke_imports.py` now exist and are what the whole refactor above was
+verified against. `goldens.py` covers items 1 and 2 below (golden volumes, watertight) plus a sha256
+of every member file inside each exported 3MF, across 4 cases including the 8-letter `WILLIAMS`
+worst case. `smoke_imports.py` imports all 31 generator modules in fresh interpreters — it is what
+catches a broken import in lamp or spinner code that no bowl test loads.
+
+**Still to do: items 3 and 4 below (wire `printability.audit()` in; the full 7-font packing sweep),
+convert both scripts to pytest, and add CI.** Also still true: `letter_test.py`, `wave_fit_test.py`
+and `wave_letter_test.py` are *physical* coupon generators, not software tests — good things,
+wrongly named, and they belong under `products/dog-bowl/tests/coupons/`.
+
+One environment note for CI: the generators run clean on trimesh 5.0.0 / numpy 2.4.6 and reproduce
+Conall's committed mesh volumes **exactly**. Triangle counts can differ by ~1% on the wave upper
+across trimesh versions while volume holds to 7 decimal places — so **assert on volume, not
+triangle count**, or pin trimesh.
 
 Four pytest tests would have caught most of what's bitten you historically:
 
