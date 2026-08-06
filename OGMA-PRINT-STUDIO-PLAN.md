@@ -140,10 +140,15 @@ Measured solid volumes from the job files:
 | wave | lower 156.9 + upper 92.0 + seat 9.3 cm³ | 258 cm³ | ≤320 g |
 | hex | body 209.3 cm³ | 209 cm³ | ≤260 g |
 
-Treat those as **upper bounds**. Real mass depends on wall count and infill in the 4 mm shells and
-will land lower — plausibly 45–65% of solid. Nobody knows, because **no style has ever been sliced
-for time or mass, and there is no cost model anywhere in the repo.** For a product you intend to
-sell, that's the first number you need, and it's fifteen minutes of work.
+**UPDATE 2026-08-06 — all three styles have now been sliced. See `G1-slice-results.md`.** The real
+figures: cooper **249.65 g / 7h30m**, wave **281.11 g / 7h07m**, hex **212.96 g / 7h55m**, at €5.32–7.03
+of filament each. My "45–65% of solid" guess below was too pessimistic — actual is **75–87%**, and a
+4 mm wall prints at **95%** because it's all perimeter with nowhere to put infill.
+
+The headline: **all three styles cost about the same, and that cost is a working day of machine time,
+not €6 of plastic.** One P2S makes at most ~3 stands/day. Mass and time are *anti*-correlated — hex
+uses 25% less filament than wave and takes 11% longer — so pricing on material would systematically
+underprice the style that occupies the printer longest.
 
 ---
 
@@ -363,14 +368,27 @@ references in `AGENTS.md` if that sandbox is no longer live.
 Software is not what's blocking you. These are, in dependency order. **G1, G2 and G6 are the
 critical path** — everything else can run alongside.
 
-### G1 — Slice everything and get real numbers ⏱ 1 hour · **blocks all pricing**
+### ~~G1 — Slice everything and get real numbers~~ ✅ **DONE 2026-08-06**
 
-Open all three styles in Bambu Studio and record, per SKU: print time, filament mass per colour,
-plate count, support usage. Commit the table to `products/dog-bowl/SPEC.md`.
+All 10 plates across the three styles sliced on the P2S profile. Full results in
+`G1-slice-results.md`; commit that table into `products/dog-bowl/SPEC.md` during the restructure.
 
-You currently cannot answer "what does a Luna wave stand cost me?" A 258 cm³ shell is plausibly a
-12–20 hour print — if it's 20 hours, the machine time dominates the €5–7 of filament and changes
-what the product has to sell for. **Find out before designing five more styles.**
+| | cooper | wave | hex |
+|---|---:|---:|---:|
+| Plates | 4 | 4 | 2 |
+| Mass | 249.65 g | 281.11 g | 212.96 g |
+| Filament cost | 6.24 | 7.03 | 5.32 |
+| **Total time** | **7h30m** | **7h07m** | **7h55m** |
+| Longest plate | 4h36m | 3h30m | **7h32m** |
+
+What it changed: pricing must be driven by **machine time** (~7.5 h/stand, ~3 stands/day/printer),
+not filament. Letters are under 1.5 g and under 25 min in every case, so name length and font count
+are commercially free. hex's single 7h32m plate is a distinct operational risk — fewest plate changes,
+but a failure at hour seven loses the whole stand.
+
+**Follow-on now unblocked:** set a price. Take the ~7.5 h, decide what an hour of P2S time is worth
+to you, add the bought-in bowl from G6, and you have a floor. That is the one number the business
+still lacks.
 
 ### G2 — One complete stand of each style, printed and assembled ⏱ ~3 print days
 
@@ -524,7 +542,8 @@ and get G1–G9 closed** before touching Tier 2.
 | **0** | **Commit + push everything; merge `oggie-spin` → `main`** | **15 min** | **everything** |
 | 1 | Delete junk (`_tmp`, `.fuse_hidden*`, `_to_delete/`); fix `.gitignore` | 15 min | — |
 | 2 | Untrack `bambu_work/`, Arial/Oswald fonts, STL/GLB; add `LICENSE` | 30 min | — |
-| 3 | **G1 — slice all three styles, record time/mass/cost** | 1 hr | all pricing |
+| ~~3~~ | ~~**G1 — slice all three styles**~~ ✅ **done 2026-08-06** | — | — |
+| 3b | **Set a price** from the ~7.5 h machine time + G6 bowl cost | 1 hr | selling |
 | 4 | **G6 — name the bowl supplier; caliper five units** | 1 day | all sizing |
 | 5 | Cut the four import seams (A–D) | 1 day | 6 |
 | 6 | `git mv` to `products/` + `shared/`; split the two sediment docs | 0.5 day | 7, 8 |
