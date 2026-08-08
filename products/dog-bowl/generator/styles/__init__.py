@@ -13,7 +13,7 @@ from importlib import import_module
 
 from .base import BowlStyle, StyleImpl
 
-_MODULES = ("cooper", "wave", "hex")
+_MODULES = ("cooper", "wave", "hex", "fluted")
 
 _REGISTRY: dict[str, BowlStyle] = {}
 for _m in _MODULES:

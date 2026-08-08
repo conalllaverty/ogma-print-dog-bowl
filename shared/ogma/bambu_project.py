@@ -94,12 +94,22 @@ def configure_wave_objects(mesh_dir: Path, name: str) -> None:
     BUILD_POSITIONS = positions
 
 
-def configure_hex_objects(mesh_dir: Path, name: str) -> None:
-    """Build OBJECTS + BUILD_POSITIONS for the solid honeycomb layout."""
+def configure_hex_objects(
+    mesh_dir: Path,
+    name: str,
+    body_mesh: str = "honeycomb_body.ply",
+    body_label: str = "honeycomb body",
+) -> None:
+    """Build OBJECTS + BUILD_POSITIONS for a single-body drum layout.
+
+    Shared by every drum style — honeycomb, fluted, and anything else that is
+    one textured body plus a letters plate. Only the body mesh filename differs,
+    so it is a parameter rather than a copy of this function.
+    """
     global OBJECTS, BUILD_POSITIONS, MESH_DIR
     MESH_DIR = Path(mesh_dir)
     objects: list[tuple[str, Path, int]] = [
-        (f"{name} honeycomb body", MESH_DIR / "honeycomb_body.ply", 1),
+        (f"{name} {body_label}", MESH_DIR / body_mesh, 1),
     ]
     seen: dict[str, int] = {}
     for index, ch in enumerate(name, start=1):
@@ -702,8 +712,10 @@ def build_hex_project(
     letter_name: str = "Letters",
     work_dir: Path | None = None,
     template_path: Path | None = None,
+    body_mesh: str = "honeycomb_body.ply",
+    body_label: str = "honeycomb body",
 ) -> Path:
-    """Package the solid honeycomb body and letters into a 2-plate 3MF."""
+    """Package a single textured drum body and its letters into a 2-plate 3MF."""
     global OUTPUT, WORK, TEMPLATE
     mesh_dir = Path(mesh_dir)
     output_path = Path(output_path)
@@ -713,7 +725,7 @@ def build_hex_project(
     WORK = work_dir
     TEMPLATE = template_path
 
-    configure_hex_objects(mesh_dir, name.upper())
+    configure_hex_objects(mesh_dir, name.upper(), body_mesh=body_mesh, body_label=body_label)
 
     meshes = []
     for _, path, _ in OBJECTS:

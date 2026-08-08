@@ -103,6 +103,52 @@ class HexParams:
 HEX = HexParams()
 
 
+@dataclass(frozen=True)
+class FlutedParams:
+    """Fluted drum — same envelope and seat as the honeycomb, different texture.
+
+    Flutes are cut INWARD. The archived Named Bowl v4.5 generator pushed them
+    outward (`r += fa*(0.5+0.5*sin(fn*th))`), which grows the outside diameter
+    by 2*fa and would foul the letter pockets, since those are cut at a fixed
+    LETTER_FACE_R. Cutting inward keeps the 170 mm envelope and leaves the wall
+    arithmetic identical to the honeycomb's.
+    """
+
+    h: float = 78.0
+    rb_out: float = COOPER.wall_outer_r
+    rt_out: float = COOPER.wall_outer_r
+    wall_inner_r: float = COOPER.wall_inner_r
+    support_start_z: float = 58.0
+
+    # v4.5 shipped fn=64 / fa=1.1 as its defaults. 64 flutes at R81.6 is a
+    # 8.0 mm pitch — comfortably above the 0.42 mm line width, so each flute
+    # still gets real perimeters rather than becoming slicer noise.
+    flute_count: int = 64
+    flute_depth: float = 1.1
+
+    # Remaining web = 4.0 mm wall - flute_depth. Keep >= 2.5 mm.
+    min_web: float = 2.5
+
+    rows: int = 208
+    sections: int = 1056
+    pattern_edge_band: float = 5.0
+    pattern_border_width: float = 1.4
+    pattern_border_depth: float = 0.45
+    # Flutes fade out over this distance rather than stopping at a hard edge —
+    # a step would leave a visible seam beside every letter.
+    name_keepout_margin: float = 2.5
+    name_fade: float = 6.0
+    top_edge_bead: float = 0.45
+    top_edge_height: float = 1.2
+    bottom_edge_chamfer: float = 0.35
+    bottom_edge_height: float = 1.2
+    # No staggered cell field here, so the name sits at the true drum midpoint.
+    letter_center_z: float = 39.0
+
+
+FLUTED = FlutedParams()
+
+
 def wave_derived(p: WaveParams = WAVE) -> dict[str, float]:
     """Derived wave seam / collar numbers (Named Bowl §2, Cooper-sized)."""
     seam_y = p.h * p.seam_p / 100.0
