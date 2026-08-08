@@ -15,7 +15,7 @@ import zipfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-PIPELINE = REPO / "backend" / "generator" / "pipeline.py"
+PIPELINE = REPO / "products" / "dog-bowl" / "generator" / "pipeline.py"
 PY = sys.executable
 
 CASES = [

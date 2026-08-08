@@ -1,0 +1,160 @@
+{
+  "project": "Offaly County Clicker",
+  "series": "Standalone Ireland county clickers",
+  "units": "mm",
+  "sizing": {
+    "reference_county": "Tyrone",
+    "reference_width_mm": 62.0,
+    "size_boosted": true,
+    "size_scale_factor": 1.503933,
+    "placement_center_mm": [
+      120.746,
+      116.257
+    ]
+  },
+  "filaments": [
+    {
+      "slot": 1,
+      "name": "Offaly Green",
+      "hex": "#009A44"
+    },
+    {
+      "slot": 2,
+      "name": "Offaly Gold",
+      "hex": "#F0C400"
+    }
+  ],
+  "shell": {
+    "outer_size": [
+      68.11,
+      59.649,
+      23.5
+    ],
+    "inscribed_radius_mm": 11.5,
+    "cap_inset": 2.65,
+    "pocket_inset": 1.4,
+    "moving_side_clearance": 1.25,
+    "min_side_clearance_mm": 1.2
+  },
+  "moving_top": {
+    "released_height_above_shell": 2.5,
+    "full_switch_travel": 4.0,
+    "print_orientation": "top face-down; MX socket boss points upward"
+  },
+  "switch": {
+    "type": "Outemu (Gaote) Blue, 3-pin, 50 gf",
+    "centre_xy": [
+      -15.398,
+      10.276
+    ],
+    "mount_opening": 14.1
+  },
+  "boundary_source_fidelity": {
+    "ok": true,
+    "dataset": "Counties \u2013 National Statutory Boundaries \u2013 2019",
+    "publisher": "Tailte \u00c9ireann",
+    "licence": "Creative Commons Attribution 4.0",
+    "iou": 0.99606,
+    "accuracy_percent_iou": 99.606,
+    "hausdorff_distance_mm_at_print_scale": 0.0796,
+    "generated_to_source_area_ratio": 1.000367,
+    "size_scale_factor_excluded_from_comparison": 1.503933,
+    "min_iou": 0.99,
+    "max_hausdorff_mm": 0.1
+  },
+  "fit_checks": {
+    "county": "Offaly",
+    "ok": true,
+    "issues": [],
+    "clearance": {
+      "cap_inside_pocket": true,
+      "cap_outside_pocket_area_mm2": 0.0,
+      "min_side_clearance_mm": 1.2485,
+      "p10_side_clearance_mm": 1.25,
+      "median_side_clearance_mm": 1.25,
+      "exact_min_side_clearance_mm": 1.248,
+      "target_side_clearance_mm": 1.25,
+      "min_allowed_side_clearance_mm": 1.2
+    },
+    "cap_inscribed_radius_mm": 8.882,
+    "shell_inscribed_radius_mm": 11.5,
+    "boundary_source_fidelity": {
+      "ok": true,
+      "dataset": "Counties \u2013 National Statutory Boundaries \u2013 2019",
+      "publisher": "Tailte \u00c9ireann",
+      "licence": "Creative Commons Attribution 4.0",
+      "iou": 0.99606,
+      "accuracy_percent_iou": 99.606,
+      "hausdorff_distance_mm_at_print_scale": 0.0796,
+      "generated_to_source_area_ratio": 1.000367,
+      "size_scale_factor_excluded_from_comparison": 1.503933,
+      "min_iou": 0.99,
+      "max_hausdorff_mm": 0.1
+    },
+    "travel_cap_overlap": {
+      "released": {
+        "assembled_z": 19.0,
+        "cap_shell_overlap_mm3": 0.0
+      },
+      "mid": {
+        "assembled_z": 17.0,
+        "cap_shell_overlap_mm3": 0.0
+      },
+      "pressed": {
+        "assembled_z": 15.0,
+        "cap_shell_overlap_mm3": 0.0
+      }
+    },
+    "decisions_needed": []
+  },
+  "validation": [
+    {
+      "name": "offaly_shell",
+      "vertices": 1562,
+      "faces": 3120,
+      "watertight": true,
+      "volume_mm3": 24523.357,
+      "bounds_mm": {
+        "min": [
+          -34.055,
+          -29.825,
+          0.0
+        ],
+        "max": [
+          34.055,
+          29.825,
+          23.5
+        ],
+        "size": [
+          68.11,
+          59.649,
+          23.5
+        ]
+      }
+    },
+    {
+      "name": "offaly_top",
+      "vertices": 1655,
+      "faces": 3306,
+      "watertight": true,
+      "volume_mm3": 4025.871,
+      "bounds_mm": {
+        "min": [
+          -28.705,
+          -26.287,
+          0.0
+        ],
+        "max": [
+          29.684,
+          22.607,
+          7.0
+        ],
+        "size": [
+          58.389,
+          48.894,
+          7.0
+        ]
+      }
+    }
+  ]
+}

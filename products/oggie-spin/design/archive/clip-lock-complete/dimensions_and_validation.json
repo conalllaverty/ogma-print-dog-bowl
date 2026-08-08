@@ -1,0 +1,487 @@
+{
+  "project": "Oggie Spin complete five-arm spinner",
+  "status": "complete printable prototype; physical approval pending",
+  "printer": "Bambu Lab P2S, 0.4 mm nozzle",
+  "material": "Bambu PLA Matte + Bambu PLA Tough+",
+  "finished_envelope_mm": {
+    "diameter": 49.0,
+    "core_height": 14.0,
+    "body_height": 12.0,
+    "assembled_height": 30.0
+  },
+  "core": {
+    "diameter": 40.0,
+    "height": 14.0,
+    "slots": 5,
+    "slot_pitch_deg": 72.0,
+    "bearing_pocket_diameter": 12.82,
+    "bearing_nominal_outer_diameter": 12.7,
+    "bearing_diametral_clearance": 0.12,
+    "bearing_diametral_interference": 0.0,
+    "bearing_fit_revision": "12.86 mm released the R188 under gravity; 12.68 mm would not install by hand; 12.78 mm remained too tight; 12.82 mm uses the retaining ring for axial capture",
+    "clip_pockets": true,
+    "matched_arm_revision": true
+  },
+  "clip_lock_joint": {
+    "arms": 5,
+    "style": "short wrap-around colour segment with three-rail tongue and underside battery-cover clip",
+    "arm_height": 12.0,
+    "wrap_height": 14.0,
+    "wrap_inner_radius": 20.12,
+    "wrap_outer_radius": 24.5,
+    "wrap_half_angle_deg": 20.0,
+    "core_radial_clearance": 0.12,
+    "tongue_lead_in_mm": 0.4,
+    "tongue_inner_radius_mm": 14.0,
+    "tongue_outer_radius_mm": 21.4,
+    "central_side_clearance_mm": 0.16,
+    "guide_side_clearance_mm": 0.22,
+    "central_inner_half_width_mm": 2.2,
+    "central_outer_half_width_mm": 1.35,
+    "guide_width_mm": 0.9,
+    "clip_beam_mm": {
+      "radial_width": 1.0,
+      "height": 2.4,
+      "arc_half_deg": 12.0,
+      "center_radius": 22.3
+    },
+    "clip_hook_engagement_mm": 0.22,
+    "clip_release_travel_mm": 0.35,
+    "clip_entry_angle_deg": 37.0,
+    "release": "press the underside tip radially outward to clear the pocket, then lift the wrap segment vertically",
+    "radial_load_path": "central dovetail rail plus two side guide rails",
+    "axial_retention": "integrated underside Matte PLA cantilever clip",
+    "weighting": "100% grid infill; no separate weight pods",
+    "mass_rule": "all five arms must use identical geometry and slicer settings",
+    "print_orientation": "flipped so the flush top face is on the bed; avoids the slot tongue overhang created by the 2 mm bottom shelf",
+    "revision": "matched core/arm revision: three-rail loose slide with underside battery-cover clip; friction ribs, rigid side detents and legacy barb recesses retired; not compatible with earlier solid-slide arms or cores"
+  },
+  "bearing_retainer": {
+    "type": "pressed outer-race ring",
+    "counterbore_diameter": 15.15,
+    "ring_outer_diameter": 15.22,
+    "ring_inner_diameter": 10.8,
+    "height": 1.2,
+    "diametral_interference": 0.07
+  },
+  "cartridge": {
+    "type": "fully printed four-finger split collet + through-bore receiver",
+    "material": "Bambu PLA Tough+",
+    "integrated_inner_race_spacers": true,
+    "hub_to_core_gap_each_side": 1.6,
+    "installed_intersection_volume_mm3": 0.0,
+    "installed_clear": true,
+    "axle_diameter_mm": 6.4,
+    "bearing_bore_diameter_mm": 6.35,
+    "bearing_diametral_clearance_mm": -0.05,
+    "bearing_diametral_interference_mm": 0.05,
+    "bearing_fit_class": "light interference trial",
+    "receiver_bore_diameter_mm": 6.48,
+    "shaft_receiver_diametral_clearance_mm": 0.08,
+    "bead_diameter_mm": 6.8,
+    "bead_compression_through_bearing_diameter_mm": 0.45,
+    "bead_compression_through_receiver_diameter_mm": 0.32,
+    "finger_count": 4,
+    "finger_length_mm": 10.1,
+    "slot_width_mm": 0.55,
+    "installed_axial_play_mm": 0.05,
+    "release": "remove the upper thumb pad, pinch the four exposed collet fingers inward, and push the axle back through the receiver"
+  },
+  "thumb_pads": {
+    "geometry": "two identical socketed bayonet pads",
+    "height_each": 6.4,
+    "socket_each": {
+      "installed_collet_intersection_volume_mm3": 0.0,
+      "installed_collet_clear": true,
+      "cap_height_mm": 6.4,
+      "socket_diameter_mm": 7.3,
+      "socket_depth_mm": 5.2,
+      "collet_radial_clearance_mm": 0.5,
+      "collet_tip_axial_clearance_mm": 0.5
+    },
+    "identity_validation": {
+      "geometrically_identical": true,
+      "volume_mm3_each": 1408.382,
+      "bounds_mm_each": [
+        20.0,
+        20.0,
+        6.4
+      ]
+    },
+    "manufacturing": "same mesh on both sides; the receiver side requires the socket and the collet side retains it for batch uniformity"
+  },
+  "hardware": [
+    "1 \u00d7 R188 bearing (12.70 \u00d7 6.35 \u00d7 4.76 mm)"
+  ],
+  "print": {
+    "plates": 9,
+    "layer_height": 0.16,
+    "wall_loops_default": 5,
+    "arm_wall_loops": 2,
+    "default_infill": "25% gyroid",
+    "arm_infill": "100% grid",
+    "supports": false,
+    "arm_colour_slots": [
+      "Marine Blue Matte",
+      "Lemon Yellow Matte",
+      "Mandarin Orange Matte",
+      "Grass Green Matte",
+      "Lilac Purple Matte"
+    ],
+    "structural_filament_slot": "Orange Tough+ cartridge"
+  },
+  "physical_gates": [
+    "bearing enters the \u00d812.82 pocket by controlled hand pressure, seats on the lower shoulder, and is captured by the outer-race retaining ring",
+    "retaining ring presses to the bearing outer race and cannot lift by hand",
+    "Tough+ collet compresses through the R188 and receiver without cracking",
+    "collet bead snaps fully beyond the receiver face with 0.05 mm axial play",
+    "assembled printed cartridge leaves both hubs 1.6 mm clear of the core",
+    "both identical thumb pads install by hand without pliers",
+    "receiver-side thumb pad seats fully without touching the exposed collet tip",
+    "exposed collet fingers release only when deliberately pinched together",
+    "split collet survives 100 assemble/release cycles without whitening or creep",
+    "all five three-rail blocks seat on the bottom shelves by hand without hammering",
+    "each underside clip clicks into its core pocket on install",
+    "pinch/press the underside tip to release; no accidental lift in normal handling",
+    "all five clip locks survive 100 insert/remove cycles without whitening or creep",
+    "both thumb pads survive 100 bayonet cycles",
+    "assembled spinner turns freely without visible wobble"
+  ],
+  "meshes": [
+    {
+      "object": 1,
+      "name": "Complete Oggie Spin core",
+      "watertight": true,
+      "vertices": 1468,
+      "faces": 2936,
+      "volume_mm3": 12576.687,
+      "bounds_mm": [
+        40.0,
+        40.0,
+        14.0
+      ]
+    },
+    {
+      "object": 2,
+      "name": "R188 outer-race retaining ring",
+      "watertight": true,
+      "vertices": 512,
+      "faces": 1024,
+      "volume_mm3": 108.349,
+      "bounds_mm": [
+        15.22,
+        15.22,
+        1.2
+      ]
+    },
+    {
+      "object": 3,
+      "name": "Tough+ split-collet through-axle hub",
+      "watertight": true,
+      "vertices": 1601,
+      "faces": 3198,
+      "volume_mm3": 1156.516,
+      "bounds_mm": [
+        15.17,
+        14.708,
+        24.3
+      ]
+    },
+    {
+      "object": 4,
+      "name": "Tough+ through-bore receiver hub",
+      "watertight": true,
+      "vertices": 756,
+      "faces": 1512,
+      "volume_mm3": 434.287,
+      "bounds_mm": [
+        15.17,
+        14.708,
+        8.62
+      ]
+    },
+    {
+      "object": 5,
+      "name": "Socketed thumb pad 1",
+      "watertight": true,
+      "vertices": 1095,
+      "faces": 2186,
+      "volume_mm3": 1408.382,
+      "bounds_mm": [
+        20.0,
+        20.0,
+        6.4
+      ]
+    },
+    {
+      "object": 6,
+      "name": "Socketed thumb pad 2",
+      "watertight": true,
+      "vertices": 1095,
+      "faces": 2186,
+      "volume_mm3": 1408.382,
+      "bounds_mm": [
+        20.0,
+        20.0,
+        6.4
+      ]
+    },
+    {
+      "object": 7,
+      "name": "Clip-lock colour block 1",
+      "watertight": true,
+      "vertices": 718,
+      "faces": 1440,
+      "volume_mm3": 1439.383,
+      "bounds_mm": [
+        11.351,
+        17.106,
+        14.0
+      ]
+    },
+    {
+      "object": 8,
+      "name": "Clip-lock colour block 2",
+      "watertight": true,
+      "vertices": 718,
+      "faces": 1440,
+      "volume_mm3": 1439.383,
+      "bounds_mm": [
+        11.351,
+        17.106,
+        14.0
+      ]
+    },
+    {
+      "object": 9,
+      "name": "Clip-lock colour block 3",
+      "watertight": true,
+      "vertices": 718,
+      "faces": 1440,
+      "volume_mm3": 1439.383,
+      "bounds_mm": [
+        11.351,
+        17.106,
+        14.0
+      ]
+    },
+    {
+      "object": 10,
+      "name": "Clip-lock colour block 4",
+      "watertight": true,
+      "vertices": 718,
+      "faces": 1440,
+      "volume_mm3": 1439.383,
+      "bounds_mm": [
+        11.351,
+        17.106,
+        14.0
+      ]
+    },
+    {
+      "object": 11,
+      "name": "Clip-lock colour block 5",
+      "watertight": true,
+      "vertices": 718,
+      "faces": 1440,
+      "volume_mm3": 1439.383,
+      "bounds_mm": [
+        11.351,
+        17.106,
+        14.0
+      ]
+    }
+  ],
+  "package": {
+    "objects": 11,
+    "plates": 9,
+    "printer_profile": "Bambu Lab P2S 0.4 nozzle",
+    "filament_profiles": [
+      "Bambu PLA Matte @BBL P2S",
+      "Bambu PLA Matte @BBL P2S",
+      "Bambu PLA Matte @BBL P2S",
+      "Bambu PLA Matte @BBL P2S",
+      "Bambu PLA Matte @BBL P2S",
+      "Bambu PLA Tough+ @BBL P2S"
+    ],
+    "filament_colours": [
+      "#3A8FCF",
+      "#F0C14A",
+      "#F26B38",
+      "#61B15A",
+      "#9B7AC7",
+      "#F97316"
+    ],
+    "layer_height": "0.16",
+    "solid_infill_object_ids": [
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "two_wall_arm_object_ids": [
+      7,
+      8,
+      9,
+      10,
+      11
+    ]
+  },
+  "five_block_plate": {
+    "path": "Oggie_Spin_5x_Clip_Lock_P2S.3mf",
+    "objects": 5,
+    "plates": 1,
+    "separate_plate_objects": true,
+    "print_sequence": "by layer",
+    "assigned_filament_slot": 1,
+    "configured_filament_slots": 2,
+    "expected_filament_changes": 0,
+    "wall_loops": 2,
+    "infill": "100% gyroid",
+    "z_hop_mm": 0.6,
+    "z_hop_type": "Slope Lift",
+    "prime_tower": false,
+    "layout_centres_mm": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        -70.0,
+        -70.0
+      ],
+      [
+        70.0,
+        -70.0
+      ],
+      [
+        70.0,
+        70.0
+      ],
+      [
+        -70.0,
+        70.0
+      ]
+    ]
+  },
+  "clip_lock_validation": {
+    "installed_intersection_volume_mm3": [
+      0.326782,
+      0.326783,
+      0.326782,
+      0.326782,
+      0.326782
+    ],
+    "maximum_intersection_volume_mm3": 0.326783,
+    "unexpected_intersection_volume_mm3": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "maximum_unexpected_intersection_volume_mm3": 0.0,
+    "seated_latch_intersection_volume_mm3": 0.326782,
+    "released_latch_intersection_volume_mm3": 7e-06,
+    "central_side_clearance_mm": 0.16,
+    "guide_side_clearance_mm": 0.22,
+    "clip_hook_engagement_mm": 0.22,
+    "clip_release_travel_mm": 0.35,
+    "clip_entry_angle_deg": 37.0,
+    "installed_clear_except_intentional_hook": true,
+    "adjacent_arm_intersection_volume_mm3": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "adjacent_arms_clear": true,
+    "wrap_inner_radius_mm": 20.12,
+    "wrap_outer_radius_mm": 24.5,
+    "wrap_half_angle_deg": 20.0,
+    "wrap_height_mm": 14.0,
+    "slot_insert_height_mm": 12.0,
+    "core_radial_clearance_mm": 0.12,
+    "matched_revision": true
+  },
+  "split_collet_validation": {
+    "installed_intersection_volume_mm3": 0.0,
+    "installed_clear": true,
+    "axle_diameter_mm": 6.4,
+    "bearing_bore_diameter_mm": 6.35,
+    "bearing_diametral_clearance_mm": -0.05,
+    "bearing_diametral_interference_mm": 0.05,
+    "bearing_fit_class": "light interference trial",
+    "receiver_bore_diameter_mm": 6.48,
+    "shaft_receiver_diametral_clearance_mm": 0.08,
+    "bead_diameter_mm": 6.8,
+    "bead_compression_through_bearing_diameter_mm": 0.45,
+    "bead_compression_through_receiver_diameter_mm": 0.32,
+    "finger_count": 4,
+    "finger_length_mm": 10.1,
+    "slot_width_mm": 0.55,
+    "installed_axial_play_mm": 0.05,
+    "release": "remove the upper thumb pad, pinch the four exposed collet fingers inward, and push the axle back through the receiver"
+  },
+  "thumb_bayonet_validation": {
+    "pad_1_collet_side": {
+      "sampled_rotation_deg": [
+        0,
+        5,
+        10,
+        15,
+        20,
+        25,
+        30
+      ],
+      "intersection_volume_mm3": {
+        "0": 0.0,
+        "5": 0.0,
+        "10": 0.069699,
+        "15": 0.069772,
+        "20": 0.069664,
+        "25": 0.0,
+        "30": 0.0
+      },
+      "maximum_intersection_volume_mm3": 0.069772,
+      "entry_clear": true,
+      "locked_clear": true,
+      "detent_flex_interference_present": true
+    },
+    "pad_2_receiver_side": {
+      "sampled_rotation_deg": [
+        0,
+        5,
+        10,
+        15,
+        20,
+        25,
+        30
+      ],
+      "intersection_volume_mm3": {
+        "0": 0.0,
+        "5": 0.0,
+        "10": 0.069699,
+        "15": 0.069772,
+        "20": 0.069664,
+        "25": 0.0,
+        "30": 0.0
+      },
+      "maximum_intersection_volume_mm3": 0.069772,
+      "entry_clear": true,
+      "locked_clear": true,
+      "detent_flex_interference_present": true
+    },
+    "receiver_tip_clearance": {
+      "installed_collet_intersection_volume_mm3": 0.0,
+      "installed_collet_clear": true,
+      "cap_height_mm": 6.4,
+      "socket_diameter_mm": 7.3,
+      "socket_depth_mm": 5.2,
+      "collet_radial_clearance_mm": 0.5,
+      "collet_tip_axial_clearance_mm": 0.5
+    }
+  }
+}

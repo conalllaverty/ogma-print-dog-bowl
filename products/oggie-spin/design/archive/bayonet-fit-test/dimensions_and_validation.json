@@ -1,0 +1,211 @@
+{
+  "project": "Oggie Spin R188 + axial-lock bayonet fit test",
+  "status": "printable prototype; physical fit not yet approved",
+  "units": "mm",
+  "printer": "Bambu Lab P2S, 0.4 mm nozzle",
+  "material": "Bambu PLA Matte",
+  "core": {
+    "diameter": 40.0,
+    "height": 14.0,
+    "arm_slots": 5,
+    "slot_pitch_deg": 72.0,
+    "slot_bottom_shelf": 2.0
+  },
+  "bearing": {
+    "type": "R188",
+    "nominal": {
+      "outer_diameter": 12.7,
+      "inner_diameter": 6.35,
+      "width": 4.76
+    },
+    "pocket_diameter": 12.86,
+    "diametral_clearance": 0.16,
+    "seat_z": 4.62,
+    "shoulder_opening": 10.6,
+    "retention": "coupon transition fit; final outer-race retainer pending print result"
+  },
+  "cartridge": {
+    "fastener": "M3 x 25 mm low-profile/button-head screw + M3 nyloc nut",
+    "sleeve": {
+      "od": 6.18,
+      "id": 3.35,
+      "height": 4.76
+    },
+    "spacer": {
+      "od": 8.4,
+      "id": 3.35,
+      "height": 5.02
+    },
+    "hub_to_core_gap_each_side": 0.4
+  },
+  "bayonet": {
+    "lug_count": 3,
+    "rotation_deg": 30.0,
+    "boss_diameter": 9.6,
+    "cap_cavity_diameter": 10.1,
+    "boss_radial_clearance_per_side": 0.25,
+    "lug_radial_clearance": 0.16,
+    "lug_axial_clearance": 0.58,
+    "detent_radial_interference": 0.06,
+    "retention": "three undercut tracks + flex nubs + widened terminal pockets",
+    "release": "twist 30 degrees back past the detents, then lift"
+  },
+  "print": {
+    "plates": 4,
+    "layer_height": 0.16,
+    "wall_loops": 5,
+    "infill": "25% gyroid",
+    "supports": false,
+    "cap_orientation": "finished top face on bed; bayonet cavity upward"
+  },
+  "physical_gates": [
+    "R188 seats fully against the shoulder without cracking the core",
+    "inner race spins freely after M3 cartridge is tightened",
+    "both hub flanges retain at least 0.4 mm clearance from the core",
+    "pads insert through all three gates and rotate 30 degrees to the stop",
+    "locked pads have no visible axial lift and cannot pull straight off",
+    "pads release by reverse twist and lift without whitening or chipped lugs",
+    "repeat 100 lock/unlock cycles before production approval"
+  ],
+  "meshes": [
+    {
+      "object": 1,
+      "name": "Oggie Spin five-slot core",
+      "vertices": 872,
+      "faces": 1744,
+      "watertight": true,
+      "volume_mm3": 12819.038,
+      "bounds_mm": [
+        40.0,
+        40.0,
+        14.0
+      ]
+    },
+    {
+      "object": 2,
+      "name": "R188 M3 centring sleeve",
+      "vertices": 512,
+      "faces": 1024,
+      "watertight": true,
+      "volume_mm3": 100.786,
+      "bounds_mm": [
+        6.18,
+        6.18,
+        4.76
+      ]
+    },
+    {
+      "object": 3,
+      "name": "Lower inner-race spacer",
+      "vertices": 512,
+      "faces": 1024,
+      "watertight": true,
+      "volume_mm3": 233.856,
+      "bounds_mm": [
+        8.4,
+        8.4,
+        5.02
+      ]
+    },
+    {
+      "object": 4,
+      "name": "Upper inner-race spacer",
+      "vertices": 512,
+      "faces": 1024,
+      "watertight": true,
+      "volume_mm3": 233.856,
+      "bounds_mm": [
+        8.4,
+        8.4,
+        5.02
+      ]
+    },
+    {
+      "object": 5,
+      "name": "Screw-side permanent bayonet hub",
+      "vertices": 884,
+      "faces": 1768,
+      "watertight": true,
+      "volume_mm3": 544.182,
+      "bounds_mm": [
+        14.0,
+        14.0,
+        6.2
+      ]
+    },
+    {
+      "object": 6,
+      "name": "Nut-side permanent bayonet hub",
+      "vertices": 768,
+      "faces": 1536,
+      "watertight": true,
+      "volume_mm3": 512.053,
+      "bounds_mm": [
+        14.0,
+        14.0,
+        6.2
+      ]
+    },
+    {
+      "object": 7,
+      "name": "Lower removable thumb pad",
+      "vertices": 813,
+      "faces": 1622,
+      "watertight": true,
+      "volume_mm3": 1161.044,
+      "bounds_mm": [
+        20.0,
+        20.0,
+        4.8
+      ]
+    },
+    {
+      "object": 8,
+      "name": "Upper removable thumb pad",
+      "vertices": 813,
+      "faces": 1622,
+      "watertight": true,
+      "volume_mm3": 1161.044,
+      "bounds_mm": [
+        20.0,
+        20.0,
+        4.8
+      ]
+    }
+  ],
+  "package": {
+    "archive_entries": 32,
+    "objects": 8,
+    "plates": 4,
+    "printer_profile": "Bambu Lab P2S 0.4 nozzle",
+    "filament_profiles": [
+      "Bambu PLA Matte @BBL P2S",
+      "Bambu PLA Matte @BBL P2S"
+    ],
+    "layer_height": "0.16"
+  },
+  "bayonet_path_validation": {
+    "sampled_rotation_deg": [
+      0,
+      5,
+      10,
+      15,
+      20,
+      25,
+      30
+    ],
+    "intersection_volume_mm3": {
+      "0": 0.0,
+      "5": 0.0,
+      "10": 0.052193,
+      "15": 0.052234,
+      "20": 0.052174,
+      "25": 0.0,
+      "30": 0.0
+    },
+    "maximum_intersection_volume_mm3": 0.052234,
+    "entry_clear": true,
+    "locked_clear": true,
+    "detent_flex_interference_present": true
+  }
+}

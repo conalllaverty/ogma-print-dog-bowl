@@ -1,0 +1,647 @@
+{
+  "project": "Bouclé Stack table lamp — physical gate coupons",
+  "units": "mm",
+  "shell_filament": "matte-bone-white",
+  "base_filament": "matte-dark-chocolate",
+  "wall": 1.6,
+  "stack": [
+    {
+      "key": "shell_a",
+      "base_diameter": 112.0,
+      "widest_diameter": 149.87,
+      "rim_diameter": 149.79,
+      "lean_deg": 0.0,
+      "local_cut_deg": 12.0,
+      "print_draft_deg": 28.33
+    },
+    {
+      "key": "shell_b",
+      "base_diameter": 125.79,
+      "widest_diameter": 125.79,
+      "rim_diameter": 134.68,
+      "lean_deg": 12.0,
+      "local_cut_deg": 24.0,
+      "print_draft_deg": 0.0
+    },
+    {
+      "key": "shell_c",
+      "base_diameter": 103.68,
+      "widest_diameter": 117.06,
+      "rim_diameter": 121.61,
+      "lean_deg": -12.0,
+      "local_cut_deg": 21.0,
+      "print_draft_deg": 8.35
+    }
+  ],
+  "overall_height": 234.99,
+  "widest_diameter": 149.87,
+  "printer": "Bambu Lab P2S, 0.4 mm nozzle, Bambu PLA Matte",
+  "stability": {
+    "status": "not qualified by geometry alone",
+    "foot_centre_radius": 78.0,
+    "support_polygon": "triangle through the three real foot contact patches",
+    "warning": "The 78 mm foot-centre radius is a circumradius, not a tipping boundary. Use sliced masses, upper-stack mass dummies and a 10-degree board test in every orientation."
+  },
+  "thermal": {
+    "status": "physical test required",
+    "maximum_allowed_pla_surface_c": 45,
+    "shell_a_test_hours": 8,
+    "complete_burn_in_hours": 24
+  },
+  "plates": [
+    {
+      "plate": 1,
+      "name": "Glow wall and diffuser baffle",
+      "filament": "matte-bone-white",
+      "parts": [
+        {
+          "name": "Glow wall coupon",
+          "layer_height": "0.20",
+          "wall_loops": "6",
+          "ams_slot": 1
+        },
+        {
+          "name": "LED diffuser baffle",
+          "layer_height": "0.20",
+          "wall_loops": "4",
+          "ams_slot": 1
+        }
+      ]
+    },
+    {
+      "plate": 2,
+      "name": "A to B halo and base seat",
+      "filament": "matte-bone-white",
+      "parts": [
+        {
+          "name": "A-B · Shell A rim",
+          "layer_height": "0.20",
+          "wall_loops": "6",
+          "ams_slot": 1
+        },
+        {
+          "name": "A-B · Halo ring",
+          "layer_height": "0.16",
+          "wall_loops": "4",
+          "ams_slot": 1
+        },
+        {
+          "name": "A-B · Shell B base",
+          "layer_height": "0.20",
+          "wall_loops": "6",
+          "ams_slot": 1
+        },
+        {
+          "name": "Shell A base seat check",
+          "layer_height": "0.20",
+          "wall_loops": "6",
+          "ams_slot": 1
+        }
+      ]
+    },
+    {
+      "plate": 3,
+      "name": "B to C halo",
+      "filament": "matte-bone-white",
+      "parts": [
+        {
+          "name": "B-C · Shell B rim",
+          "layer_height": "0.20",
+          "wall_loops": "6",
+          "ams_slot": 1
+        },
+        {
+          "name": "B-C · Halo ring",
+          "layer_height": "0.16",
+          "wall_loops": "4",
+          "ams_slot": 1
+        },
+        {
+          "name": "B-C · Shell C base",
+          "layer_height": "0.20",
+          "wall_loops": "6",
+          "ams_slot": 1
+        }
+      ]
+    },
+    {
+      "plate": 4,
+      "name": "LED and plinth interface",
+      "filament": "matte-dark-chocolate",
+      "parts": [
+        {
+          "name": "LED cradle",
+          "layer_height": "0.20",
+          "wall_loops": "4",
+          "ams_slot": 2
+        },
+        {
+          "name": "Plinth interface gauge",
+          "layer_height": "0.20",
+          "wall_loops": "4",
+          "ams_slot": 2
+        }
+      ]
+    }
+  ],
+  "hardware_preflight": {
+    "required_before_plate_4": [
+      "Measure the actual module against the D60 x H8 design envelope.",
+      "Measure screw-hole centre spacing and module thickness under each screw head.",
+      "Confirm the attached lead and strain relief lay sideways into the 6.8 mm open-top slots; the switch and USB stay outside."
+    ],
+    "configured_module_diameter": 60.0,
+    "configured_module_height": 8.0
+  },
+  "print_and_test_sequence": [
+    {
+      "stage": 0,
+      "print": "none",
+      "gate": "Measure the actual MH001 diameter, height, screw spacing, screw-head stack and cable envelope. Do not print Plate 4 unless they match the configured dimensions."
+    },
+    {
+      "stage": 1,
+      "print": "Plate 1 only — Glow wall and production diffuser baffle",
+      "gate": "Measure each smooth wall at three points (target ±0.15 mm). Using the same LED, distance and dark-room exposure, choose the thinnest sector with even light and no pinholes visible from 300 mm. If the winner is not 1.6 mm, change WALL and regenerate every later plate."
+    },
+    {
+      "stage": 2,
+      "print": "Plate 2 — A→B halo and shell/base seat arc",
+      "gate": "Dry-fit without force or rocking; verify the slot is 4.0 ±0.2 mm at three points and the ring is hidden at eye level. After Plate 4, align the base arc over the local cable-slot interruption and verify it bridges without rocking or damage."
+    },
+    {
+      "stage": 3,
+      "print": "Plate 3 — B→C halo",
+      "gate": "Repeat the complete fit and slot checks. This joint has a different local cut, radius and ring and cannot inherit the A→B result."
+    },
+    {
+      "stage": 4,
+      "print": "Plate 4 — LED cradle and plinth interface",
+      "gate": "Cradle enters the full 28 mm bore by hand, is stopped by its flange, finishes flush within 0.3 mm, has no obvious rattle, and lifts out. Lower the actual module while laying its attached lead sideways into both open-top slots; the switch and USB remain outside and the lead is not pinched. Do not use screws until safe engagement has been measured."
+    },
+    {
+      "stage": 5,
+      "print": "none — bonded coupon proof",
+      "gate": "Bond the less favourable halo coupon with the intended adhesive, cure for the maker's full stated time, then apply a 500 g lateral load for 60 seconds. No separation, crack or permanent slot change greater than 0.2 mm."
+    },
+    {
+      "stage": 6,
+      "print": "base, cradle, baffle and Shell A only",
+      "gate": "Run the LED for eight hours and keep every measured PLA surface below 45°C. Then place mass dummies equal to the sliced B/C/ring masses at their assembled centres and pass a 10° board test in every orientation before printing B/C."
+    },
+    {
+      "stage": 7,
+      "print": "complete lamp",
+      "gate": "Pass a 24-hour powered burn-in plus repeated glare, cable temperature and stability checks with no smell, softening, colour change or cable heating."
+    }
+  ],
+  "coupons": [
+    {
+      "coupon": "glow wall",
+      "radius": 72.0,
+      "panel_height": 50.0,
+      "foot_height": 3.0,
+      "arc_deg": 150.0,
+      "sectors": [
+        {
+          "wall_mm": 1.2,
+          "start_deg": -75.0,
+          "end_deg": -25.0,
+          "dots": 1
+        },
+        {
+          "wall_mm": 1.6,
+          "start_deg": -25.0,
+          "end_deg": 25.0,
+          "dots": 2
+        },
+        {
+          "wall_mm": 2.0,
+          "start_deg": 25.0,
+          "end_deg": 75.0,
+          "dots": 3
+        }
+      ],
+      "fuzzy_above_z": 28.0,
+      "painted_fraction_of_outer_wall": 0.5,
+      "volume_mm3": 18279.6,
+      "acceptance": "Lit from inside in a dark room: pick the thinnest sector with an even glow, no visible pinholes in the fuzzy half, and no layer banding."
+    },
+    {
+      "coupon": "production LED diffuser baffle",
+      "disc_diameter": 76.0,
+      "disc_thickness": 1.2,
+      "post_count": 3,
+      "post_height": 30.0,
+      "locator_pegs": {
+        "count": 3,
+        "diameter": 3.0,
+        "engagement": 2.0,
+        "phases_deg": [
+          60.0,
+          180.0,
+          300.0
+        ]
+      },
+      "print_orientation": "diffuser disc on bed, posts and reduced locator tips up; flip for assembly",
+      "acceptance": "All three posts are straight and equal-height, the disc stays flat, all three locator tips enter the cradle sockets without force or rocking, and when placed over the powered module no LED die is directly visible from normal seated eye height."
+    },
+    {
+      "coupon": "halo joint A · lower bowl → B · wedge",
+      "arc_deg": 100.0,
+      "halo_gap": 4.0,
+      "slip_fit_per_side": 0.25,
+      "lower": {
+        "source": "shell_a",
+        "height_short_side": 26.0,
+        "minimum_inner_radius_at_rim": 69.96,
+        "oblique_rim_span": 31.14
+      },
+      "ring": {
+        "print_orientation": "upper-shell axis vertical, skirt down",
+        "bore_radius": 54.04,
+        "collar_radius": 57.04,
+        "seat_radius": 59.29,
+        "web": 3.0,
+        "skirt_length": 22.0,
+        "seat_inboard_of_outer_surface": 12.26,
+        "light_window": [
+          59.29,
+          69.96
+        ],
+        "upper_shell_clocking": {
+          "phase_deg": 0.0,
+          "key_width_mm": 3.0,
+          "key_depth_mm": 1.0,
+          "key_height_mm": 3.2,
+          "tip_width_mm": 2.4,
+          "groove_width_mm": 3.8,
+          "groove_depth_mm": 1.4,
+          "tangential_clearance_total_mm": 0.8,
+          "radial_clearance_mm": 0.4,
+          "top_clearance_mm": 0.8,
+          "register_material_behind_mm": 2.6,
+          "maximum_angular_play_deg": 0.4
+        },
+        "lower_shell_clocking": {
+          "phase_deg": 36.0,
+          "key_width_mm": 3.0,
+          "key_depth_mm": 0.55,
+          "key_height_mm": 4.0,
+          "tip_width_mm": 2.4,
+          "groove_width_joint_frame_mm": 3.8,
+          "groove_width_shell_frame_mm": 4.32,
+          "groove_depth_mm": 0.9,
+          "local_rim_height_mm": 43.61,
+          "open_notch_height_mm": 5.8,
+          "tangential_clearance_total_mm": 0.8,
+          "radial_clearance_mm": 0.35,
+          "wall_remaining_behind_mm": 0.7,
+          "open_to_oblique_rim": true
+        },
+        "fit": {
+          "interference_mm3": {
+            "lower shell": 0.0,
+            "upper shell": 0.0
+          },
+          "assembled_slot_mm": 4.0,
+          "seat_height_error_mm": 0.0,
+          "nominal_skirt_clearance_per_side": 0.25,
+          "nominal_register_clearance_per_side": 0.25,
+          "register_engagement_height": 4.0,
+          "upper_shell_clocking": {
+            "phase_deg": 0.0,
+            "key_width_mm": 3.0,
+            "key_depth_mm": 1.0,
+            "key_height_mm": 3.2,
+            "tip_width_mm": 2.4,
+            "groove_width_mm": 3.8,
+            "groove_depth_mm": 1.4,
+            "tangential_clearance_total_mm": 0.8,
+            "radial_clearance_mm": 0.4,
+            "top_clearance_mm": 0.8,
+            "register_material_behind_mm": 2.6,
+            "maximum_angular_play_deg": 0.4
+          },
+          "lower_shell_clocking": {
+            "phase_deg": 36.0,
+            "key_width_mm": 3.0,
+            "key_depth_mm": 0.55,
+            "key_height_mm": 4.0,
+            "tip_width_mm": 2.4,
+            "groove_width_joint_frame_mm": 3.8,
+            "groove_width_shell_frame_mm": 4.32,
+            "groove_depth_mm": 0.9,
+            "local_rim_height_mm": 43.61,
+            "open_notch_height_mm": 5.8,
+            "tangential_clearance_total_mm": 0.8,
+            "radial_clearance_mm": 0.35,
+            "wall_remaining_behind_mm": 0.7,
+            "open_to_oblique_rim": true
+          },
+          "clocking_geometry_validation": {
+            "key_volume_mm3": 14.322,
+            "key_volume_captured_by_ring_mm3": 14.322,
+            "missing_key_volume_mm3": 0.0,
+            "key_to_grooved_shell_overlap_mm3": 0.0,
+            "lower_key_volume_mm3": 15.3202,
+            "lower_key_volume_captured_by_ring_mm3": 15.3202,
+            "missing_lower_key_volume_mm3": 2e-06,
+            "lower_key_to_grooved_shell_overlap_mm3": 0.0,
+            "passed": true
+          }
+        }
+      },
+      "upper": {
+        "source": "shell_b",
+        "height": 26.0,
+        "base_outer_radius": 62.89,
+        "base_inner_radius": 61.29,
+        "register_width": 4.0,
+        "register_height": 4.0,
+        "clocking_groove": {
+          "phase_deg": 0.0,
+          "key_width_mm": 3.0,
+          "key_depth_mm": 1.0,
+          "key_height_mm": 3.2,
+          "tip_width_mm": 2.4,
+          "groove_width_mm": 3.8,
+          "groove_depth_mm": 1.4,
+          "tangential_clearance_total_mm": 0.8,
+          "radial_clearance_mm": 0.4,
+          "top_clearance_mm": 0.8,
+          "register_material_behind_mm": 2.6,
+          "maximum_angular_play_deg": 0.4
+        }
+      },
+      "acceptance": "Align the ring's outward skirt tab with the open rim notch in A · lower bowl, then slide the ring in by hand with a 0.25 mm/side glue gap. Align the upper tapered tab with the open register notch, then B · wedge drops onto the seat with no rocking or binding. Clamped in its assembled orientation, the slot measures 4.0 ± 0.2 mm at three points and eye-level inspection shows shadow, not a bright ring edge."
+    },
+    {
+      "coupon": "shell A base seat check",
+      "source": "shell_a",
+      "arc_deg": 50.0,
+      "height": 12.0,
+      "base_outer_diameter": 112.0,
+      "base_inner_diameter": 108.8,
+      "acceptance": "On Plate 4, the arc drops into the 1.0 mm annular locate groove, then is aligned over the 6.8 mm open cable slot and bridges that local interruption without rocking, cracking or permanent deformation. After a dry fit, bond only the groove contact — never the removable cradle flange."
+    },
+    {
+      "coupon": "halo joint B · wedge → C · upper bowl",
+      "arc_deg": 100.0,
+      "halo_gap": 4.0,
+      "slip_fit_per_side": 0.25,
+      "lower": {
+        "source": "shell_b",
+        "height_short_side": 26.0,
+        "minimum_inner_radius_at_rim": 58.98,
+        "oblique_rim_span": 54.78
+      },
+      "ring": {
+        "print_orientation": "upper-shell axis vertical, skirt down",
+        "bore_radius": 42.99,
+        "collar_radius": 45.99,
+        "seat_radius": 48.24,
+        "web": 3.0,
+        "skirt_length": 22.0,
+        "seat_inboard_of_outer_surface": 12.34,
+        "light_window": [
+          48.24,
+          58.98
+        ],
+        "upper_shell_clocking": {
+          "phase_deg": 0.0,
+          "key_width_mm": 3.0,
+          "key_depth_mm": 1.0,
+          "key_height_mm": 3.2,
+          "tip_width_mm": 2.4,
+          "groove_width_mm": 3.8,
+          "groove_depth_mm": 1.4,
+          "tangential_clearance_total_mm": 0.8,
+          "radial_clearance_mm": 0.4,
+          "top_clearance_mm": 0.8,
+          "register_material_behind_mm": 2.6,
+          "maximum_angular_play_deg": 0.496
+        },
+        "lower_shell_clocking": {
+          "phase_deg": 36.0,
+          "key_width_mm": 3.0,
+          "key_depth_mm": 0.55,
+          "key_height_mm": 4.0,
+          "tip_width_mm": 2.4,
+          "groove_width_joint_frame_mm": 3.8,
+          "groove_width_shell_frame_mm": 4.74,
+          "groove_depth_mm": 0.9,
+          "local_rim_height_mm": 59.86,
+          "open_notch_height_mm": 6.98,
+          "tangential_clearance_total_mm": 0.8,
+          "radial_clearance_mm": 0.35,
+          "wall_remaining_behind_mm": 0.7,
+          "open_to_oblique_rim": true
+        },
+        "fit": {
+          "interference_mm3": {
+            "lower shell": 0.0,
+            "upper shell": 0.0
+          },
+          "assembled_slot_mm": 4.0,
+          "seat_height_error_mm": 0.0,
+          "nominal_skirt_clearance_per_side": 0.25,
+          "nominal_register_clearance_per_side": 0.25,
+          "register_engagement_height": 4.0,
+          "upper_shell_clocking": {
+            "phase_deg": 0.0,
+            "key_width_mm": 3.0,
+            "key_depth_mm": 1.0,
+            "key_height_mm": 3.2,
+            "tip_width_mm": 2.4,
+            "groove_width_mm": 3.8,
+            "groove_depth_mm": 1.4,
+            "tangential_clearance_total_mm": 0.8,
+            "radial_clearance_mm": 0.4,
+            "top_clearance_mm": 0.8,
+            "register_material_behind_mm": 2.6,
+            "maximum_angular_play_deg": 0.496
+          },
+          "lower_shell_clocking": {
+            "phase_deg": 36.0,
+            "key_width_mm": 3.0,
+            "key_depth_mm": 0.55,
+            "key_height_mm": 4.0,
+            "tip_width_mm": 2.4,
+            "groove_width_joint_frame_mm": 3.8,
+            "groove_width_shell_frame_mm": 4.74,
+            "groove_depth_mm": 0.9,
+            "local_rim_height_mm": 59.86,
+            "open_notch_height_mm": 6.98,
+            "tangential_clearance_total_mm": 0.8,
+            "radial_clearance_mm": 0.35,
+            "wall_remaining_behind_mm": 0.7,
+            "open_to_oblique_rim": true
+          },
+          "clocking_geometry_validation": {
+            "key_volume_mm3": 14.322,
+            "key_volume_captured_by_ring_mm3": 14.322,
+            "missing_key_volume_mm3": 0.0,
+            "key_to_grooved_shell_overlap_mm3": 0.0,
+            "lower_key_volume_mm3": 15.3203,
+            "lower_key_volume_captured_by_ring_mm3": 15.3202,
+            "missing_lower_key_volume_mm3": 1.2e-05,
+            "lower_key_to_grooved_shell_overlap_mm3": 0.0,
+            "passed": true
+          }
+        }
+      },
+      "upper": {
+        "source": "shell_c",
+        "height": 26.0,
+        "base_outer_radius": 51.84,
+        "base_inner_radius": 50.24,
+        "register_width": 4.0,
+        "register_height": 4.0,
+        "clocking_groove": {
+          "phase_deg": 0.0,
+          "key_width_mm": 3.0,
+          "key_depth_mm": 1.0,
+          "key_height_mm": 3.2,
+          "tip_width_mm": 2.4,
+          "groove_width_mm": 3.8,
+          "groove_depth_mm": 1.4,
+          "tangential_clearance_total_mm": 0.8,
+          "radial_clearance_mm": 0.4,
+          "top_clearance_mm": 0.8,
+          "register_material_behind_mm": 2.6,
+          "maximum_angular_play_deg": 0.496
+        }
+      },
+      "acceptance": "Align the ring's outward skirt tab with the open rim notch in B · wedge, then slide the ring in by hand with a 0.25 mm/side glue gap. Align the upper tapered tab with the open register notch, then C · upper bowl drops onto the seat with no rocking or binding. Clamped in its assembled orientation, the slot measures 4.0 ± 0.2 mm at three points and eye-level inspection shows shadow, not a bright ring edge."
+    },
+    {
+      "coupon": "LED cradle",
+      "kit": "Bambu Lab LED Lamp Kit-001 (MH001)",
+      "cradle_diameter": 93.6,
+      "retaining_flange_diameter": 99.0,
+      "retaining_flange_height": 4.0,
+      "flange_underside_ramp": {
+        "angle_deg": 45.0,
+        "height": 1.9,
+        "top_diameter": 97.4,
+        "final_lip": 0.8,
+        "plinth_ramp_radial_clearance": 0.2
+      },
+      "anti_rotation_key": [
+        2.0,
+        8.0
+      ],
+      "anti_rotation_key_ramp": {
+        "angle_deg": 45.0,
+        "height": 2.0,
+        "full_depth_height": 2.0
+      },
+      "anti_rotation_key_phase_deg": 290.0,
+      "coupon_height": 28.0,
+      "pocket_diameter": 60.4,
+      "pocket_depth": 8.5,
+      "pocket_floor_thickness": 19.5,
+      "tape_pad_diameter": 40.0,
+      "diffuser_locator_sockets": {
+        "count": 3,
+        "diameter": 3.6,
+        "depth": 2.4,
+        "peg_clearance_total": 0.6,
+        "bottom_clearance": 0.4,
+        "phases_deg": [
+          60.0,
+          180.0,
+          300.0
+        ],
+        "installed_peg_phases_deg": [
+          60.0,
+          180.0,
+          300.0
+        ],
+        "phase_alignment_error_deg": 0.0,
+        "minimum_led_pocket_web": 2.0,
+        "minimum_outer_web": 11.0,
+        "cable_material_margin": 20.85
+      },
+      "cable_slot": {
+        "width": 6.8,
+        "floor_z": 19.5,
+        "open_to_top": true,
+        "phase_deg": 110.0,
+        "assembly": "Lay the attached cable sideways into the slot while lowering the LED; never thread the switch or USB plug through the part."
+      },
+      "screw_mounting": {
+        "generated": false,
+        "reason": "Hole centres and safe engagement are unmeasured. Generic radial slots would cut through the D40 tape pad, weakening the known retention method. Add real blind pilots only after measuring."
+      },
+      "volume_mm3": 170871.8,
+      "acceptance": "The measured module drops into the pocket with its light face at the intended height, the tape pad lies flat, the attached cable lays sideways into the open-top slot without pinching, and the retaining flange seats flush in the plinth gauge. All three diffuser pegs enter the blind sockets by hand, seat on their Ø6 post shoulders without rocking, and lift out without tools. Use screws only after measuring their hole spacing and safe engagement depth."
+    },
+    {
+      "coupon": "plinth interface gauge",
+      "bore_diameter": 94.0,
+      "outer_diameter": 104.0,
+      "top_seat_outer_diameter": 116.0,
+      "flange_recess_diameter": 99.4,
+      "top_seat_height": 4.0,
+      "shoulder_height": 24.0,
+      "height": 28.0,
+      "print_orientation": "production top seat down on the bed",
+      "cradle_stop": {
+        "contact_width_mm": 0.6,
+        "initial_inward_step_mm": 0.8,
+        "bore_ramp_angle_deg": 45.0,
+        "bore_ramp_height_mm": 1.9,
+        "sacrificial_support": false
+      },
+      "cable_notch": {
+        "width": 6.8,
+        "floor_z": 19.5,
+        "open_to_top": true,
+        "phase_deg": 110.0
+      },
+      "anti_rotation_key_clearance": 0.4,
+      "anti_rotation_key_phase_deg": 290.0,
+      "nominal_clearance_total": 0.4,
+      "shell_a_seat_groove": {
+        "shell_outer_diameter": 112.0,
+        "shell_inner_diameter": 108.8,
+        "flare_outer_diameter_at_groove_top": 113.03,
+        "groove_outer_diameter": 113.53,
+        "groove_inner_diameter": 108.3,
+        "groove_depth": 1.0,
+        "radial_clearance_per_side": 0.25,
+        "outer_land_width": 1.23,
+        "remaining_seat_under_groove": 3.0,
+        "cradle_flange_pass_clearance_total": 9.8,
+        "bond_target": "Shell A wall to fixed plinth seat only"
+      },
+      "acceptance": "The cradle body enters the complete bore without binding; the outer 0.6 mm of its flange stops on the narrow shoulder and finishes flush with the top. It must lift out by hand without perceptible lateral rattle. With both open-top cable slots aligned, the attached lead drops in sideways while its switch and USB plug remain outside, without pinching. The shell A base arc drops into the 1.0 mm annular locate groove, bridges the local cable-slot interruption without rocking, and leaves the cradle flange free to pass through Shell A's opening after bonding.",
+      "interface_validation": {
+        "cradle_body_clearance_total": 0.4,
+        "cradle_flange_clearance_total": 0.4,
+        "cradle_flange_stop_width": 0.6,
+        "bore_ramp_angle_deg": 45.0,
+        "shoulder_to_flange_vertical_error": 0.0,
+        "shell_wall_supported_width": 1.6,
+        "shell_wall_width": 1.6,
+        "shell_a_seat_groove": {
+          "shell_outer_diameter": 112.0,
+          "shell_inner_diameter": 108.8,
+          "flare_outer_diameter_at_groove_top": 113.03,
+          "groove_outer_diameter": 113.53,
+          "groove_inner_diameter": 108.3,
+          "groove_depth": 1.0,
+          "radial_clearance_per_side": 0.25,
+          "outer_land_width": 1.23,
+          "remaining_seat_under_groove": 3.0,
+          "cradle_flange_pass_clearance_total": 9.8,
+          "bond_target": "Shell A wall to fixed plinth seat only"
+        },
+        "local_cable_slot_bridge_span": 6.8,
+        "anti_rotation_key_clearance": 0.4
+      }
+    }
+  ]
+}

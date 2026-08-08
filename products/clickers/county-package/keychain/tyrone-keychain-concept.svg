@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1000" viewBox="0 0 1400 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Tyrone keychain clicker 2D concept</title>
+  <desc id="desc">Compact two-colour County Tyrone keychain clicker using a Kailh GM 8.0 mouse microswitch, a white fixed shell, a red moving top and a reinforced keyring lug.</desc>
+
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FAFAF7"/>
+      <stop offset="1" stop-color="#ECEEE9"/>
+    </linearGradient>
+    <linearGradient id="shell" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#DDE1DC"/>
+    </linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ED343D"/>
+      <stop offset="1" stop-color="#B81522"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="170%" height="180%">
+      <feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#17201C" flood-opacity=".18"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10Z" fill="#64716A"/>
+    </marker>
+
+    <!-- Keychain-safe mainland Tyrone outline. Physical width is about 46 mm. -->
+    <path id="tyroneShell" d="M -22.87,-3.42 L -21.74,-3.47 L -20.40,-5.18 L -17.72,-3.59 L -14.40,-5.92 L -11.69,-5.55 L -11.68,-7.86 L -9.76,-9.59 L -8.53,-11.93 L -8.59,-15.33 L -6.92,-15.83 L -5.79,-14.35 L -4.23,-14.78 L -2.91,-14.44 L -3.05,-13.03 L -1.13,-12.91 L -1.14,-11.71 L -0.47,-11.05 L 0.32,-11.37 L 1.92,-9.11 L 3.43,-9.08 L 5.41,-10.08 L 6.63,-10.11 L 7.62,-9.47 L 7.39,-8.56 L 7.92,-7.60 L 6.91,-7.07 L 6.34,-5.16 L 8.29,-4.58 L 10.15,-5.39 L 10.32,-4.46 L 12.96,-1.20 L 14.52,-0.96 L 14.57,-0.42 L 15.81,0.18 L 17.10,-1.12 L 19.01,-1.20 L 21.11,-2.53 L 22.99,-0.62 L 22.42,3.44 L 19.02,4.72 L 17.38,6.72 L 16.22,6.84 L 15.60,8.46 L 14.16,9.95 L 13.77,11.80 L 11.20,11.45 L 9.78,15.44 L 9.01,15.56 L 8.66,14.75 L 7.83,14.54 L 7.26,12.91 L 4.11,11.03 L 1.77,13.52 L 1.79,14.32 L 0.37,15.31 L -1.11,15.03 L -2.21,15.83 L -3.27,14.87 L -3.61,13.54 L -5.17,13.46 L -5.09,11.81 L -6.26,10.13 L -7.71,9.92 L -10.48,11.74 L -11.79,10.15 L -13.97,10.01 L -14.32,7.75 L -12.72,7.00 L -11.28,3.73 L -12.88,3.64 L -14.00,2.62 L -15.33,2.67 L -15.56,1.72 L -16.37,1.39 L -16.49,0.25 L -17.57,0.89 L -19.65,-0.33 L -20.87,0.23 L -21.07,-0.74 L -22.59,-1.59 L -22.34,-2.68 L -22.87,-3.42 Z"/>
+    <path id="tyroneTop" d="M -20.19,-2.47 L -17.56,-1.70 L -13.90,-3.96 L -10.51,-4.07 L -9.83,-6.98 L -8.07,-8.71 L -6.68,-11.48 L -6.66,-12.80 L -4.76,-12.71 L -4.47,-11.78 L -2.87,-11.21 L 1.03,-7.43 L 3.81,-7.22 L 5.27,-7.77 L 4.78,-4.10 L 7.81,-2.74 L 9.11,-2.97 L 12.22,0.55 L 15.88,2.08 L 17.88,0.74 L 20.98,0.04 L 20.69,2.06 L 17.96,3.15 L 16.38,4.95 L 15.07,5.32 L 12.45,9.71 L 10.96,9.56 L 9.86,10.16 L 8.94,12.18 L 8.21,11.26 L 4.03,9.14 L 0.43,12.17 L 0.03,13.10 L -1.66,13.47 L -5.44,8.42 L -8.19,8.09 L -10.15,9.26 L -11.44,8.31 L -9.50,4.38 L -10.14,2.21 L -13.95,0.85 L -15.69,-1.46 L -17.52,-1.23 L -20.19,-2.47 Z"/>
+
+    <style>
+      .card{fill:#FFFFFF;stroke:#D2D8D2;stroke-width:1.4}
+      .ink{stroke:#26312C;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+      .thin{stroke:#64716A;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;fill:none}
+      .dash{stroke:#77837D;stroke-width:1.4;stroke-dasharray:5 5;fill:none}
+      .title{font:800 35px ui-rounded,system-ui,sans-serif;fill:#26312C;letter-spacing:-.6px}
+      .subtitle{font:500 16px system-ui,sans-serif;fill:#64716A}
+      .section{font:750 20px ui-rounded,system-ui,sans-serif;fill:#26312C}
+      .label{font:650 14px system-ui,sans-serif;fill:#26312C}
+      .body{font:500 13px system-ui,sans-serif;fill:#53615A}
+      .small{font:500 11.5px system-ui,sans-serif;fill:#64716A}
+      .tiny{font:700 10px system-ui,sans-serif;fill:#64716A;letter-spacing:.55px}
+      .metric{font:800 23px ui-rounded,system-ui,sans-serif;fill:#26312C}
+      .chip{font:750 10px system-ui,sans-serif;letter-spacing:.55px}
+    </style>
+  </defs>
+
+  <rect width="1400" height="1000" fill="url(#paper)"/>
+  <circle cx="1335" cy="15" r="190" fill="#D71920" opacity=".055"/>
+  <circle cx="-10" cy="990" r="210" fill="#0C2340" opacity=".045"/>
+
+  <text x="48" y="59" class="title">TYRONE KEYCHAIN CLICKER</text>
+  <text x="49" y="89" class="subtitle">2D concept / equal-size county series / compact mouse microswitch / mainland outlines only</text>
+  <g transform="translate(1230 31)">
+    <rect width="122" height="49" rx="24.5" fill="#26312C"/>
+    <text x="61" y="20" text-anchor="middle" class="tiny" fill="#FFFFFF">CONCEPT A</text>
+    <text x="61" y="36" text-anchor="middle" class="tiny" fill="#F08B8E">2D / NOT CAD</text>
+  </g>
+
+  <!-- Main top view -->
+  <rect x="38" y="118" width="810" height="430" rx="25" class="card"/>
+  <text x="67" y="157" class="section">Assembled top view</text>
+  <text x="816" y="157" text-anchor="end" class="small">46 mm body / reinforced shell-only lug / captive red top</text>
+
+  <g transform="translate(334 325) scale(8)" filter="url(#shadow)">
+    <circle cx="-28.5" cy="-3.4" r="5" fill="url(#shell)" stroke="#26312C" stroke-width=".35"/>
+    <path d="M-27 -6.3 L-20.2 -6 L-18.5 -1 L-27 -.4Z" fill="url(#shell)" stroke="#26312C" stroke-width=".35"/>
+    <circle cx="-28.5" cy="-3.4" r="2.1" fill="#F1F2EE" stroke="#26312C" stroke-width=".35"/>
+    <use href="#tyroneShell" fill="url(#shell)" stroke="#26312C" stroke-width=".35"/>
+    <use href="#tyroneTop" fill="url(#red)" stroke="#8F101A" stroke-width=".3"/>
+  </g>
+  <path d="M334 181 V235" class="thin" marker-end="url(#arrow)"/>
+  <text x="334" y="168" text-anchor="middle" class="label">PRESS</text>
+  <path d="M150 485 H518 M150 479 V491 M518 479 V491" class="thin"/>
+  <text x="334" y="514" text-anchor="middle" class="label">46 mm TARGET BODY WIDTH</text>
+
+  <g transform="translate(626 205)">
+    <rect width="178" height="145" rx="16" fill="#F6F7F4" stroke="#D2D8D2"/>
+    <text x="18" y="29" class="label">Keychain envelope</text>
+    <text x="18" y="59" class="metric">about 57 mm</text>
+    <text x="18" y="78" class="small">including 9 mm lug</text>
+    <text x="18" y="107" class="metric">10.5 mm</text>
+    <text x="18" y="126" class="small">target thickness</text>
+  </g>
+  <g transform="translate(626 370)">
+    <rect width="178" height="125" rx="16" fill="#FFF2F2" stroke="#EBC8CA"/>
+    <text x="18" y="29" class="label">Series rule</text>
+    <text x="18" y="53" class="small">All county bodies use the</text>
+    <text x="18" y="71" class="small">same 46 mm longest edge.</text>
+    <text x="18" y="96" class="small">Lug uses the strongest</text>
+    <text x="18" y="114" class="small">available shell edge.</text>
+  </g>
+
+  <!-- Switch comparison -->
+  <rect x="873" y="118" width="489" height="430" rx="25" class="card"/>
+  <text x="902" y="157" class="section">Compact switch choice</text>
+  <text x="1331" y="157" text-anchor="end" class="small">measure a sample before CAD</text>
+
+  <g transform="translate(901 181)">
+    <rect width="433" height="112" rx="17" fill="#EEF5F0" stroke="#9ABAA7" stroke-width="1.6"/>
+    <rect x="16" y="13" width="104" height="23" rx="12" fill="#26312C"/>
+    <text x="68" y="29" text-anchor="middle" class="chip" fill="#FFFFFF">RECOMMENDED</text>
+    <text x="16" y="59" class="label">Kailh GM 8.0 mouse microswitch</text>
+    <text x="16" y="81" class="body">12.8 x 5.8 x 6.5 mm / 60-65 gf / crisp click</text>
+    <text x="16" y="101" class="small">+ narrow and durable   - 0.3 mm travel, custom clip mount</text>
+    <g transform="translate(350 46)">
+      <rect width="60" height="27" rx="3" fill="#242A27" stroke="#111512"/>
+      <rect x="23" y="-5" width="14" height="7" rx="2" fill="#B73A42"/>
+      <path d="M11 27v17 M30 27v17 M49 27v17" stroke="#B5A56E" stroke-width="4"/>
+    </g>
+  </g>
+  <g transform="translate(901 309)">
+    <rect width="433" height="92" rx="16" fill="#F7F8F5" stroke="#D2D8D2"/>
+    <text x="16" y="29" class="label">Kailh Choc V1 keyboard switch</text>
+    <text x="16" y="51" class="body">13.8 x 13.8 mm cutout / 3.0 mm full travel</text>
+    <text x="16" y="73" class="small">+ familiar feel   - body grows to roughly 52-55 mm</text>
+    <rect x="366" y="23" width="44" height="44" rx="5" fill="#D7DBD6" stroke="#26312C" stroke-width="2"/>
+    <rect x="381" y="13" width="14" height="16" rx="3" fill="#B73A42"/>
+  </g>
+  <g transform="translate(901 417)">
+    <rect width="433" height="92" rx="16" fill="#F7F8F5" stroke="#D2D8D2"/>
+    <text x="16" y="29" class="label">6 x 6 mm tactile switch</text>
+    <text x="16" y="51" class="body">Smallest and cheapest option</text>
+    <text x="16" y="73" class="small">+ easiest fit   - very short, less satisfying motion</text>
+    <rect x="373" y="24" width="34" height="34" rx="4" fill="#2D3430" stroke="#111512"/>
+    <circle cx="390" cy="41" r="7" fill="#B9BDB9"/>
+  </g>
+
+  <!-- Exploded view -->
+  <rect x="38" y="575" width="535" height="370" rx="25" class="card"/>
+  <text x="67" y="614" class="section">Exploded top view</text>
+  <text x="541" y="614" text-anchor="end" class="small">top / switch / fixed shell</text>
+
+  <g transform="translate(150 742) scale(4.5)">
+    <use href="#tyroneTop" fill="url(#red)" stroke="#8F101A" stroke-width=".55"/>
+  </g>
+  <path d="M264 742 H319" class="thin" marker-end="url(#arrow)"/>
+  <g transform="translate(354 718)">
+    <rect x="-36" y="-16" width="72" height="32" rx="4" fill="#242A27" stroke="#111512" stroke-width="2"/>
+    <rect x="-8" y="-24" width="16" height="10" rx="3" fill="#B73A42"/>
+    <path d="M-22 16v29 M0 16v29 M22 16v29" stroke="#B5A56E" stroke-width="5"/>
+    <text x="0" y="65" text-anchor="middle" class="tiny">LONG AXIS ROTATES TO FIT</text>
+  </g>
+  <path d="M394 742 H434" class="thin" marker-end="url(#arrow)"/>
+  <g transform="translate(468 742) scale(4.5)">
+    <circle cx="-28.5" cy="-3.4" r="5" fill="url(#shell)" stroke="#26312C" stroke-width=".55"/>
+    <path d="M-27 -6.3 L-20.2 -6 L-18.5 -1 L-27 -.4Z" fill="url(#shell)" stroke="#26312C" stroke-width=".55"/>
+    <circle cx="-28.5" cy="-3.4" r="2.1" fill="#F1F2EE" stroke="#26312C" stroke-width=".55"/>
+    <use href="#tyroneShell" fill="url(#shell)" stroke="#26312C" stroke-width=".55"/>
+    <rect x="-6.4" y="-2.9" width="12.8" height="5.8" class="dash" vector-effect="non-scaling-stroke"/>
+  </g>
+  <g transform="translate(67 884)">
+    <rect width="466" height="40" rx="12" fill="#FFF2F2" stroke="#EBC8CA"/>
+    <text x="15" y="25" class="small">Two guide rails + centre actuator / top captive / lug never moves</text>
+  </g>
+
+  <!-- Side section -->
+  <rect x="598" y="575" width="365" height="370" rx="25" class="card"/>
+  <text x="627" y="614" class="section">Mechanism section</text>
+  <text x="932" y="614" text-anchor="end" class="small">concept dimensions</text>
+  <g transform="translate(625 655)">
+    <path d="M8 70 H36 V58 H276 V70 H304 V202 H8Z" fill="url(#shell)" class="ink"/>
+    <path d="M30 43 Q42 31 62 31 H250 Q270 31 282 43 L276 66 H36Z" fill="#A8121D" class="ink"/>
+    <path d="M30 36 Q42 24 62 24 H250 Q270 24 282 36 L276 59 H36Z" fill="url(#red)" class="ink"/>
+    <path d="M60 58 V100 H78 V58 M234 58 V100 H252 V58" fill="#C21D28" stroke="#26312C" stroke-width="2.3"/>
+    <path d="M60 98 H78 M234 98 H252" stroke="#26312C" stroke-width="5"/>
+    <path d="M145 56 V92 H167 V56" fill="#C21D28" class="ink"/>
+    <rect x="115" y="91" width="82" height="39" rx="4" fill="#242A27" class="ink"/>
+    <rect x="145" y="83" width="22" height="11" rx="3" fill="#B73A42" class="ink"/>
+    <path d="M132 130v40 M156 130v40 M180 130v40" stroke="#B5A56E" stroke-width="6"/>
+    <path d="M315 24 V59 M309 24 H321 M309 59 H321" class="thin"/>
+    <text x="303" y="45" text-anchor="end" class="small">1.2 mm proud</text>
+    <path d="M315 70 V202 M309 70 H321 M309 202 H321" class="thin"/>
+    <text x="303" y="139" text-anchor="end" class="small">about 9.3 mm shell</text>
+  </g>
+  <g transform="translate(627 886)">
+    <rect width="307" height="37" rx="11" fill="#EEF5F0" stroke="#A6C4B0"/>
+    <text x="13" y="24" class="small">Target press motion: 0.3-0.6 mm / crisp mouse click</text>
+  </g>
+
+  <!-- Series rules -->
+  <rect x="988" y="575" width="374" height="370" rx="25" class="card"/>
+  <text x="1017" y="614" class="section">All-county rules</text>
+  <g transform="translate(1017 650)">
+    <circle cx="8" cy="6" r="4" fill="#D71920"/><text x="23" y="11" class="body">46 mm longest body dimension</text>
+    <circle cx="8" cy="42" r="4" fill="#D71920"/><text x="23" y="47" class="body">Mainland polygon only; no islands</text>
+    <circle cx="8" cy="78" r="4" fill="#D71920"/><text x="23" y="83" class="body">Keychain-safe outline / 1.8 mm min neck</text>
+    <circle cx="8" cy="114" r="4" fill="#D71920"/><text x="23" y="119" class="body">9 mm lug / 4.2 mm hole / 3 mm bridge</text>
+    <circle cx="8" cy="150" r="4" fill="#D71920"/><text x="23" y="155" class="body">Lug belongs to fixed shell only</text>
+    <circle cx="8" cy="186" r="4" fill="#D71920"/><text x="23" y="191" class="body">1.2 mm rim / 0.7 mm top clearance</text>
+    <circle cx="8" cy="222" r="4" fill="#D71920"/><text x="23" y="227" class="body">Two guides prevent rotation and binding</text>
+  </g>
+  <g transform="translate(1017 884)">
+    <rect width="316" height="40" rx="12" fill="#FFF2F2" stroke="#EBC8CA"/>
+    <text x="13" y="17" class="small">NEXT GATE: buy and measure the switch,</text>
+    <text x="13" y="32" class="small">then build a mechanism-only 3D coupon.</text>
+  </g>
+
+  <text x="40" y="978" class="small">Boundary: official OSNI mainland Tyrone, simplified for a 46 mm FDM keychain envelope. Switch envelope uses published Kailh GM 8.0 dimensions.</text>
+  <text x="1360" y="978" text-anchor="end" class="small">County Clickers / Keychain / Tyrone / concept A</text>
+</svg>

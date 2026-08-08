@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1000" viewBox="0 0 1500 1000" role="img">
+<title>Wave multi-angle concept sheet</title>
+<desc>Solid sculptural wall · sine seam · curved name rail on upper half</desc>
+
+    <defs>
+      <clipPath id="front-clip"><rect x="145" y="192" width="490" height="238" rx="8"/></clipPath>
+      <clipPath id="perspective-clip"><path d="M 890 224 C 890 196 1310 196 1310 224 L 1310 430 C 1310 466 890 466 890 430 Z"/></clipPath>
+      <clipPath id="side-clip"><rect x="210" y="610" width="360" height="240" rx="8"/></clipPath>
+      <style>
+        .card{fill:#FFFFFF;stroke:#CAD4D5;stroke-width:1.5}
+        .stand{fill:#8FCFD0;stroke:#24343D;stroke-width:2.2}
+        .rim{fill:#B8E3E2;stroke:#24343D;stroke-width:2}
+        .bowl{fill:#F5F2EB;stroke:#24343D;stroke-width:2}
+        .groove{fill:none;stroke:#4E8588;stroke-width:5;stroke-linejoin:round}
+        .paw{fill:#55999B;stroke:#4E8588;stroke-width:1.5}
+        .rail{fill:#B8E3E2;stroke:#55999B;stroke-width:2}
+        .name-window{fill:#8FCFD0;stroke:none}
+        .wave-seam{fill:none;stroke:#24343D;stroke-width:6;stroke-linecap:round}
+        .rail-line,.smooth-marker{fill:none;stroke:#55999B;stroke-width:8;stroke-linecap:round}
+        .pet-name{font:700 36px system-ui,sans-serif;fill:#D98E98;stroke:#24343D;stroke-width:.7;paint-order:stroke}
+        .title{font:700 34px system-ui,sans-serif;fill:#24343D}
+        .subtitle{font:400 17px system-ui,sans-serif;fill:#667982}
+        .view-title{font:650 19px system-ui,sans-serif;fill:#24343D}
+        .note{font:500 13px system-ui,sans-serif;fill:#667982}
+        .label{font:500 14px system-ui,sans-serif;fill:#24343D}
+        .dimension{stroke:#667982;stroke-width:1.4}
+        .dimension-text{font:500 13px system-ui,sans-serif;fill:#667982}
+        .footer{font:500 14px system-ui,sans-serif;fill:#667982}
+      </style>
+    </defs>
+    <rect x="0" y="0" width="1500" height="1000" fill="#F5F2EB"></rect><text x="40" y="54" class="title" text-anchor="start">Wave</text><text x="40" y="86" class="subtitle" text-anchor="start">Solid sculptural wall · sine seam · curved name rail on upper half</text><text x="1460" y="54" class="note" text-anchor="end">CONCEPT REVIEW · NOT A MESH RENDER</text><rect x="40" y="120" width="700" height="380" rx="18" class="card"></rect><text x="64" y="154" class="view-title" text-anchor="start">Front elevation</text><text x="716" y="154" class="note" text-anchor="end">name treatment + pattern</text><rect x="145" y="192" width="490" height="238" rx="8" class="stand"></rect><path d="M 145 324 C 225 274, 310 374, 390 324 S 555 274, 635 324" class="wave-seam"></path><rect x="284" y="255" width="212" height="82" rx="28" class="rail"></rect><ellipse cx="390.0" cy="195" rx="245.0" ry="35" class="rim"></ellipse><ellipse cx="390.0" cy="194" rx="197" ry="25" class="bowl"></ellipse><text x="390.0" y="331" class="pet-name" text-anchor="middle">MAX</text><line x1="145" y1="465" x2="635" y2="465" class="dimension"></line><line x1="145" y1="458" x2="145" y2="472" class="dimension"></line><line x1="635" y1="458" x2="635" y2="472" class="dimension"></line><text x="390.0" y="457.0" class="dimension-text" text-anchor="middle">170 mm OD</text><rect x="760" y="120" width="700" height="380" rx="18" class="card"></rect><text x="784" y="154" class="view-title" text-anchor="start">Three-quarter</text><text x="1436" y="154" class="note" text-anchor="end">overall silhouette</text><path d="M 890 224 C 890 196, 1310 196, 1310 224 L 1310 430 C 1310 466, 890 466, 890 430 Z" class="stand"></path><path d="M 890 340 C 960 297, 1030 382, 1100 340 S 1240 297, 1310 340" class="wave-seam"></path><path d="M 1020 280 Q 1100 260 1180 280 L 1172 347 Q 1100 362 1028 347 Z" class="rail"></path><ellipse cx="1100" cy="224" rx="210" ry="43" class="rim"></ellipse><ellipse cx="1100" cy="221" rx="168" ry="31" class="bowl"></ellipse><text x="1104" y="343" class="pet-name" text-anchor="middle">MAX</text><rect x="40" y="540" width="700" height="380" rx="18" class="card"></rect><text x="64" y="574" class="view-title" text-anchor="start">Side elevation</text><text x="716" y="574" class="note" text-anchor="end">wall treatment</text><rect x="210" y="610" width="360" height="240" rx="8" class="stand"></rect><path d="M 210 740 C 300 692, 390 788, 480 740 S 550 706, 570 740" class="wave-seam"></path><ellipse cx="390.0" cy="613" rx="180.0" ry="28" class="rim"></ellipse><ellipse cx="390.0" cy="612" rx="145" ry="20" class="bowl"></ellipse><line x1="175" y1="610" x2="175" y2="850" class="dimension"></line><line x1="175" y1="603" x2="175" y2="617" class="dimension"></line><line x1="175" y1="843" x2="175" y2="857" class="dimension"></line><text x="175.0" y="730.0" class="dimension-text" text-anchor="middle">78 mm H</text><rect x="760" y="540" width="700" height="380" rx="18" class="card"></rect><text x="784" y="574" class="view-title" text-anchor="start">Top view</text><text x="1436" y="574" class="note" text-anchor="end">shared Cooper insert</text><circle cx="1110" cy="742" r="144" class="stand"></circle><circle cx="1110" cy="742" r="119" class="rim"></circle><circle cx="1110" cy="742" r="108" class="bowl"></circle><path d="M 1000 836 Q 1110 893 1220 836" class="wave-seam"></path><line x1="991" y1="574" x2="1229" y2="574" class="dimension"></line><line x1="991" y1="567" x2="991" y2="581" class="dimension"></line><line x1="1229" y1="567" x2="1229" y2="581" class="dimension"></line><text x="1110.0" y="566.0" class="dimension-text" text-anchor="middle">Ø140 bowl family</text><text x="40" y="962" class="footer" text-anchor="start">3 plates: lower body · upper body printed inverted · curved-back glue-in letters</text><text x="1460" y="962" class="footer" text-anchor="end">Ogma Print · Ø140 Cooper insert · Bambu PLA Matte</text>
+</svg>

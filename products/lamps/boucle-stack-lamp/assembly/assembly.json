@@ -1,0 +1,125 @@
+{
+  "model": "Bouclé Stack table lamp — assembled preview",
+  "units": "mm",
+  "note": "Preview only: parts sit where they land in the finished lamp.",
+  "mesh_resolution": {
+    "circumferential_sections": 132,
+    "shell_profile_stride": 6,
+    "ring_envelope_steps": 70
+  },
+  "overall_height": 234.99,
+  "widest_diameter": 157.39,
+  "joint_clocking": {
+    "A_to_B": {
+      "phase_deg": 0.0,
+      "key_width_mm": 3.0,
+      "key_depth_mm": 1.0,
+      "key_height_mm": 3.2,
+      "tip_width_mm": 2.4,
+      "groove_width_mm": 3.8,
+      "groove_depth_mm": 1.4,
+      "tangential_clearance_total_mm": 0.8,
+      "radial_clearance_mm": 0.4,
+      "top_clearance_mm": 0.8,
+      "register_material_behind_mm": 2.6,
+      "maximum_angular_play_deg": 0.4
+    },
+    "B_to_C": {
+      "phase_deg": 0.0,
+      "key_width_mm": 3.0,
+      "key_depth_mm": 1.0,
+      "key_height_mm": 3.2,
+      "tip_width_mm": 2.4,
+      "groove_width_mm": 3.8,
+      "groove_depth_mm": 1.4,
+      "tangential_clearance_total_mm": 0.8,
+      "radial_clearance_mm": 0.4,
+      "top_clearance_mm": 0.8,
+      "register_material_behind_mm": 2.6,
+      "maximum_angular_play_deg": 0.496
+    },
+    "role": "One hidden tapered ring tab enters the upper shell's open-bottom register notch; adhesive remains structural."
+  },
+  "base_validation": {
+    "connected_components": 1,
+    "leg_joint": "embedded through outer contact and clipped clear of bore",
+    "leg_embed_endpoint": [
+      42.0,
+      72.0
+    ],
+    "base_cradle_collision_volume_mm3": 0.0,
+    "diffuser_cradle_collision_volume_mm3": 0.0,
+    "diffuser_locator_clearance_total_mm": 0.6,
+    "diffuser_locator_bottom_clearance_mm": 0.4,
+    "leg_phases_deg": [
+      90.0,
+      210.0,
+      330.0
+    ],
+    "front_leg_phases_deg": [
+      210.0,
+      330.0
+    ],
+    "cable_phase_deg": 110.0,
+    "rear_leg_phase_deg": 90.0,
+    "cable_to_rear_leg_deg": 20.0,
+    "front_open_midpoint_deg": 270.0,
+    "passed": true
+  },
+  "parts": [
+    {
+      "name": "Leg frame",
+      "printed": true,
+      "filament": "Dark Chocolate",
+      "volume_cm3": 70.9
+    },
+    {
+      "name": "LED cradle",
+      "printed": true,
+      "filament": "Dark Chocolate",
+      "volume_cm3": 170.9
+    },
+    {
+      "name": "Diffuser baffle",
+      "printed": true,
+      "filament": "Jade White",
+      "volume_cm3": 8.0
+    },
+    {
+      "name": "Shell A",
+      "printed": true,
+      "filament": "Bone White",
+      "volume_cm3": 37.5
+    },
+    {
+      "name": "Halo ring A–B",
+      "printed": true,
+      "filament": "Bone White",
+      "volume_cm3": 66.7
+    },
+    {
+      "name": "Shell B",
+      "printed": true,
+      "filament": "Bone White",
+      "volume_cm3": 29.0
+    },
+    {
+      "name": "Halo ring B–C",
+      "printed": true,
+      "filament": "Bone White",
+      "volume_cm3": 18.1
+    },
+    {
+      "name": "Shell C",
+      "printed": true,
+      "filament": "Bone White",
+      "volume_cm3": 23.9
+    },
+    {
+      "name": "LED module (reference)",
+      "printed": false,
+      "filament": "Dark Chocolate",
+      "volume_cm3": 22.6
+    }
+  ]
+}

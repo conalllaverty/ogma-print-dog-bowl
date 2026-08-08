@@ -1,0 +1,372 @@
+{
+  "model": "Bouclé Stack lamp — Autodesk Fusion exact mesh assembly",
+  "units": "mm",
+  "note": "Production-resolution watertight mesh components in finished assembly positions; not a print layout or native parametric B-Rep.",
+  "mesh_resolution": {
+    "circumferential_sections": 288,
+    "shell_profile_stride": 1,
+    "ring_envelope_steps": 260
+  },
+  "overall_height": 234.99,
+  "widest_diameter": 157.41,
+  "joint_clocking": {
+    "A_to_B": {
+      "phase_deg": 0.0,
+      "key_width_mm": 3.0,
+      "key_depth_mm": 1.0,
+      "key_height_mm": 3.2,
+      "tip_width_mm": 2.4,
+      "groove_width_mm": 3.8,
+      "groove_depth_mm": 1.4,
+      "tangential_clearance_total_mm": 0.8,
+      "radial_clearance_mm": 0.4,
+      "top_clearance_mm": 0.8,
+      "register_material_behind_mm": 2.6,
+      "maximum_angular_play_deg": 0.4
+    },
+    "B_to_C": {
+      "phase_deg": 0.0,
+      "key_width_mm": 3.0,
+      "key_depth_mm": 1.0,
+      "key_height_mm": 3.2,
+      "tip_width_mm": 2.4,
+      "groove_width_mm": 3.8,
+      "groove_depth_mm": 1.4,
+      "tangential_clearance_total_mm": 0.8,
+      "radial_clearance_mm": 0.4,
+      "top_clearance_mm": 0.8,
+      "register_material_behind_mm": 2.6,
+      "maximum_angular_play_deg": 0.496
+    },
+    "role": "One hidden tapered ring tab enters the upper shell's open-bottom register notch; adhesive remains structural."
+  },
+  "base_validation": {
+    "connected_components": 1,
+    "leg_joint": "embedded through outer contact and clipped clear of bore",
+    "leg_embed_endpoint": [
+      42.0,
+      72.0
+    ],
+    "base_cradle_collision_volume_mm3": 0.0,
+    "diffuser_cradle_collision_volume_mm3": 0.0,
+    "diffuser_locator_clearance_total_mm": 0.6,
+    "diffuser_locator_bottom_clearance_mm": 0.4,
+    "leg_phases_deg": [
+      90.0,
+      210.0,
+      330.0
+    ],
+    "front_leg_phases_deg": [
+      210.0,
+      330.0
+    ],
+    "cable_phase_deg": 110.0,
+    "rear_leg_phase_deg": 90.0,
+    "cable_to_rear_leg_deg": 20.0,
+    "front_open_midpoint_deg": 270.0,
+    "passed": true
+  },
+  "parts": [
+    {
+      "name": "Leg frame",
+      "printed": true,
+      "filament": "Dark Chocolate",
+      "volume_cm3": 70.9
+    },
+    {
+      "name": "LED cradle",
+      "printed": true,
+      "filament": "Dark Chocolate",
+      "volume_cm3": 170.9
+    },
+    {
+      "name": "Diffuser baffle",
+      "printed": true,
+      "filament": "Jade White",
+      "volume_cm3": 8.0
+    },
+    {
+      "name": "Shell A",
+      "printed": true,
+      "filament": "Bone White",
+      "volume_cm3": 37.5
+    },
+    {
+      "name": "Halo ring A–B",
+      "printed": true,
+      "filament": "Bone White",
+      "volume_cm3": 66.7
+    },
+    {
+      "name": "Shell B",
+      "printed": true,
+      "filament": "Bone White",
+      "volume_cm3": 29.0
+    },
+    {
+      "name": "Halo ring B–C",
+      "printed": true,
+      "filament": "Bone White",
+      "volume_cm3": 18.1
+    },
+    {
+      "name": "Shell C",
+      "printed": true,
+      "filament": "Bone White",
+      "volume_cm3": 23.9
+    },
+    {
+      "name": "LED module (reference)",
+      "printed": false,
+      "filament": "Dark Chocolate",
+      "volume_cm3": 22.6
+    }
+  ],
+  "fusion_export": {
+    "format": "componentized exact mesh assembly",
+    "units": "mm",
+    "origin": "centre of leg-frame base",
+    "printed_component_count": 8,
+    "reference_component_count": 1,
+    "total_triangle_count": 597868,
+    "overall_bounds_mm": [
+      [
+        -74.9556,
+        -73.6139,
+        0.0
+      ],
+      [
+        73.2048,
+        83.7951,
+        234.9878
+      ]
+    ],
+    "files": {
+      "obj": "Boucle_Stack_Lamp_Fusion_Assembly.obj",
+      "mtl": "Boucle_Stack_Lamp_Fusion_Assembly.mtl",
+      "3mf": "Boucle_Stack_Lamp_Fusion_Assembly.3mf",
+      "components": "components/",
+      "fusion_script": "FusionImportBoucleStack/"
+    },
+    "fuzzy_skin_geometry": false,
+    "fuzzy_skin_note": "Production Classic fuzzy skin remains slicer metadata and is not tessellated into the Fusion meshes.",
+    "parts": [
+      {
+        "index": 1,
+        "name": "Leg frame",
+        "file": "components/01_Leg_Frame.obj",
+        "printed_part": true,
+        "material": "Dark_Chocolate_PLA_Matte",
+        "units": "mm",
+        "coordinates": "finished assembly position",
+        "triangle_count": 8212,
+        "watertight": true,
+        "volume_cm3": 70.891,
+        "bounds_mm": [
+          [
+            -73.2048,
+            -58.0,
+            0.0
+          ],
+          [
+            73.2048,
+            83.7951,
+            82.0
+          ]
+        ]
+      },
+      {
+        "index": 2,
+        "name": "LED cradle",
+        "file": "components/02_LED_Cradle.obj",
+        "printed_part": true,
+        "material": "Dark_Chocolate_PLA_Matte",
+        "units": "mm",
+        "coordinates": "finished assembly position",
+        "triangle_count": 4546,
+        "watertight": true,
+        "volume_cm3": 170.872,
+        "bounds_mm": [
+          [
+            -49.5,
+            -49.7622,
+            54.0
+          ],
+          [
+            49.5,
+            49.5,
+            82.0
+          ]
+        ]
+      },
+      {
+        "index": 3,
+        "name": "Diffuser baffle",
+        "file": "components/03_Diffuser_Baffle.obj",
+        "printed_part": true,
+        "material": "Jade_White_PLA_Basic",
+        "units": "mm",
+        "coordinates": "finished assembly position",
+        "triangle_count": 2494,
+        "watertight": true,
+        "volume_cm3": 8.026,
+        "bounds_mm": [
+          [
+            -38.0,
+            -38.0,
+            80.0
+          ],
+          [
+            38.0,
+            38.0,
+            113.2
+          ]
+        ]
+      },
+      {
+        "index": 4,
+        "name": "Shell A",
+        "file": "components/04_Shell_A.obj",
+        "printed_part": true,
+        "material": "Bone_White_PLA_Matte",
+        "units": "mm",
+        "coordinates": "finished assembly position",
+        "triangle_count": 226028,
+        "watertight": true,
+        "volume_cm3": 37.544,
+        "bounds_mm": [
+          [
+            -74.9556,
+            -73.6139,
+            81.0
+          ],
+          [
+            71.5584,
+            73.6139,
+            152.9323
+          ]
+        ]
+      },
+      {
+        "index": 5,
+        "name": "Halo ring A–B",
+        "file": "components/05_Halo_Ring_A_to_B.obj",
+        "printed_part": true,
+        "material": "Bone_White_PLA_Matte",
+        "units": "mm",
+        "coordinates": "finished assembly position",
+        "triangle_count": 115178,
+        "watertight": true,
+        "volume_cm3": 66.709,
+        "bounds_mm": [
+          [
+            -73.1287,
+            -71.8134,
+            100.9181
+          ],
+          [
+            69.8263,
+            71.8134,
+            156.8799
+          ]
+        ]
+      },
+      {
+        "index": 6,
+        "name": "Shell B",
+        "file": "components/06_Shell_B.obj",
+        "printed_part": true,
+        "material": "Bone_White_PLA_Matte",
+        "units": "mm",
+        "coordinates": "finished assembly position",
+        "triangle_count": 95554,
+        "watertight": true,
+        "volume_cm3": 29.008,
+        "bounds_mm": [
+          [
+            -62.3862,
+            -62.8936,
+            128.1973
+          ],
+          [
+            71.8935,
+            62.8936,
+            192.2296
+          ]
+        ]
+      },
+      {
+        "index": 7,
+        "name": "Halo ring B–C",
+        "file": "components/07_Halo_Ring_B_to_C.obj",
+        "printed_part": true,
+        "material": "Bone_White_PLA_Matte",
+        "units": "mm",
+        "coordinates": "finished assembly position",
+        "triangle_count": 26384,
+        "watertight": true,
+        "volume_cm3": 18.119,
+        "bounds_mm": [
+          [
+            -59.216,
+            -59.7179,
+            159.2497
+          ],
+          [
+            69.9858,
+            59.7179,
+            195.4496
+          ]
+        ]
+      },
+      {
+        "index": 8,
+        "name": "Shell C",
+        "file": "components/08_Shell_C.obj",
+        "printed_part": true,
+        "material": "Bone_White_PLA_Matte",
+        "units": "mm",
+        "coordinates": "finished assembly position",
+        "triangle_count": 119092,
+        "watertight": true,
+        "volume_cm3": 23.857,
+        "bounds_mm": [
+          [
+            -65.8782,
+            -56.9957,
+            171.3635
+          ],
+          [
+            55.9006,
+            56.9957,
+            234.9878
+          ]
+        ]
+      },
+      {
+        "index": 9,
+        "name": "LED module (reference)",
+        "file": "components/09_LED_Module_Reference.obj",
+        "printed_part": false,
+        "material": "LED_Module_Reference",
+        "units": "mm",
+        "coordinates": "finished assembly position",
+        "triangle_count": 380,
+        "watertight": true,
+        "volume_cm3": 22.603,
+        "bounds_mm": [
+          [
+            -30.0,
+            -30.0,
+            74.0
+          ],
+          [
+            30.0,
+            30.0,
+            82.0
+          ]
+        ]
+      }
+    ]
+  }
+}

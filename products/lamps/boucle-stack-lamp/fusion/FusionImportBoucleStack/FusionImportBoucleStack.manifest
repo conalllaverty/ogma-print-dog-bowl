@@ -1,0 +1,11 @@
+{
+  "autodeskProduct": "Fusion360",
+  "type": "script",
+  "author": "Ogma Print",
+  "description": {
+    "": "Import the complete Boucl\u00e9 Stack lamp as nine named mesh components in their finished assembly positions."
+  },
+  "version": "1.0.0",
+  "supportedOS": "windows|mac",
+  "editEnabled": true
+}

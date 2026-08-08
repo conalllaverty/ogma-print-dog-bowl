@@ -1,0 +1,193 @@
+{
+  "project": "Wicklow County Clicker",
+  "series": "Standalone Ireland county clickers",
+  "units": "mm",
+  "sizing": {
+    "reference_county": "Tyrone",
+    "reference_width_mm": 62.0,
+    "size_boosted": false,
+    "size_scale_factor": 1.0,
+    "scale_reasons": [],
+    "placement_center_mm": [
+      167.245,
+      104.0
+    ]
+  },
+  "filaments": [
+    {
+      "slot": 1,
+      "name": "Wicklow Blue",
+      "hex": "#0033A0"
+    },
+    {
+      "slot": 2,
+      "name": "Wicklow Gold",
+      "hex": "#F0C400"
+    }
+  ],
+  "shell": {
+    "outer_size": [
+      32.508,
+      38.033,
+      23.5
+    ],
+    "inscribed_radius_mm": 10.248,
+    "cap_inset": 2.15,
+    "pocket_inset": 1.4,
+    "moving_side_clearance": 0.75,
+    "min_side_clearance_mm": 0.7
+  },
+  "moving_top": {
+    "released_height_above_shell": 2.5,
+    "full_switch_travel": 4.0,
+    "print_orientation": "top face-down; MX socket boss points upward",
+    "robustness": {
+      "cap_area_retention_percent": 62.379,
+      "cap_perimeter_retention_percent": 63.046,
+      "fragile_lobe_trimmed_percent": 0.0,
+      "neck_test_width_mm": 0.8,
+      "core_component_count": 1,
+      "secondary_core_area_percent": 0.0,
+      "min_area_retention_percent": 45.0
+    }
+  },
+  "switch": {
+    "type": "Outemu (Gaote) Blue, 3-pin, 50 gf",
+    "centre_xy": [
+      3.5,
+      4.94
+    ],
+    "mount_opening": 14.1,
+    "shoulder_size": 16.4,
+    "lower_opening_wall_mm": 3.157,
+    "shoulder_wall_mm": 1.833,
+    "minimum_shoulder_wall_mm": 1.5,
+    "centre_strategy": "square-shoulder clearance optimization"
+  },
+  "boundary_source_fidelity": {
+    "ok": true,
+    "dataset": "Counties \u2013 National Statutory Boundaries \u2013 2019",
+    "publisher": "Tailte \u00c9ireann",
+    "licence": "Creative Commons Attribution 4.0",
+    "iou": 0.996414,
+    "accuracy_percent_iou": 99.641,
+    "hausdorff_distance_mm_at_print_scale": 0.0794,
+    "generated_to_source_area_ratio": 1.000408,
+    "size_scale_factor_excluded_from_comparison": 1.0,
+    "min_iou": 0.99,
+    "max_hausdorff_mm": 0.1
+  },
+  "fit_checks": {
+    "county": "Wicklow",
+    "ok": true,
+    "issues": [],
+    "clearance": {
+      "cap_inside_pocket": true,
+      "cap_outside_pocket_area_mm2": 0.0,
+      "min_side_clearance_mm": 0.75,
+      "p10_side_clearance_mm": 0.75,
+      "median_side_clearance_mm": 0.75,
+      "exact_min_side_clearance_mm": 0.7488,
+      "target_side_clearance_mm": 0.75,
+      "min_allowed_side_clearance_mm": 0.7
+    },
+    "cap_inscribed_radius_mm": 9.405,
+    "mx_boss_edge_clearance_mm": 5.173,
+    "shell_inscribed_radius_mm": 10.248,
+    "switch_cavity": {
+      "centre_strategy": "square-shoulder clearance optimization",
+      "centre_shift_from_circle_polylabel_mm": 1.581,
+      "lower_opening_wall_mm": 3.157,
+      "shoulder_wall_mm": 1.833,
+      "min_shoulder_wall_mm": 1.5,
+      "shoulder_size_mm": 16.4
+    },
+    "moving_top_robustness": {
+      "cap_area_retention_percent": 62.379,
+      "cap_perimeter_retention_percent": 63.046,
+      "fragile_lobe_trimmed_percent": 0.0,
+      "neck_test_width_mm": 0.8,
+      "core_component_count": 1,
+      "secondary_core_area_percent": 0.0,
+      "min_area_retention_percent": 45.0
+    },
+    "boundary_source_fidelity": {
+      "ok": true,
+      "dataset": "Counties \u2013 National Statutory Boundaries \u2013 2019",
+      "publisher": "Tailte \u00c9ireann",
+      "licence": "Creative Commons Attribution 4.0",
+      "iou": 0.996414,
+      "accuracy_percent_iou": 99.641,
+      "hausdorff_distance_mm_at_print_scale": 0.0794,
+      "generated_to_source_area_ratio": 1.000408,
+      "size_scale_factor_excluded_from_comparison": 1.0,
+      "min_iou": 0.99,
+      "max_hausdorff_mm": 0.1
+    },
+    "travel_cap_overlap": {
+      "released": {
+        "assembled_z": 19.0,
+        "cap_shell_overlap_mm3": 0.0
+      },
+      "mid": {
+        "assembled_z": 17.0,
+        "cap_shell_overlap_mm3": 0.0
+      },
+      "pressed": {
+        "assembled_z": 15.0,
+        "cap_shell_overlap_mm3": 0.0
+      }
+    },
+    "decisions_needed": []
+  },
+  "validation": [
+    {
+      "name": "wicklow_shell",
+      "vertices": 1178,
+      "faces": 2352,
+      "watertight": true,
+      "volume_mm3": 9756.859,
+      "bounds_mm": {
+        "min": [
+          -16.254,
+          -19.017,
+          0.0
+        ],
+        "max": [
+          16.254,
+          19.017,
+          23.5
+        ],
+        "size": [
+          32.508,
+          38.033,
+          23.5
+        ]
+      }
+    },
+    {
+      "name": "wicklow_top",
+      "vertices": 885,
+      "faces": 1766,
+      "watertight": true,
+      "volume_mm3": 1934.946,
+      "bounds_mm": {
+        "min": [
+          -13.672,
+          -16.357,
+          0.0
+        ],
+        "max": [
+          13.46,
+          16.355,
+          7.0
+        ],
+        "size": [
+          27.131,
+          32.712,
+          7.0
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,255 @@
+{
+  "variants": [
+    {
+      "key": "full_body_vortex",
+      "title": "Full-body five-track vortex",
+      "project": "Oggie_Spin_Optical_Full_Body_Vortex_P2S.3mf",
+      "identifier": "VX",
+      "identifier_side": "core underside / bed face",
+      "plates": 2,
+      "objects": 12,
+      "arm_plate": "five arms on one plate",
+      "arm_plate_print_sequence": "by layer",
+      "arm_plate_z_hop_mm": 0.6,
+      "arm_plate_z_hop_type": "Slope Lift",
+      "arm_plate_infill": "100% gyroid",
+      "arm_plate_wall_loops": 2,
+      "recommended_matte_colours": "Dark Chocolate base + Ivory White vortex",
+      "alternative_matte_colours": [
+        "Marine Blue base + Ivory White vortex",
+        "Scarlet Red base + Lemon Yellow vortex"
+      ],
+      "filament_slots": [
+        {
+          "slot": 1,
+          "name": "Dark Chocolate Matte",
+          "hex": "#4D3324"
+        },
+        {
+          "slot": 2,
+          "name": "Ivory White Matte",
+          "hex": "#FFFFFF"
+        }
+      ],
+      "arm_volume_spread_mm3": 0.0,
+      "vortex_core_to_arm_phase_error_mm2": 0.0,
+      "mechanical_geometry": "\u00d812.82 core; detent-free 0.02 mm friction-rib arms",
+      "physical_status": "optical and fit testing pending"
+    },
+    {
+      "key": "spiral_wave",
+      "title": "Five-phase travelling spiral / wave",
+      "project": "Oggie_Spin_Optical_Spiral_Wave_P2S.3mf",
+      "identifier": "SP",
+      "identifier_side": "core underside / bed face",
+      "plates": 2,
+      "objects": 12,
+      "arm_plate": "five arms on one plate",
+      "arm_plate_print_sequence": "by layer",
+      "arm_plate_z_hop_mm": 0.6,
+      "arm_plate_z_hop_type": "Slope Lift",
+      "arm_plate_infill": "100% gyroid",
+      "arm_plate_wall_loops": 2,
+      "recommended_matte_colours": "Marine Blue base + Ivory White inlay",
+      "alternative_matte_colours": [
+        "Dark Chocolate base + Lemon Yellow inlay",
+        "Scarlet Red base + Ivory White inlay"
+      ],
+      "filament_slots": [
+        {
+          "slot": 1,
+          "name": "Marine Blue Matte",
+          "hex": "#3A8FCF"
+        },
+        {
+          "slot": 2,
+          "name": "Ivory White Matte",
+          "hex": "#FFFFFF"
+        }
+      ],
+      "arm_volume_spread_mm3": 0.0,
+      "mechanical_geometry": "\u00d812.82 core; detent-free 0.02 mm friction-rib arms",
+      "physical_status": "optical and fit testing pending"
+    },
+    {
+      "key": "chevron",
+      "title": "Chevron reversal / barber-pole band",
+      "project": "Oggie_Spin_Optical_Chevron_Barber_Pole_P2S.3mf",
+      "identifier": "CH",
+      "identifier_side": "core underside / bed face",
+      "plates": 2,
+      "objects": 12,
+      "arm_plate": "five arms on one plate",
+      "arm_plate_print_sequence": "by layer",
+      "arm_plate_z_hop_mm": 0.6,
+      "arm_plate_z_hop_type": "Slope Lift",
+      "arm_plate_infill": "100% gyroid",
+      "arm_plate_wall_loops": 2,
+      "recommended_matte_colours": "Dark Chocolate base + Lemon Yellow inlay",
+      "alternative_matte_colours": [
+        "Marine Blue base + Ivory White inlay",
+        "Scarlet Red base + Ivory White inlay"
+      ],
+      "filament_slots": [
+        {
+          "slot": 1,
+          "name": "Dark Chocolate Matte",
+          "hex": "#4D3324"
+        },
+        {
+          "slot": 2,
+          "name": "Lemon Yellow Matte",
+          "hex": "#F7D959"
+        }
+      ],
+      "arm_volume_spread_mm3": 0.0,
+      "mechanical_geometry": "\u00d812.82 core; detent-free 0.02 mm friction-rib arms",
+      "physical_status": "optical and fit testing pending"
+    },
+    {
+      "key": "strobe",
+      "title": "Phone / LED strobe animation disk",
+      "project": "Oggie_Spin_Optical_Strobe_Animation_P2S.3mf",
+      "identifier": "ST",
+      "identifier_side": "core underside / bed face",
+      "plates": 2,
+      "objects": 7,
+      "arm_plate": "five arms on one plate",
+      "arm_plate_print_sequence": "by layer",
+      "arm_plate_z_hop_mm": 0.6,
+      "arm_plate_z_hop_type": "Slope Lift",
+      "arm_plate_infill": "100% gyroid",
+      "arm_plate_wall_loops": 2,
+      "recommended_matte_colours": "Marine Blue base + Ivory White animation marks",
+      "alternative_matte_colours": [
+        "Dark Chocolate base + Lemon Yellow marks",
+        "Scarlet Red base + Ivory White marks"
+      ],
+      "filament_slots": [
+        {
+          "slot": 1,
+          "name": "Marine Blue Matte",
+          "hex": "#3A8FCF"
+        },
+        {
+          "slot": 2,
+          "name": "Ivory White Matte",
+          "hex": "#FFFFFF"
+        }
+      ],
+      "arm_volume_spread_mm3": 0.0,
+      "mechanical_geometry": "\u00d812.82 core; detent-free 0.02 mm friction-rib arms",
+      "physical_status": "optical and fit testing pending"
+    },
+    {
+      "key": "opposing_drift",
+      "title": "Dual-radius opposing drift rings",
+      "project": "Oggie_Spin_Optical_Opposing_Drift_P2S.3mf",
+      "identifier": "OD",
+      "identifier_side": "core underside / bed face",
+      "plates": 2,
+      "objects": 12,
+      "arm_plate": "five arms on one plate",
+      "arm_plate_print_sequence": "by layer",
+      "arm_plate_z_hop_mm": 0.6,
+      "arm_plate_z_hop_type": "Slope Lift",
+      "arm_plate_infill": "100% gyroid",
+      "arm_plate_wall_loops": 2,
+      "recommended_matte_colours": "Dark Chocolate base + Ivory White inlays",
+      "alternative_matte_colours": [
+        "Marine Blue base + Ivory White inlays",
+        "Scarlet Red base + Lemon Yellow inlays"
+      ],
+      "filament_slots": [
+        {
+          "slot": 1,
+          "name": "Dark Chocolate Matte",
+          "hex": "#4D3324"
+        },
+        {
+          "slot": 2,
+          "name": "Ivory White Matte",
+          "hex": "#FFFFFF"
+        }
+      ],
+      "arm_volume_spread_mm3": 0.0,
+      "mechanical_geometry": "\u00d812.82 core; detent-free 0.02 mm friction-rib arms",
+      "physical_status": "optical and fit testing pending"
+    },
+    {
+      "key": "colour_pulse",
+      "title": "High-contrast colour pulse sequence",
+      "project": "Oggie_Spin_Optical_Colour_Pulse_P2S.3mf",
+      "identifier": "CP",
+      "identifier_side": "core underside / bed face",
+      "plates": 2,
+      "objects": 7,
+      "arm_plate": "five arms on one plate",
+      "arm_plate_print_sequence": "by object",
+      "arm_plate_z_hop_mm": 0.6,
+      "arm_plate_z_hop_type": "Slope Lift",
+      "arm_plate_infill": "100% gyroid",
+      "arm_plate_wall_loops": 2,
+      "recommended_matte_colours": "Ivory White / Marine Blue / Ivory White / Marine Blue / Lemon Yellow",
+      "alternative_matte_colours": [
+        "Ivory White / Dark Chocolate / Ivory White / Dark Chocolate / Mandarin Orange",
+        "Ivory White / Scarlet Red / Ivory White / Scarlet Red / Lemon Yellow"
+      ],
+      "filament_slots": [
+        {
+          "slot": 1,
+          "name": "Marine Blue Matte",
+          "hex": "#3A8FCF"
+        },
+        {
+          "slot": 2,
+          "name": "Ivory White Matte",
+          "hex": "#FFFFFF"
+        },
+        {
+          "slot": 3,
+          "name": "Lemon Yellow Matte",
+          "hex": "#F7D959"
+        }
+      ],
+      "arm_volume_spread_mm3": 0.0,
+      "mechanical_geometry": "\u00d812.82 core; detent-free 0.02 mm friction-rib arms",
+      "physical_status": "optical and fit testing pending"
+    },
+    {
+      "key": "dashed_ladder",
+      "title": "Expanding / contracting dashed ladder",
+      "project": "Oggie_Spin_Optical_Dashed_Ladder_P2S.3mf",
+      "identifier": "LD",
+      "identifier_side": "core underside / bed face",
+      "plates": 2,
+      "objects": 12,
+      "arm_plate": "five arms on one plate",
+      "arm_plate_print_sequence": "by layer",
+      "arm_plate_z_hop_mm": 0.6,
+      "arm_plate_z_hop_type": "Slope Lift",
+      "arm_plate_infill": "100% gyroid",
+      "arm_plate_wall_loops": 2,
+      "recommended_matte_colours": "Scarlet Red base + Ivory White inlay",
+      "alternative_matte_colours": [
+        "Marine Blue base + Lemon Yellow inlay",
+        "Dark Chocolate base + Ivory White inlay"
+      ],
+      "filament_slots": [
+        {
+          "slot": 1,
+          "name": "Scarlet Red Matte",
+          "hex": "#DE4343"
+        },
+        {
+          "slot": 2,
+          "name": "Ivory White Matte",
+          "hex": "#FFFFFF"
+        }
+      ],
+      "arm_volume_spread_mm3": 0.0,
+      "mechanical_geometry": "\u00d812.82 core; detent-free 0.02 mm friction-rib arms",
+      "physical_status": "optical and fit testing pending"
+    }
+  ]
+}

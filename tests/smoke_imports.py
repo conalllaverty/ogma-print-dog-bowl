@@ -12,7 +12,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-GEN = Path(__file__).resolve().parent.parent / "backend" / "generator"
+REPO = Path(__file__).resolve().parent.parent
+# Every product's generator + coupon dir, plus the shared toolkit.
+DIRS = sorted(
+    [p for p in REPO.glob("products/*/generator")]
+    + [p for p in REPO.glob("products/*/coupons")]
+    + [REPO / "shared" / "ogma"]
+)
 
 SKIP = {
     # Fusion add-in half: imports adsk.* which only exists inside Autodesk Fusion.
@@ -21,15 +27,23 @@ SKIP = {
 
 
 def main() -> int:
-    mods = sorted(p.stem for p in GEN.glob("*.py") if not p.stem.startswith("_"))
+    mods = sorted(
+        (d, p.stem) for d in DIRS for p in d.glob("*.py") if not p.stem.startswith("_")
+    )
     results = {}
-    for m in mods:
+    for d, m in mods:
         if m in SKIP:
             results[m] = "SKIP"
             continue
+        # ogma is a package: import it as one, not as loose modules on sys.path.
+        if d.name == "ogma":
+            stmt = (f"import sys; sys.path.insert(0, {str(d.parent)!r}); "
+                    f"import ogma.{m}")
+        else:
+            stmt = (f"import sys; sys.path.insert(0, {str(d)!r}); "
+                    f"sys.path.insert(0, {str(REPO / 'shared')!r}); import {m}")
         proc = subprocess.run(
-            [sys.executable, "-c",
-             f"import sys; sys.path.insert(0, {str(GEN)!r}); import {m}"],
+            [sys.executable, "-c", stmt],
             capture_output=True, text=True, timeout=300,
         )
         if proc.returncode == 0:
