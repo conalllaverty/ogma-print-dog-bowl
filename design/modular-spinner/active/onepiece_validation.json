@@ -1,0 +1,171 @@
+{
+  "project": "Oggie_Spin_Solo_OnePiece_P2S.3mf",
+  "status": "one-piece core-and-arms variant; no arm joint. Geometry validated, physical gates open.",
+  "plates": 4,
+  "objects": 7,
+  "body_volume_cm3": 21.46,
+  "body_mass_g_at_1_24": 26.7,
+  "body_outer_diameter_mm": 52.6,
+  "root_fillet_mm": 2.5,
+  "section_area_over_convex_hull": 0.756,
+  "inlay_proud_mm": 0.32,
+  "inlay_proud_volume_mm3": 52.7249,
+  "removed_from_the_modular_design": [
+    "five arm slots",
+    "dovetail tongues",
+    "clip cantilever beams",
+    "snap barbs",
+    "underside clip pockets",
+    "entry channels",
+    "retaining lips",
+    "push-through ledges",
+    "wrap clearance"
+  ],
+  "unchanged_from_the_modular_design": [
+    "R188 bearing pocket and lead-in chamfer",
+    "retaining ring counterbore and press fit",
+    "Tough+ split-collet cartridge",
+    "bayonet thumb pads",
+    "broken-ring optical pattern (15/20/25 dashes)"
+  ],
+  "small_parts_cylinder": {
+    "bore_mm": 31.77,
+    "depth_mm": 57.1,
+    "fits_cylinder": {
+      "Oggie Spin Solo one-piece body": false,
+      "R188 outer-race retaining ring": true,
+      "Tough+ split-collet through-axle hub": true,
+      "Tough+ through-bore receiver hub": true,
+      "Socketed thumb pad 1": true,
+      "Socketed thumb pad 2": true
+    },
+    "note": "the one-piece body cannot fit, which is the point: the modular arm could. The bearing, hubs, ring and pads still fit and are still small parts -- they are captive rather than user-removable, and EN 71-1 torque and tension tests decide whether that holds."
+  },
+  "printability": {
+    "spec": {
+      "nozzle_mm": 0.4,
+      "layer_height_mm": 0.16,
+      "overhang_limit_deg": 45.0,
+      "min_feature_mm": 0.8,
+      "min_anchor_ratio": 0.18
+    },
+    "parts": [
+      {
+        "name": "Oggie Spin Solo one-piece body",
+        "blocking": false,
+        "findings": [
+          {
+            "kind": "overhang-surface",
+            "detail": "26.1 mm\u00b2 of downward faces steeper than 45\u00b0 (0.4% of the part)",
+            "z": null,
+            "value": 26.0657,
+            "blocking": false,
+            "layers": 1
+          },
+          {
+            "kind": "thin-feature",
+            "detail": "1.50 mm\u00b2 narrower than 0.80 mm",
+            "z": 13.88,
+            "value": 1.5033,
+            "blocking": false,
+            "layers": 10
+          }
+        ]
+      },
+      {
+        "name": "R188 outer-race retaining ring",
+        "blocking": false,
+        "findings": []
+      },
+      {
+        "name": "Tough+ split-collet through-axle hub",
+        "blocking": false,
+        "findings": [
+          {
+            "kind": "overhang-surface",
+            "detail": "5.3 mm\u00b2 of downward faces steeper than 45\u00b0 (0.5% of the part)",
+            "z": null,
+            "value": 5.2613,
+            "blocking": false,
+            "layers": 1
+          },
+          {
+            "kind": "overhang-reach",
+            "detail": "1.75 mm\u00b2 reaches 1.27 mm beyond the layer below, anchored on 29% of its outline (a bridge, but a long one)",
+            "z": 0.76,
+            "value": 1.2722,
+            "blocking": false,
+            "layers": 3
+          }
+        ]
+      },
+      {
+        "name": "Tough+ through-bore receiver hub",
+        "blocking": false,
+        "findings": [
+          {
+            "kind": "overhang-surface",
+            "detail": "5.3 mm\u00b2 of downward faces steeper than 45\u00b0 (0.7% of the part)",
+            "z": null,
+            "value": 5.2508,
+            "blocking": false,
+            "layers": 1
+          },
+          {
+            "kind": "overhang-reach",
+            "detail": "1.75 mm\u00b2 reaches 1.27 mm beyond the layer below, anchored on 29% of its outline (a bridge, but a long one)",
+            "z": 0.76,
+            "value": 1.2722,
+            "blocking": false,
+            "layers": 3
+          }
+        ]
+      },
+      {
+        "name": "Socketed thumb pad 1",
+        "blocking": false,
+        "findings": [
+          {
+            "kind": "overhang-surface",
+            "detail": "13.1 mm\u00b2 of downward faces steeper than 45\u00b0 (1.0% of the part)",
+            "z": null,
+            "value": 13.144,
+            "blocking": false,
+            "layers": 1
+          },
+          {
+            "kind": "overhang-reach",
+            "detail": "4.38 mm\u00b2 reaches 1.16 mm beyond the layer below, anchored on 55% of its outline (a bridge, but a long one)",
+            "z": 5.88,
+            "value": 1.1622,
+            "blocking": false,
+            "layers": 3
+          }
+        ]
+      },
+      {
+        "name": "Socketed thumb pad 2",
+        "blocking": false,
+        "findings": [
+          {
+            "kind": "overhang-surface",
+            "detail": "13.1 mm\u00b2 of downward faces steeper than 45\u00b0 (1.0% of the part)",
+            "z": null,
+            "value": 13.144,
+            "blocking": false,
+            "layers": 1
+          },
+          {
+            "kind": "overhang-reach",
+            "detail": "4.38 mm\u00b2 reaches 1.16 mm beyond the layer below, anchored on 55% of its outline (a bridge, but a long one)",
+            "z": 5.88,
+            "value": 1.1622,
+            "blocking": false,
+            "layers": 3
+          }
+        ]
+      }
+    ],
+    "blocking": false
+  }
+}

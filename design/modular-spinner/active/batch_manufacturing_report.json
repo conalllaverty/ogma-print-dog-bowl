@@ -1,0 +1,45 @@
+{
+  "project": "Oggie_Spin_Batch_x10_P2S.3mf",
+  "units_per_batch": 10,
+  "plates": 8,
+  "objects": 170,
+  "unique_meshes": 16,
+  "single_filament_plates": [
+    "Tough+ cartridge hubs x20",
+    "Thumb pads x20"
+  ],
+  "layer_height_by_plate": {
+    "Cores x10 + retaining rings x10": "0.16",
+    "Tough+ cartridge hubs x20": "0.16",
+    "Thumb pads x20": "0.20",
+    "Arms x10 - colour 1": "0.16",
+    "Arms x10 - colour 2": "0.16",
+    "Arms x10 - colour 3": "0.16",
+    "Arms x10 - colour 4": "0.16",
+    "Arms x10 - colour 5": "0.16"
+  },
+  "worst_object_reach_from_plate_centre_mm": 103.35,
+  "bed_half_size_mm": 128.0,
+  "batch_volume_cm3": 248.86,
+  "batch_mass_g_at_1_24": 308.6,
+  "mass_per_spinner_g": 30.86,
+  "parts_per_batch": {
+    "Core": 10,
+    "Core inlay": 10,
+    "Retaining ring": 10,
+    "Collet hub": 10,
+    "Receiver hub": 10,
+    "Thumb pad": 20,
+    "Arm c1": 10,
+    "Arm c1 inlay": 10,
+    "Arm c2": 10,
+    "Arm c2 inlay": 10,
+    "Arm c3": 10,
+    "Arm c3 inlay": 10,
+    "Arm c4": 10,
+    "Arm c4 inlay": 10,
+    "Arm c5": 10,
+    "Arm c5 inlay": 10
+  },
+  "geometry_source": "identical meshes to the shipped single-unit project; nothing re-tuned for batch"
+}
