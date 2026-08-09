@@ -9,7 +9,7 @@ from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 from pydantic_settings import BaseSettings
 
-ROOT = Path(__file__).resolve().parents[3]  # repo root
+ROOT = Path(__file__).resolve().parents[2]  # repo root
 load_dotenv(find_dotenv(str(ROOT / ".env"), usecwd=True) or str(ROOT / ".env"))
 
 

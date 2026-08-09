@@ -13,8 +13,8 @@ const body = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Ogma Bowl — Custom paw-lattice stand",
-  description: "Personalise a Bambu Lab P2S dog bowl stand with Matte PLA colours.",
+  title: "Ogma Print Studio",
+  description: "Design something to print. Bambu P2S, Matte PLA.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

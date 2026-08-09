@@ -3,16 +3,17 @@
 install:
 	python3 -m venv .venv
 	.venv/bin/pip install -r requirements.txt
-	cd products/dog-bowl/web && npm install
+	cd studio/web && npm install
+
+# One command: installs anything missing, then runs API + web together.
+dev:
+	bash studio/dev.sh
 
 api:
-	cd products/dog-bowl && ../../.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port $${PORT:-8000}
+	cd studio && PYTHONPATH=$$PWD ../.venv/bin/python -m uvicorn api.main:app --reload --host 0.0.0.0 --port $${PORT:-8000}
 
 web:
-	cd products/dog-bowl/web && PIPELINE_API_URL=$${PIPELINE_API_URL:-http://127.0.0.1:8000} npm run dev
-
-dev:
-	@echo "Run 'make api' and 'make web' in two terminals (or products/dog-bowl/dev.sh)"
+	cd studio/web && PIPELINE_API_URL=$${PIPELINE_API_URL:-http://127.0.0.1:8000} npm run dev
 
 # Every generator across every product must still import.
 smoke:
