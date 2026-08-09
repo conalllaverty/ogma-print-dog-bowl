@@ -88,20 +88,40 @@ implementation: the summary read the raw values and cheerfully announced
 **If a value is hidden, it must be hidden everywhere** — payload, summary, and
 anything else derived from state.
 
+The wire format is ids, because that is what the generator consumes — but ids
+are not for reading. `displayValue()` resolves them through the option list and
+the palette, so the summary says "Stand style: Paw lattice · Stand colour:
+Caramel" rather than "cooper · matte-caramel".
+
 `ProductSpec.coerce()` runs server-side before validation: fills defaults, drops
 unknown keys, applies `transform` and `strip`, clamps integers. A product's
 validator only ever sees a complete, typed dict, never raw browser input.
+
+**Coercion normalises; it must never change what the customer asked for.** Text
+is deliberately *not* truncated to `max_length`. It was, briefly, and
+`POST name="WILLIAMSON"` came back `ok: true` with `name: "WILLIAMS"` — the
+browser's `maxLength` hid it, but on a personalised product that ships the wrong
+item. Integers are still clamped, because a slider cannot express intent outside
+its own range; a text field can.
 
 ---
 
 ## Validation is field-addressed, and server-side
 
-Cheap constraints (length, pattern) are declared so the UI can check as you
-type. But the constraints that matter are geometric and only the generator knows
-them — the bowl rejects a name whose letters cannot pack inside ±45°, which
-depends on the glyphs, the font and the rail radius.
+It runs in two layers, and the split matters.
 
-So validation returns errors addressed to a parameter:
+**`ProductSpec.check_declared()`** enforces what the spec itself declares —
+length, pattern, unknown or unavailable options, integer range. The UI checks
+the same things as you type, but a browser is not a gate; anything can POST to
+the API. Running them server-side is what makes `max_length` a rule rather than
+a hint, and it means a product's `validate()` can assume the cheap constraints
+already hold. There is exactly one copy of each rule.
+
+**The product's `validate()`** then handles only what the spec cannot express.
+For the bowl that is one thing: do the letters physically pack inside ±45°? It
+depends on the glyphs, the font and the rail radius, so only the geometry knows.
+
+Validation returns errors addressed to a parameter:
 
 ```json
 {"ok": false, "errors": [
@@ -115,11 +135,32 @@ only way to discover a fit failure was to run a multi-minute generate and read a
 stack trace.
 
 `hint` is separate from `message` deliberately: the message says what is wrong,
-the hint says what to do about it.
+the hint says what to do about it. And the hint is computed, not guessed — the
+bowl measures the name in every lettering style and names one that actually
+fits, or says plainly that none does.
 
-A gate that only trips during generation (the geometry raising `NameFitError`
-mid-build) is caught and stored on the job as `field_errors`, so a late failure
-still lands under the right control instead of becoming a 500.
+### Answering the packing gate in 9 ms
+
+The fit check used to be reachable only by running a full generate. It now runs
+during validation, on the same keystroke debounce, because of one observation:
+
+> A letter's angular half-extent depends only on that letter and the font.
+> Packing slides letters sideways; it never changes how wide each subtends.
+
+So `products/dog-bowl/generator/name_fit.py` memoises the expensive part
+(rasterise → extrude → boolean against the core cylinder, ~0.3 s) per
+`(letter, font_style)`, and the packing itself is then arithmetic. 26 letters ×
+7 fonts is 182 entries, so the cache converges fast: a novel 8-letter name costs
+~2 s cold and **9 ms warm** — which is every keystroke after the first.
+
+It is not an approximation. It calls the same five functions the build calls, so
+the two verdicts cannot drift; a test asserts they agree to 1e-9 across ten
+cases including every font's worst case. The `NameFitError` catch at generate
+time remains as a backstop for anyone posting straight to `/generate`.
+
+A gate that only trips during generation is still caught and stored on the job
+as `field_errors`, so a late failure lands under the right control rather than
+becoming a 500.
 
 ---
 

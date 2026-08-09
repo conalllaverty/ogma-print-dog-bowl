@@ -68,3 +68,29 @@ export function visibleValues(spec: ProductSpec, values: Values): Values {
   for (const p of spec.params) if (isVisible(p, spec, values)) out[p.id] = values[p.id];
   return out;
 }
+
+/**
+ * How a value should read to a customer.
+ *
+ * The wire format is ids — "cooper", "matte-caramel", true — because that is
+ * what the generator consumes. Showing those back in the order summary reads
+ * like a database row: "Stand style: cooper · Stand colour: matte-caramel".
+ * Choices carry their own display name, and filaments get theirs from the
+ * palette, so the summary can say "Paw lattice · Caramel" instead.
+ */
+export function displayValue(
+  param: Param,
+  value: Values[string],
+  filaments: Filament[] = [],
+): string {
+  switch (param.kind) {
+    case "choice":
+      return param.options.find((o) => o.id === String(value))?.name ?? String(value);
+    case "filament":
+      return filaments.find((f) => f.id === String(value))?.name ?? String(value);
+    case "boolean":
+      return value ? "Yes" : "No";
+    default:
+      return String(value);
+  }
+}

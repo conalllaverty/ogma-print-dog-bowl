@@ -67,6 +67,14 @@ class Job:
 _jobs: dict[str, Job] = {}
 _lock = threading.Lock()
 
+# One build at a time. The bowl generator configures itself through module
+# globals (NAME, FONT_PATH, NAME_RAIL_OUTER_DEG), so two concurrent jobs in one
+# process would silently interleave and produce a stand with one name and
+# letters for another. Serialising is also the honest model of a one-printer
+# shop; it costs nothing until there are two customers at once, and the fix
+# then is a real queue, not threads.
+_build_lock = threading.Lock()
+
 
 def create_job(product_id: str, raw_values: dict[str, Any]) -> Job:
     """Coerce, validate, then queue. Raises ValidationError before any work."""
@@ -75,6 +83,9 @@ def create_job(product_id: str, raw_values: dict[str, Any]) -> Job:
         raise ValueError(f"{spec.name} is not available in the designer yet")
 
     values = spec.coerce(raw_values)
+    declared = spec.check_declared(values)
+    if declared:
+        raise ValidationError(declared)
     spec.generator.validate(values)  # ValidationError propagates to the caller
 
     job = Job(
@@ -109,11 +120,14 @@ def _run_job(job_id: str) -> None:
     job = get_job(job_id)
     if not job:
         return
-    job.status = JobStatus.running
-    job.touch()
     try:
         spec = REGISTRY.get(job.product)
-        result = spec.generator.generate(job.values, job.dir)
+        with _build_lock:
+            # Status flips to running only once this job actually owns the
+            # builder, so a queued job doesn't claim to be building.
+            job.status = JobStatus.running
+            job.touch()
+            result = spec.generator.generate(job.values, job.dir)
         job.output = result.get("output")
         job.meta = {k: v for k, v in result.items() if k != "output"}
         job.status = JobStatus.succeeded

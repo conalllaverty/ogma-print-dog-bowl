@@ -30,8 +30,9 @@ Design notes worth keeping:
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
-from typing import Any, Callable, Literal, Protocol, Sequence
+from typing import Any, Literal, Protocol, Sequence
 
 # --------------------------------------------------------------------------
 # Conditional visibility
@@ -291,6 +292,47 @@ class ProductSpec:
     def defaults(self) -> dict[str, Any]:
         return {p.id: getattr(p, "default") for p in self.params}
 
+    def check_declared(self, values: dict[str, Any]) -> list[FieldError]:
+        """Enforce the constraints the spec itself declares.
+
+        The UI checks these as you type (maxLength, pattern), but a browser is
+        not a gate — anything can POST to the API. Running them server-side is
+        what makes `max_length` a rule rather than a hint, and it means a
+        product's own validate() can assume the cheap constraints already hold
+        and concentrate on the ones only it knows (geometry, packing, fit).
+        """
+        errors: list[FieldError] = []
+        for p in self.params:
+            v = values.get(p.id)
+            if isinstance(p, TextParam):
+                s = str(v or "")
+                if len(s) < p.min_length or len(s) > p.max_length:
+                    errors.append(
+                        FieldError(
+                            p.id,
+                            f"Use between {p.min_length} and {p.max_length} characters.",
+                        )
+                    )
+                elif p.pattern and not re.fullmatch(p.pattern, s):
+                    errors.append(FieldError(p.id, "That contains characters we can't print."))
+            elif isinstance(p, ChoiceParam):
+                match = next((o for o in p.options if o.id == str(v)), None)
+                if match is None:
+                    errors.append(FieldError(p.id, f"Unknown option {v!r}."))
+                elif not match.available:
+                    errors.append(FieldError(p.id, f"{match.name} is not available yet."))
+            elif isinstance(p, IntegerParam):
+                try:
+                    n = int(v)  # type: ignore[arg-type]
+                except (TypeError, ValueError):
+                    errors.append(FieldError(p.id, "Must be a whole number."))
+                    continue
+                if not (p.minimum <= n <= p.maximum):
+                    errors.append(
+                        FieldError(p.id, f"Must be between {p.minimum} and {p.maximum}.")
+                    )
+        return errors
+
     def param(self, param_id: str) -> Param:
         for p in self.params:
             if p.id == param_id:
@@ -302,6 +344,14 @@ class ProductSpec:
 
         Runs before validate() so a product's validator only ever sees a
         complete, typed dict — not whatever the browser happened to post.
+
+        Coercion normalises; it must never change what the customer asked for.
+        Text is *not* truncated to max_length: an over-long name is a
+        validation failure the customer must see, not something to silently
+        shorten. (This once let POST name="WILLIAMSON" return ok with
+        name="WILLIAMS" — on a personalised product, that ships the wrong
+        item.) Integers are clamped because a slider cannot express intent
+        outside its own range; a text field can.
         """
         out = self.defaults()
         for p in self.params:
@@ -316,7 +366,6 @@ class ProductSpec:
                     v = v.upper()
                 elif p.transform == "lower":
                     v = v.lower()
-                v = v[: p.max_length]
             elif isinstance(p, BooleanParam):
                 v = bool(v)
             elif isinstance(p, IntegerParam):

@@ -17,6 +17,7 @@ for _p in (PRODUCT_DIR / "generator", _REPO / "shared"):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
+import name_fit  # noqa: E402
 import styles  # noqa: E402
 from cooper_bowl_design import MAX_NAME_LEN, NameFitError  # noqa: E402
 from ogma.designer import (  # noqa: E402
@@ -122,29 +123,40 @@ PARAMS = (
 
 class DogBowlGenerator:
     def validate(self, values: dict[str, Any]) -> None:
-        errors: list[FieldError] = []
+        """Only the gate the spec can't declare: do the letters physically pack?
+
+        Length, character set and unknown options are all enforced by
+        ProductSpec.check_declared() before this runs, so there is no second
+        copy of those rules here.
+        """
         name = str(values.get("name", ""))
+        font_style = str(values.get("font_style", ""))
 
-        if not name.isalpha():
-            errors.append(FieldError("name", "Letters A–Z only."))
-        elif not (2 <= len(name) <= MAX_NAME_LEN):
-            errors.append(
-                FieldError("name", f"Use between 2 and {MAX_NAME_LEN} letters.")
-            )
+        fits, needed = name_fit.check(name, font_style)
+        if fits:
+            return
 
-        style_id = str(values.get("style", ""))
-        try:
-            style = styles.get(style_id)
-            if not style.available:
-                errors.append(FieldError("style", f"{style.name} is not available yet."))
-        except ValueError:
-            errors.append(FieldError("style", f"Unknown style {style_id!r}."))
+        # Name a style that actually works rather than guessing "try condensed"
+        # — for some names nothing does, and saying so is more useful than
+        # sending someone round a loop.
+        alternative = name_fit.widest_fitting_font(name)
+        if alternative is None:
+            hint = f"No lettering style fits {len(name)} letters this wide — try a shorter name."
+        elif alternative == font_style:
+            hint = "Try a shorter name."
+        else:
+            hint = f"{FONT_LABELS[alternative][0]} lettering fits this name."
 
-        if str(values.get("font_style")) not in FONT_STYLES:
-            errors.append(FieldError("font_style", "Unknown lettering style."))
-
-        if errors:
-            raise ValidationError(errors)
+        raise ValidationError(
+            [
+                FieldError(
+                    "name",
+                    f"'{name}' is too wide for the rail in this lettering "
+                    f"(needs ±{needed:.0f}°, the stand allows ±{name_fit.MAX_RAIL_OUTER_DEG:.0f}°).",
+                    hint=hint,
+                )
+            ]
+        )
 
     def generate(self, values: dict[str, Any], job_dir) -> dict:
         try:
@@ -158,9 +170,10 @@ class DogBowlGenerator:
                 fuzzy_enabled=bool(values.get("fuzzy_enabled", False)),
             )
         except NameFitError as exc:
-            # The real gate: letters must pack inside MAX_RAIL_OUTER_DEG. Only
-            # the geometry knows, so it surfaces here as a field error rather
-            # than a 500.
+            # validate() should have caught this via name_fit, which measures
+            # with the same functions. Kept as a backstop so a drift between
+            # the two lands under the name field instead of as a 500 — and so
+            # this stays correct if someone posts straight to /generate.
             raise ValidationError(
                 [
                     FieldError(

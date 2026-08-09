@@ -5,6 +5,7 @@ import Link from "next/link";
 import Controls from "@/components/Controls";
 import {
   defaults,
+  displayValue,
   visibleValues,
   type FieldError,
   type Filament,
@@ -116,9 +117,9 @@ export default function DesignerPage({ params }: { params: Promise<{ product: st
     const shown = visibleValues(spec, values);
     return spec.params
       .filter((p) => p.id in shown)
-      .map((p) => `${p.label}: ${shown[p.id]}`)
+      .map((p) => `${p.label}: ${displayValue(p, shown[p.id], filaments)}`)
       .join(" · ");
-  }, [spec, values]);
+  }, [spec, values, filaments]);
 
   if (fatal) return <main className="wrap"><p className="err">{fatal}</p><Link href="/">← Back</Link></main>;
   if (!spec) return <main className="wrap"><p>Loading…</p></main>;

@@ -352,10 +352,20 @@ def normalize_name(name: str) -> str:
     return cleaned
 
 
-def glyph_polygon(letter: str, target_height: float = LETTER_HEIGHT):
-    """Rasterize a glyph at high resolution for smooth printable outlines."""
-    font = ImageFont.truetype(FONT_PATH, GLYPH_FONT_PX)
-    variation = FONT_VARIATIONS.get(FONT_STYLE)
+def glyph_polygon(
+    letter: str,
+    target_height: float = LETTER_HEIGHT,
+    font_path: str | None = None,
+    font_style: str | None = None,
+):
+    """Rasterize a glyph at high resolution for smooth printable outlines.
+
+    `font_path`/`font_style` default to the globals set by configure_output().
+    They can be passed explicitly so a caller that only wants to measure a
+    glyph (the fit pre-check) doesn't have to mutate job state to do it.
+    """
+    font = ImageFont.truetype(font_path or FONT_PATH, GLYPH_FONT_PX)
+    variation = FONT_VARIATIONS.get(font_style or FONT_STYLE)
     if variation is not None:
         font.set_variation_by_name(variation.encode())
     bbox = font.getbbox(letter, stroke_width=0)

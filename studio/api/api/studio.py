@@ -75,6 +75,11 @@ def validate(product_id: str, body: ValuesRequest):
     if spec.generator is None:
         raise HTTPException(status_code=409, detail=f"{spec.name} is not designable yet")
     values = spec.coerce(body.values)
+    # Declared constraints first: if the name is the wrong length there is no
+    # point asking the geometry whether it packs.
+    declared = spec.check_declared(values)
+    if declared:
+        return {"ok": False, "values": values, "errors": [e.to_json() for e in declared]}
     try:
         spec.generator.validate(values)
     except ValidationError as exc:
