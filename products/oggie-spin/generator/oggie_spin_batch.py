@@ -27,8 +27,8 @@ filament, which means zero purge on them:
     pads   -- one colour only
     (rings ride along on the core plate: same filament as the core body)
 
-    .venv/bin/python backend/generator/oggie_spin_batch.py \\
-        --out design/modular-spinner/active --units 10
+    .venv/bin/python products/oggie-spin/generator/oggie_spin_batch.py \\
+        --out products/oggie-spin/design/active --units 10
 """
 
 from __future__ import annotations
@@ -45,13 +45,15 @@ from xml.etree import ElementTree as ET
 import trimesh
 
 GENERATOR_DIR = Path(__file__).resolve().parent
-if str(GENERATOR_DIR) not in sys.path:
-    sys.path.insert(0, str(GENERATOR_DIR))
+_REPO = next(p for p in GENERATOR_DIR.parents if (p / "shared" / "ogma").is_dir())
+for _p in (GENERATOR_DIR, _REPO / "shared"):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
 import oggie_spin_bayonet as base  # noqa: E402
 import oggie_spin_broken_rings as br  # noqa: E402
 import oggie_spin_complete as complete  # noqa: E402
-import printability  # noqa: E402
+from ogma import printability  # noqa: E402
 
 BED = 256.0
 # Bambu's nominal 256 x 256 is not all usable: there are exclusion zones at the

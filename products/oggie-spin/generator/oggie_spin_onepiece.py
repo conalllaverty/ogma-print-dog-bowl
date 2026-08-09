@@ -34,8 +34,8 @@ weighs. The optical inlay survives because it lives only in the top 0.64 mm.
 
 Treat this as a second SKU, not a replacement.
 
-    .venv/bin/python backend/generator/oggie_spin_onepiece.py \\
-        --out design/modular-spinner/active
+    .venv/bin/python products/oggie-spin/generator/oggie_spin_onepiece.py \\
+        --out products/oggie-spin/design/active
 """
 
 from __future__ import annotations
@@ -54,13 +54,15 @@ import trimesh
 from shapely.geometry import Polygon
 
 GENERATOR_DIR = Path(__file__).resolve().parent
-if str(GENERATOR_DIR) not in sys.path:
-    sys.path.insert(0, str(GENERATOR_DIR))
+_REPO = next(p for p in GENERATOR_DIR.parents if (p / "shared" / "ogma").is_dir())
+for _p in (GENERATOR_DIR, _REPO / "shared"):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
 import oggie_spin_bayonet as base  # noqa: E402
 import oggie_spin_broken_rings as br  # noqa: E402
 import oggie_spin_complete as complete  # noqa: E402
-import printability  # noqa: E402
+from ogma import printability  # noqa: E402
 
 OUTPUT_NAME = "Oggie_Spin_Solo_OnePiece_P2S.3mf"
 MESH_DIR_NAME = "onepiece-meshes"

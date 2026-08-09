@@ -430,3 +430,88 @@ clearance once there are five 14 mm towers to catch a curled edge on),
 `reduce_crossing_wall` on, `retract_before_wipe` 70 %, prime tower on, print by
 layer. These live in the print profile so they are global, but none of them hurt
 a one-object plate.
+
+## Batch manufacturing project
+
+`Oggie_Spin_Batch_x10_P2S.3mf` makes **ten complete spinners** in eight plates,
+against the shipped project's ten plates for one.
+
+```bash
+.venv/bin/python products/oggie-spin/generator/oggie_spin_batch.py \
+  --out products/oggie-spin/design/active --units 10
+```
+
+`--units` is free: 5 for a cautious first run, 20 still fits one plate per part
+type. The generator refuses to emit a plate whose parts overlap or fall off the
+bed, and refuses a batch that is not a **matched set** — 1 core, 1 ring, 2 hubs,
+2 pads and 5 arms per unit, or it raises.
+
+| Plate | Contents | Filaments | Layer |
+| ----- | -------- | --------- | ----- |
+| 1 | 10 cores + 10 retaining rings | 2 | 0.16 |
+| 2 | 20 Tough+ cartridge hubs | **1 — zero purge** | 0.16 |
+| 3 | 20 thumb pads | **1 — zero purge** | 0.20 |
+| 4–8 | 10 arms + inlays, one colour each | 2 | 0.16 |
+
+**Geometry is byte-identical to the shipped project** — all 16 unique meshes
+hash the same as their single-unit counterparts.
+
+**Packing is the win**, not print settings: ten cores on one plate is a 10× cut
+in per-run overhead. Rings ride on the core plate because they share its
+filament. Layer coarsening was measured and mostly rejected — the parts that
+could safely take 0.20 mm are 18 % of batch volume, so the whole saving is 3–4 %
+of run time, bought by putting an untested variable into the collet's spring
+fingers. Only the pads take it. Arms keep 2 walls and 100 % grid infill because
+the mass match depends on it.
+
+309 g per batch of ten; every part sits 25 mm inside the bed edge.
+
+## Solo — one-piece variant
+
+`Oggie_Spin_Solo_OnePiece_P2S.3mf` is the same spinner with core and arms as
+**one printed body**. Four plates instead of ten.
+
+```bash
+.venv/bin/python products/oggie-spin/generator/oggie_spin_onepiece.py \
+  --out products/oggie-spin/design/active
+```
+
+Gone: arm slots, dovetail tongues, clip beams, snap barbs, underside pockets,
+entry channels, retaining lips, push-through ledges, wrap clearance. Unchanged:
+R188 pocket and lead-in, retaining ring press fit, Tough+ cartridge, bayonet
+thumb pads, broken-ring pattern.
+
+**Ø52.6 mm, 26.7 g, single shell, printability audit clean with no findings.**
+
+The modular arm fits the EN 71-1 small parts cylinder — that is what forces 3+
+and the choking warning. The Solo body cannot, and the generator asserts it.
+That does **not** make the toy compliant: the bearing, hubs, ring and pads are
+still small parts, merely captive, and EN 71-1 torque and tension tests decide
+whether captive holds. It removes the hazard that was designed in.
+
+**It costs the pick-and-mix colour range.** Arms and core coexist at every
+layer, so separate filaments would mean a colour change on all ~87 layers —
+more purge than the part weighs. The inlay survives because it only occupies the
+top 0.64 mm. Second SKU, not a replacement.
+
+`ROOT_FILLET = 2.5` mm rounds the arm/core junction — a sharp inside corner
+there is a stress riser exactly where a drop test loads it. It only grows the
+arm root; the gap between arms stays at R20.00 even at 3.5 mm. Drop to ~1.5 mm
+for a crisper silhouette at some cost in root strength. See
+`onepiece-comparison.png`.
+
+**Two bugs, both caught only by rendering the result:**
+
+1. `complete._loft_polygons()` lofts by **convex hull** — fine for the small
+   convex features it was written for, and fed a five-arm profile it returns a
+   solid decagon. The arms vanished and every check still passed. The Solo body
+   is built from straight extrusions of the real polygon with a stepped chamfer.
+2. **Arms seat at −90 + 72k, not 72k.** `_arm_installed_orientation()` does not
+   rotate about Z. Assembling with 72k alone left every arm stuck to the outside
+   of the core with all five slots open — 386 mm³ of interference each. The
+   generator now asserts zero interference per arm.
+
+The validator gained the checks that would have caught them: section area over
+convex hull (0.756; above 0.90 means the arms are gone) and that all five gaps
+between arms still reach the core OD. The originals all tested what should be
+*filled* and none tested what should stay *open*.
