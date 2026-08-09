@@ -279,3 +279,516 @@ select {
 .hint {
   color: var(--muted);
 }
+
+/* ---------------------------------------------------------------------------
+   Studio layout: controls left, model right.
+   Two columns on a desktop, stacked on anything narrow — with the stage FIRST
+   when stacked, because on a phone the thing you want to see is the bowl.
+   --------------------------------------------------------------------------- */
+
+.studio {
+  display: grid;
+  grid-template-columns: minmax(360px, 440px) 1fr;
+  gap: 0;
+  min-height: 100vh;
+}
+
+.panel {
+  padding: 34px 30px 90px;
+  border-right: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.22);
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
+.phead h1 {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 30px;
+  line-height: 1.1;
+  margin: 0 0 8px;
+}
+.phead p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0 0 6px;
+}
+
+/* The panel is a scrolling column, so the first group needs no top rule. */
+.panel .group:first-of-type {
+  border-top: none;
+  margin-top: 28px;
+  padding-top: 0;
+}
+
+.stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 18px 20px 14px;
+  gap: 12px;
+}
+
+.stage-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stage-note {
+  color: var(--muted);
+  font-size: 12.5px;
+  margin: 0;
+  text-align: center;
+  min-height: 1.2em;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px;
+  background: rgba(0, 0, 0, 0.28);
+}
+.segmented button {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 7px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 13.5px;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.segmented button.on {
+  background: rgba(174, 131, 91, 0.9);
+  color: #221a12;
+}
+
+.preview-cta {
+  margin-top: 0;
+  padding: 11px 22px;
+  font-size: 14px;
+}
+.ghost-cta {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--ink);
+}
+
+/* --- the 3D stage --- */
+.viewer {
+  position: relative;
+  flex: 1;
+  min-height: 380px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(244, 236, 227, 0.07), transparent 60%),
+    rgba(0, 0, 0, 0.26);
+}
+.viewer-canvas {
+  position: absolute;
+  inset: 0;
+}
+.viewer-canvas canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  cursor: grab;
+  touch-action: none;
+}
+.viewer-canvas canvas:active {
+  cursor: grabbing;
+}
+
+/* Quadrant captions sit over the canvas rather than inside the GL scene —
+   text rendered in WebGL at this size never looks right. */
+.quad-labels {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  pointer-events: none;
+}
+.quad-labels span {
+  align-self: end;
+  justify-self: start;
+  margin: 0 0 10px 12px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+/* The dividing cross, drawn once rather than as four borders. */
+.quad-labels::before,
+.quad-labels::after {
+  content: "";
+  position: absolute;
+  background: var(--line);
+}
+.quad-labels::before {
+  left: 0; right: 0; top: 50%; height: 1px;
+}
+.quad-labels::after {
+  top: 0; bottom: 0; left: 50%; width: 1px;
+}
+
+.viewer-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  padding: 24px;
+  background: rgba(18, 15, 12, 0.55);
+  backdrop-filter: blur(2px);
+}
+.viewer-overlay p {
+  margin: 0;
+  font-size: 14px;
+}
+.viewer-overlay .dim {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.viewer-empty {
+  background: transparent;
+  backdrop-filter: none;
+}
+.ghost {
+  width: 76px;
+  height: 46px;
+  border: 1.5px dashed var(--line);
+  border-radius: 8px 8px 22px 22px;
+  margin-bottom: 6px;
+}
+
+.spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  animation: spin 0.85s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.dl {
+  margin: 12px 0 0;
+}
+
+@media (max-width: 1000px) {
+  .studio {
+    grid-template-columns: 1fr;
+  }
+  .panel {
+    order: 2;
+    max-height: none;
+    border-right: none;
+    border-top: 1px solid var(--line);
+  }
+  .stage {
+    order: 1;
+    height: 70vh;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Dropdown (see components/Dropdown.tsx for why this isn't a <select>).
+   --------------------------------------------------------------------------- */
+
+.dd {
+  position: relative;
+  max-width: 420px;
+}
+.dd-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+.dd-trigger:hover,
+.dd.open .dd-trigger {
+  border-color: rgba(174, 131, 91, 0.75);
+}
+.dd-trigger:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(174, 131, 91, 0.22);
+}
+.dd-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 17px;
+  line-height: 1.35;
+}
+.dd-sub {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.dd-caret {
+  width: 8px;
+  height: 8px;
+  border-right: 1.6px solid var(--muted);
+  border-bottom: 1.6px solid var(--muted);
+  transform: rotate(45deg) translate(-2px, -2px);
+  transition: transform 0.2s ease;
+}
+.dd.open .dd-caret {
+  transform: rotate(-135deg) translate(-3px, -3px);
+}
+
+.dd-chip {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.dd-list {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #221b16;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+  animation: dd-in 0.16s cubic-bezier(0.2, 0.8, 0.3, 1);
+  transform-origin: top center;
+}
+@keyframes dd-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+.dd-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.dd-item.active {
+  background: rgba(244, 236, 227, 0.09);
+}
+.dd-item.sel {
+  background: rgba(174, 131, 91, 0.22);
+}
+.dd-item.off {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.dd-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.dd-label {
+  font-size: 17px;
+  line-height: 1.3;
+}
+.dd-desc {
+  color: var(--muted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- style cards with rendered thumbnails --- */
+.card-thumb {
+  width: 100%;
+  height: 92px;
+  object-fit: contain;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.card:hover:not(:disabled) .card-thumb {
+  transform: translateY(-3px) scale(1.03);
+}
+.card.sel .card-thumb {
+  transform: translateY(-2px);
+}
+
+/* --- switch --- */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--muted);
+}
+.switch-track {
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--line);
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.switch-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.3, 1), background 0.2s ease;
+}
+.switch.on .switch-track {
+  background: rgba(174, 131, 91, 0.85);
+  border-color: var(--accent);
+}
+.switch.on .switch-thumb {
+  transform: translateX(18px);
+  background: #221a12;
+}
+.switch:focus-visible .switch-track {
+  box-shadow: 0 0 0 3px rgba(174, 131, 91, 0.25);
+}
+
+/* ---------------------------------------------------------------------------
+   Motion.
+   Everything here is transform/opacity only — those are the two properties a
+   browser can animate off the main thread, and this page is already running a
+   WebGL loop that wants the frame budget.
+   --------------------------------------------------------------------------- */
+
+/* `backwards`, not `both`.
+   A transform/opacity animation that keeps *filling forwards* leaves the
+   element with a stacking context long after it has settled — which trapped the
+   dropdown list under every field declared after it. The end state of `reveal`
+   is the element's natural style anyway, so only the *pre*-delay state needs
+   filling. */
+.reveal {
+  animation: reveal 0.42s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+}
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.field {
+  animation: reveal 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+}
+
+.ptile {
+  animation: reveal 0.45s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+}
+.picker .ptile:nth-child(2) { animation-delay: 60ms; }
+.picker .ptile:nth-child(3) { animation-delay: 120ms; }
+.picker .ptile:nth-child(4) { animation-delay: 180ms; }
+
+.viewer-overlay {
+  animation: fade 0.25s ease backwards;
+}
+@keyframes fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.cta {
+  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.3, 1), filter 0.16s ease,
+    box-shadow 0.16s ease;
+}
+.cta:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: 0 8px 22px rgba(174, 131, 91, 0.28);
+}
+.cta:active:not(:disabled) {
+  transform: translateY(0) scale(0.985);
+}
+
+/* The preview button wants to be noticed once the design has moved on from
+   what is on screen — but a pulse that never stops is a pulse you stop seeing. */
+.preview-cta.stale {
+  animation: nudge 2.2s ease-in-out 3;
+}
+@keyframes nudge {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(174, 131, 91, 0); }
+  50%      { box-shadow: 0 0 0 6px rgba(174, 131, 91, 0.16); }
+}
+
+.card {
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+.card:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Stacking fix for the open dropdown.
+
+   `.field` carries a transform-based reveal animation with `fill-mode: both`,
+   and a filling transform animation creates a stacking context in Chrome even
+   once it has settled on `transform: none`. That traps `.dd-list`'s z-index
+   inside its own field, so every field declared *after* it painted on top and
+   the list looked transparent.
+
+   Raising the ancestors only while a list is open keeps the fix local; the
+   alternative — dropping the animation — costs the thing it was added for.
+   --------------------------------------------------------------------------- */
+
+.field,
+.group {
+  position: relative;
+}
+.field:has(.dd.open),
+.group:has(.dd.open) {
+  z-index: 60;
+}
+/* With `backwards` fill above, fields no longer hold a stacking context once
+   their reveal has finished, so this is enough on its own — the `:has()` rules
+   are the belt to its braces, and cover the case where a list is opened while a
+   reveal is still running. */
+.dd.open {
+  z-index: 60;
+}

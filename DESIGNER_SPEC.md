@@ -171,6 +171,11 @@ GET  /api/v1/products                      catalogue for the picker (no params)
 GET  /api/v1/products/{id}                 full spec the designer renders from
 POST /api/v1/products/{id}/validate        {values} -> {ok, values, errors[]}
 POST /api/v1/products/{id}/generate        {values} -> {job_id}   422 on invalid
+POST /api/v1/products/{id}/preview         {values} -> {key, status, url}
+GET  /api/v1/previews/{key}                status
+GET  /api/v1/previews/{key}.glb            the model (immutable — key is a hash)
+GET  /api/v1/products/{id}/assets/{path}   style thumbnails etc.
+GET  /api/v1/fonts/{file}                  the bundled lettering faces
 GET  /api/v1/jobs/{id}                     status, field_errors, output, meta
 GET  /api/v1/jobs/{id}/download            the .3mf
 GET  /api/v1/filaments                     shared Matte palette
@@ -213,11 +218,65 @@ today.
 
 ---
 
+## The 3D preview
+
+A preview costs 2-8 s of mesh building. Doing that on every change would be
+absurd, because the thing a customer changes most often is *colour* — and colour
+is not geometry. So the preview asset carries **roles, not colours**:
+
+```
+stand__assembly_paw_panel     letters__assembly_letter_1_O     bowl__metal_bowl
+```
+
+The viewer builds one material per role and assigns by prefix. Changing a
+filament is `material.color.set()` — instant, no server. `ProductSpec.preview_keys`
+declares which parameters actually change geometry (`name`, `style`,
+`font_style` for the bowl), and both the server's cache key and the client's
+staleness check derive from that one list. Walking all 25 palette colours
+produces one cache key and therefore one build.
+
+Getting `preview_keys` wrong is asymmetric: omitting a parameter that *does*
+change geometry shows a stale model; including a colour merely wastes a rebuild.
+
+Two traps, both of which rendered the whole model in a single colour:
+
+- **The separator must survive three.js.** `GLTFLoader` runs every node name
+  through `PropertyBinding.sanitizeNodeName`, which strips the characters its
+  animation-binding syntax reserves — `. : / [ ]` and whitespace. A `::`
+  separator arrived in the browser as `standpaw_panel`. Hence `__`.
+- **The name may sit on a parent.** A glTF node becomes a `Mesh` or a `Group`
+  with the mesh beneath it, at the loader's discretion. So walk up.
+
+Previews take the same build lock as jobs. They must: the bowl generator
+configures itself through module globals, and a paying job should not lose a
+race to someone spinning the viewer.
+
+The four-view mode scissors **one** canvas into four viewports — front, top and
+left orthographic, angled perspective — rather than mounting four canvases.
+Browsers cap WebGL contexts at around 16 and start killing the oldest.
+
+## Icons and typefaces are the real thing
+
+Style cards show thumbnails rendered from the actual meshes by
+`products/dog-bowl/tools/render_style_thumbs.py`, committed as assets. A
+hand-drawn icon set would start lying the day someone changes a wall.
+
+Lettering options render their own label in their own face, served from
+`shared/ogma/fonts` — the same files the generator rasterises — rather than a
+copy under `web/public`. Two copies of a font is how the picture and the print
+stop matching. Variable faces are asked for at the weight the generator picks
+(`FONT_VARIATIONS`); static faces ask for 400, because requesting a weight they
+do not have gets a synthetic emboldening that is not what prints.
+
+An option advertises both through `meta`, which the spec never interprets:
+`{"thumb": "styles/cooper.png"}`, `{"font_url": "…", "font_weight": 700}`.
+
 ## What this deliberately does not do
 
 - **No pricing.** Machine time dominates cost (see `products/dog-bowl/G1-slice-results.md`)
   and the bought-in bowl still has no supplier, so any number would be invented.
-- **No 3D preview.** The old page faked one with CSS. A real GLB export from the
-  generator is the honest version; `custom_panels` is where it will attach.
 - **No checkout.** Out of scope until the SKUs are print-proven.
-- **No client-side geometry.** House rule. The web app is a configurator.
+- **No client-side geometry.** House rule. The web app renders what the
+  generator built; it never computes a shape of its own. The preview is a
+  decimated copy of the real meshes, not a parametric approximation — an
+  approximation would eventually show something that doesn't print.

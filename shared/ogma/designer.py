@@ -34,6 +34,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol, Sequence
 
+from ogma.filaments import load_palette, resolve_filament
+
 # --------------------------------------------------------------------------
 # Conditional visibility
 # --------------------------------------------------------------------------
@@ -253,6 +255,14 @@ class Generator(Protocol):
         """Build into job_dir. Return metadata including 'output' (a filename)."""
         ...
 
+    def preview(self, values: dict[str, Any], out_path) -> dict:
+        """Optional. Write a role-tagged GLB to out_path; return stats.
+
+        Only the parameters listed in ProductSpec.preview_keys may affect the
+        result — see that field. A product without this simply has no 3D view.
+        """
+        ...
+
 
 @dataclass(frozen=True)
 class ProductSpec:
@@ -272,7 +282,34 @@ class ProductSpec:
     custom_panels: tuple[str, ...] = ()
     # Rough guidance shown in the picker; from measured slice data where known.
     print_note: str = ""
+    # Which parameters actually change the 3D preview's *geometry*.
+    #
+    # This is the field that makes an on-demand preview affordable. Colour and
+    # surface-finish parameters are applied by the viewer at draw time, so a
+    # customer can walk the whole palette without rebuilding anything; only a
+    # change to one of these invalidates the cached model. Empty means the
+    # product has no preview.
+    #
+    # Getting this wrong is a correctness bug in one direction only: omitting a
+    # parameter that does change geometry shows a stale model. Including a
+    # colour merely wastes a rebuild.
+    preview_keys: tuple[str, ...] = ()
     generator: Generator | None = None
+
+    @property
+    def has_preview(self) -> bool:
+        return bool(self.preview_keys) and hasattr(self.generator, "preview")
+
+    def preview_key(self, values: dict[str, Any]) -> str:
+        """Stable id for the preview these values produce."""
+        import hashlib
+        import json as _json
+
+        payload = _json.dumps(
+            {"product": self.id, **{k: values.get(k) for k in self.preview_keys}},
+            sort_keys=True,
+        )
+        return hashlib.sha256(payload.encode()).hexdigest()[:16]
 
     def to_json(self, *, include_params: bool = True) -> dict:
         out = {
@@ -284,7 +321,9 @@ class ProductSpec:
             "custom_panels": list(self.custom_panels),
             "print_note": self.print_note,
         }
+        out["has_preview"] = self.has_preview
         if include_params:
+            out["preview_keys"] = list(self.preview_keys)
             out["params"] = [p.to_json() for p in self.params]
             out["groups"] = list(dict.fromkeys(p.group for p in self.params))
         return out
@@ -321,6 +360,19 @@ class ProductSpec:
                     errors.append(FieldError(p.id, f"Unknown option {v!r}."))
                 elif not match.available:
                     errors.append(FieldError(p.id, f"{match.name} is not available yet."))
+            elif isinstance(p, FilamentParam):
+                # The palette is the constraint, and it lives in this same
+                # package — so this belongs here rather than in every product.
+                # Without it an unknown id validated clean and then raised
+                # `Unknown filament` deep in the build, turning a typo into a
+                # failed job with a stack trace instead of a message on the
+                # colour control.
+                try:
+                    resolve_filament(str(v), load_palette())
+                except (ValueError, KeyError):
+                    errors.append(
+                        FieldError(p.id, f"{v!r} is not a colour we stock.")
+                    )
             elif isinstance(p, IntegerParam):
                 try:
                     n = int(v)  # type: ignore[arg-type]

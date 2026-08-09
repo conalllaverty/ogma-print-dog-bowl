@@ -11,6 +11,8 @@ export type Option = {
   description: string;
   available: boolean;
   flags: string[];
+  /** Free-form passthrough from the spec. Known keys the UI understands:
+   *  `thumb` (asset path), `font_url`, `font_weight`, `font_italic`. */
   meta?: Record<string, unknown>;
 };
 
@@ -33,9 +35,15 @@ export type Param =
 export type ProductSummary = {
   id: string; name: string; tagline: string; description: string;
   available: boolean; custom_panels: string[]; print_note: string;
+  has_preview: boolean;
 };
 
-export type ProductSpec = ProductSummary & { params: Param[]; groups: string[] };
+export type ProductSpec = ProductSummary & {
+  params: Param[];
+  groups: string[];
+  /** Parameters that change the preview geometry. Colour is never among them. */
+  preview_keys: string[];
+};
 
 export type Filament = { id: string; name: string; hex: string; material?: string };
 export type FieldError = { param: string; message: string; hint: string };
@@ -65,7 +73,9 @@ export function isVisible(param: Param, spec: ProductSpec, values: Values): bool
 /** Strip values whose control is hidden, so a hidden toggle can't leak into a job. */
 export function visibleValues(spec: ProductSpec, values: Values): Values {
   const out: Values = {};
-  for (const p of spec.params) if (isVisible(p, spec, values)) out[p.id] = values[p.id];
+  // Tolerate a not-yet-loaded spec: this runs inside render, and a `?? {}`
+  // upstream once made it throw before the fetch resolved.
+  for (const p of spec?.params ?? []) if (isVisible(p, spec, values)) out[p.id] = values[p.id];
   return out;
 }
 
@@ -93,4 +103,66 @@ export function displayValue(
     default:
       return String(value);
   }
+}
+
+/**
+ * A stable string for "what geometry would these values produce".
+ *
+ * Built from `preview_keys` alone, which is what lets the viewer keep showing a
+ * model while the customer walks the palette: colour is not in the signature,
+ * so the model never goes stale for a colour change. The server derives its
+ * cache key from exactly the same fields.
+ */
+export function previewSignature(spec: ProductSpec, values: Values): string {
+  return (spec.preview_keys ?? []).map((k) => `${k}=${String(values[k])}`).join("|");
+}
+
+/**
+ * Map filament slots to the viewer's roles: `{ stand: "#AE835B", letters: "#FFF" }`.
+ *
+ * The link between a FilamentParam's `role` and a GLB node's `role::` prefix is
+ * the contract that makes instant recolouring work. It is declared once on the
+ * backend (see the FilamentParam definitions) and consumed here.
+ */
+export function filamentRoles(
+  spec: ProductSpec | null,
+  values: Values,
+  filaments: Filament[],
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!spec?.params) return out;
+  for (const p of spec.params) {
+    if (p.kind !== "filament") continue;
+    const hex = filaments.find((f) => f.id === String(values[p.id]))?.hex;
+    if (hex) out[p.role] = hex;
+  }
+  return out;
+}
+
+/**
+ * `@font-face` rules for every option that declares a typeface.
+ *
+ * The alternative is bundling the fonts into the web app, which would mean two
+ * copies of each face — one the browser shows, one the generator rasterises —
+ * free to drift apart. Instead an option carries `meta.font_url` pointing at the
+ * API, and this turns the set of them into a stylesheet.
+ *
+ * Returns CSS text plus a map from option id to the family name to request.
+ */
+export function fontFaces(spec: ProductSpec): { css: string; families: Record<string, string> } {
+  const families: Record<string, string> = {};
+  const rules: string[] = [];
+  for (const p of spec?.params ?? []) {
+    if (p.kind !== "choice") continue;
+    for (const o of p.options) {
+      const url = o.meta?.font_url as string | undefined;
+      if (!url) continue;
+      const family = `ogma-${p.id}-${o.id}`;
+      families[o.id] = family;
+      // No weight/style descriptors: each file is one face, and declaring a
+      // weight it doesn't have invites the browser to synthesise one.
+      rules.push(`@font-face{font-family:"${family}";src:url("${url}") format("truetype");font-display:swap;}`);
+    }
+  }
+  return { css: rules.join("\n"), families };
 }

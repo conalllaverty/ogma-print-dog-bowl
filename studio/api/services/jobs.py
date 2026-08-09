@@ -76,6 +76,11 @@ _lock = threading.Lock()
 _build_lock = threading.Lock()
 
 
+def build_lock() -> threading.Lock:
+    """The one geometry builder. Previews take it too — see services/previews.py."""
+    return _build_lock
+
+
 def create_job(product_id: str, raw_values: dict[str, Any]) -> Job:
     """Coerce, validate, then queue. Raises ValidationError before any work."""
     spec = REGISTRY.get(product_id)

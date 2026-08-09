@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 from ogma import assets
@@ -26,7 +27,10 @@ class Filament:
     hex: str
 
 
+@lru_cache(maxsize=4)
 def load_palette(path: Path = PALETTE_PATH) -> dict[str, Filament]:
+    """The palette, memoised — it is a read-only asset and validation reads it
+    on every keystroke."""
     data = json.loads(Path(path).read_text())
     return {
         item["id"]: Filament(id=item["id"], name=item["name"], hex=item["hex"].upper())

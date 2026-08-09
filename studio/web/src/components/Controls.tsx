@@ -1,7 +1,9 @@
 "use client";
 
-import type { FieldError, Filament, Param, ProductSpec, Values } from "@/lib/spec";
-import { isVisible } from "@/lib/spec";
+import { useMemo } from "react";
+import Dropdown, { type DropdownItem } from "@/components/Dropdown";
+import type { FieldError, Filament, Option, Param, ProductSpec, Values } from "@/lib/spec";
+import { fontFaces, isVisible } from "@/lib/spec";
 
 type Props = {
   spec: ProductSpec;
@@ -10,6 +12,9 @@ type Props = {
   errors: FieldError[];
   onChange: (id: string, value: string | number | boolean) => void;
 };
+
+/** Word drawn in each lettering option's own face. Short, and a plausible name. */
+const FONT_SAMPLE = "Bella";
 
 function ErrorText({ errors, id }: { errors: FieldError[]; id: string }) {
   const e = errors.find((x) => x.param === id);
@@ -22,9 +27,14 @@ function ErrorText({ errors, id }: { errors: FieldError[]; id: string }) {
   );
 }
 
+type ControlProps = Omit<Props, "errors"> & {
+  param: Param;
+  families: Record<string, string>;
+};
+
 /** One control per param kind. Adding a kind means adding a case here and in
  *  designer.py — nothing per product. */
-function Control({ param, values, filaments, onChange }: Omit<Props, "spec" | "errors"> & { param: Param }) {
+function Control({ param, spec, values, filaments, families, onChange }: ControlProps) {
   const v = values[param.id];
 
   switch (param.kind) {
@@ -44,7 +54,7 @@ function Control({ param, values, filaments, onChange }: Omit<Props, "spec" | "e
         />
       );
 
-    case "choice":
+    case "choice": {
       if (param.display === "cards") {
         return (
           <div className="cards">
@@ -56,6 +66,11 @@ function Control({ param, values, filaments, onChange }: Omit<Props, "spec" | "e
                 className={`card ${String(v) === o.id ? "sel" : ""}`}
                 onClick={() => onChange(param.id, o.id)}
               >
+                {thumbUrl(spec, o) ? (
+                  // Rendered from the real mesh, so the icon is the stand.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img className="card-thumb" src={thumbUrl(spec, o)!} alt="" loading="lazy" />
+                ) : null}
                 <span className="card-name">{o.name}</span>
                 <span className="card-desc">{o.description}</span>
               </button>
@@ -63,39 +78,56 @@ function Control({ param, values, filaments, onChange }: Omit<Props, "spec" | "e
           </div>
         );
       }
+      const items: DropdownItem[] = param.options.map((o) => ({
+        id: o.id,
+        label: o.name,
+        description: o.description,
+        disabled: !o.available,
+        fontFamily: families[o.id],
+        fontWeight: (o.meta?.font_weight as number) ?? undefined,
+        fontItalic: Boolean(o.meta?.font_italic),
+      }));
+      const showsFont = items.some((i) => i.fontFamily);
       return (
-        <select className="select" value={String(v ?? "")} onChange={(e) => onChange(param.id, e.target.value)}>
-          {param.options.map((o) => (
-            <option key={o.id} value={o.id} disabled={!o.available}>
-              {o.name} — {o.description}
-            </option>
-          ))}
-        </select>
+        <Dropdown
+          items={items}
+          value={String(v ?? "")}
+          ariaLabel={param.label}
+          sample={showsFont ? FONT_SAMPLE : undefined}
+          onChange={(id) => onChange(param.id, id)}
+        />
       );
+    }
 
     case "filament":
       return (
-        <div className="swatches">
-          {filaments.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              title={`${f.name}${f.material ? ` · ${f.material}` : ""}`}
-              aria-label={f.name}
-              className={`swatch ${String(v) === f.id ? "sel" : ""}`}
-              style={{ background: f.hex }}
-              onClick={() => onChange(param.id, f.id)}
-            />
-          ))}
-        </div>
+        <Dropdown
+          items={filaments.map((f) => ({
+            id: f.id,
+            label: f.name,
+            description: f.material ?? undefined,
+            swatch: f.hex,
+          }))}
+          value={String(v ?? "")}
+          ariaLabel={param.label}
+          onChange={(id) => onChange(param.id, id)}
+        />
       );
 
     case "boolean":
       return (
-        <label className="toggle">
-          <input type="checkbox" checked={!!v} onChange={(e) => onChange(param.id, e.target.checked)} />
-          <span>{v ? "On" : "Off"}</span>
-        </label>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={!!v}
+          className={`switch${v ? " on" : ""}`}
+          onClick={() => onChange(param.id, !v)}
+        >
+          <span className="switch-track" aria-hidden>
+            <span className="switch-thumb" />
+          </span>
+          <span className="switch-label">{v ? "On" : "Off"}</span>
+        </button>
       );
 
     case "integer":
@@ -115,20 +147,36 @@ function Control({ param, values, filaments, onChange }: Omit<Props, "spec" | "e
   }
 }
 
+function thumbUrl(spec: ProductSpec, o: Option): string | null {
+  const thumb = o.meta?.thumb as string | undefined;
+  return thumb ? `/api/v1/products/${spec.id}/assets/${thumb}` : null;
+}
+
 export default function Controls({ spec, values, filaments, errors, onChange }: Props) {
+  // One stylesheet for the whole spec rather than a rule per render.
+  const { css, families } = useMemo(() => fontFaces(spec), [spec]);
+
   return (
     <>
-      {spec.groups.map((group) => {
+      {css ? <style dangerouslySetInnerHTML={{ __html: css }} /> : null}
+      {spec.groups.map((group, gi) => {
         const params = spec.params.filter((p) => p.group === group && isVisible(p, spec, values));
         if (!params.length) return null;
         return (
-          <section key={group} className="group">
+          <section key={group} className="group reveal" style={{ animationDelay: `${gi * 70}ms` }}>
             <h2>{group}</h2>
             {params.map((p) => (
               <div key={p.id} className="field">
                 <label className="flabel">{p.label}</label>
                 {p.help ? <p className="fhelp">{p.help}</p> : null}
-                <Control param={p} values={values} filaments={filaments} onChange={onChange} />
+                <Control
+                  param={p}
+                  spec={spec}
+                  values={values}
+                  filaments={filaments}
+                  families={families}
+                  onChange={onChange}
+                />
                 <ErrorText errors={errors} id={p.id} />
               </div>
             ))}

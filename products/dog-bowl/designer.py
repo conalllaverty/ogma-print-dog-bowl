@@ -19,7 +19,9 @@ for _p in (PRODUCT_DIR / "generator", _REPO / "shared"):
 
 import name_fit  # noqa: E402
 import styles  # noqa: E402
+import cooper_bowl_design as design  # noqa: E402
 from cooper_bowl_design import MAX_NAME_LEN, NameFitError  # noqa: E402
+from preview import build as build_preview  # noqa: E402
 from ogma.designer import (  # noqa: E402
     BooleanParam,
     ChoiceParam,
@@ -44,6 +46,27 @@ FONT_LABELS = {
     "condensed": ("Condensed", "Barlow Condensed SemiBold — best for long names"),
 }
 
+# CSS weight to request from each face in the browser.
+#
+# Three of these files are variable fonts, and the generator picks a named
+# instance from them (design.FONT_VARIATIONS). The browser has to be told the
+# same thing or the sample is drawn at the default weight and the customer picks
+# a lettering style by looking at the wrong one. The static files already carry
+# their weight in the outlines, so they ask for 400 — requesting 600 there gets
+# a synthetic emboldening that is not what prints.
+_CSS_WEIGHT = {"Bold": 700, "SemiBold": 600}
+
+
+def _font_meta(style: str) -> dict:
+    path = design.FONT_STYLES[style]
+    variation = design.FONT_VARIATIONS.get(style)
+    return {
+        # Relative to the API root; the client composes the URL.
+        "font_url": f"/api/v1/fonts/{path.name}",
+        "font_weight": _CSS_WEIGHT.get(variation or "", 400),
+        "font_italic": "Italic" in path.name,
+    }
+
 
 def _style_options() -> tuple[Option, ...]:
     """Derived from the style registry, so a new styles/<id>.py appears here."""
@@ -56,6 +79,10 @@ def _style_options() -> tuple[Option, ...]:
             # This flag is what drives the fuzzy toggle's visibility. The UI
             # never tests a style id.
             flags=("supports_fuzzy",) if s.supports_fuzzy else (),
+            # Rendered from the real meshes by tools/render_style_thumbs.py, so
+            # the icon cannot drift from the geometry. Path is relative to the
+            # product's asset root.
+            meta={"thumb": f"styles/{s.id}.png"},
         )
         for s in styles.all_styles()
     )
@@ -89,7 +116,12 @@ PARAMS = (
         help="Letters print separately at 0.10 mm and glue into pockets.",
         group="Design",
         options=tuple(
-            Option(id=f, name=FONT_LABELS[f][0], description=FONT_LABELS[f][1])
+            Option(
+                id=f,
+                name=FONT_LABELS[f][0],
+                description=FONT_LABELS[f][1],
+                meta=_font_meta(f),
+            )
             for f in FONT_STYLES
         ),
         default="bold",
@@ -189,6 +221,20 @@ class DogBowlGenerator:
             "rail_outer_deg": result.rail_outer_deg,
         }
 
+    def preview(self, values: dict[str, Any], out_path) -> dict:
+        """A role-tagged GLB of the assembled stand.
+
+        Note what is *not* passed: neither filament, nor the fuzzy flag. The
+        viewer applies those. That is what `preview_keys` below encodes, and
+        why walking the palette costs nothing.
+        """
+        return build_preview(
+            values["name"],
+            values["style"],
+            values["font_style"],
+            Path(out_path),
+        )
+
 
 SPEC = ProductSpec(
     id="dog-bowl",
@@ -202,5 +248,8 @@ SPEC = ProductSpec(
     available=True,
     custom_panels=("bowl-fit",),
     print_note="~7.5 h print · 210–280 g · 2–4 plates",
+    # Only these three change the geometry. Colour and fuzzy are applied by the
+    # viewer, so the whole palette shares one cached model.
+    preview_keys=("name", "style", "font_style"),
     generator=DogBowlGenerator(),
 )
