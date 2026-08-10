@@ -133,51 +133,15 @@ SINGLE_FILAMENT = [("Marine Blue Matte", "#3A8FCF")]
 def extended_profile(extension: float) -> Polygon:
     """The Solo silhouette with each arm pushed `extension` mm further out.
 
-    The arm's outboard shadow is swept radially rather than translated. A plain
-    translation detaches the lobe from the core the moment `extension` exceeds
-    the overlap -- I tried it, and at 2 mm the union quietly returned just the
-    R20 core disc with an area of exactly pi*400, which every downstream check
-    would have passed. Sweeping leaves a stem of the arm's own cross-section
-    behind it, so the arm gets LONGER without getting wider and without ever
-    letting go of the core.
+    The radial sweep now lives in oggie_spin_onepiece, because it won this
+    experiment and became the shipping geometry. Kept as a thin wrapper so the
+    plate keeps calling it by the name the write-up uses -- and so this file
+    can never drift away from the body it was measuring.
+
+    Note the explicit 0.0: onepiece now defaults to ARM_EXTENSION = 4.0, and
+    variants 1 and 2 must stay the Ø52.6 shape they were measured as.
     """
-    arm = complete.build_arm("arm length source")
-    shadow = _shapely_union(
-        [
-            printability._footprint(arm, z)
-            for z in np.linspace(0.3, base.CORE_HEIGHT - 0.3, 24)
-            if printability._footprint(arm, z) is not None
-        ]
-    )
-    core_disc = _Point(0.0, 0.0).buffer(base.CORE_DIAMETER / 2.0, resolution=64)
-    outboard = shadow.difference(
-        _Point(0.0, 0.0).buffer(base.CORE_DIAMETER / 2.0 - 0.15, resolution=64)
-    )
-    if extension > 0.0:
-        steps = max(2, int(round(extension / ARM_EXTENSION_STEP)) + 1)
-        outboard = _shapely_union(
-            [
-                _translate(outboard, xoff=extension * t)
-                for t in np.linspace(0.0, 1.0, steps)
-            ]
-        )
-    lobes = [
-        _rotate(outboard, -90.0 + 72.0 * index, origin=(0.0, 0.0))
-        for index in range(5)
-    ]
-    profile = _shapely_union([core_disc, *lobes])
-    components = printability._components(profile)
-    if len(components) != 1:
-        raise RuntimeError(
-            f"arm extension {extension} mm left {len(components)} disconnected "
-            "islands; the lobes have come off the core"
-        )
-    profile = Polygon(components[0].exterior)
-    if not profile.is_valid:
-        profile = profile.buffer(0)
-    return profile.buffer(solo.ROOT_FILLET, join_style=1).buffer(
-        -solo.ROOT_FILLET, join_style=1
-    )
+    return solo._assembled_silhouette(extension)
 
 
 def _bearing_cutters() -> list[trimesh.Trimesh]:

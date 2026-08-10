@@ -81,7 +81,12 @@ MARK_DEPTH = 0.40       # underside only; never touches the face under test
 
 def _identified_body(dots: int) -> trimesh.Trimesh:
     """The Solo body with `dots` shallow marks recessed into its underside."""
-    body = solo.build_body()
+    # Pinned to the ORIGINAL Ø52.6 silhouette. The Solo shipped 4 mm longer
+    # arms after the inertia plate, but this experiment is about which top
+    # surface pattern reads best and it is already printed. Re-running it has
+    # to produce the same parts, or the plate on the desk stops being the
+    # thing the comparison is about.
+    body = solo.build_body(extension=0.0)
     cutters = []
     for index in range(dots):
         # spread the dots over a small arc so they read as a count at a glance

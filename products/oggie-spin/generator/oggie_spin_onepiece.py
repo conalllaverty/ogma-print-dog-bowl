@@ -34,8 +34,8 @@ weighs. The optical inlay survives because it lives only in the top 0.64 mm.
 
 Treat this as a second SKU, not a replacement.
 
-    .venv/bin/python products/oggie-spin/generator/oggie_spin_onepiece.py \\
-        --out products/oggie-spin/design/active
+    .venv/bin/python backend/generator/oggie_spin_onepiece.py \\
+        --out design/modular-spinner/active
 """
 
 from __future__ import annotations
@@ -54,15 +54,13 @@ import trimesh
 from shapely.geometry import Polygon
 
 GENERATOR_DIR = Path(__file__).resolve().parent
-_REPO = next(p for p in GENERATOR_DIR.parents if (p / "shared" / "ogma").is_dir())
-for _p in (GENERATOR_DIR, _REPO / "shared"):
-    if str(_p) not in sys.path:
-        sys.path.insert(0, str(_p))
+if str(GENERATOR_DIR) not in sys.path:
+    sys.path.insert(0, str(GENERATOR_DIR))
 
 import oggie_spin_bayonet as base  # noqa: E402
 import oggie_spin_broken_rings as br  # noqa: E402
 import oggie_spin_complete as complete  # noqa: E402
-from ogma import printability  # noqa: E402
+import printability  # noqa: E402
 
 OUTPUT_NAME = "Oggie_Spin_Solo_OnePiece_P2S.3mf"
 MESH_DIR_NAME = "onepiece-meshes"
@@ -78,12 +76,70 @@ REPORT_NAME = "onepiece_validation.json"
 # together. 2.5 mm adds 7 % section area at mid height.
 ROOT_FILLET = 2.5
 
+# --- arm length -----------------------------------------------------------
+#
+# Each arm is swept 4.0 mm further out, taking the Solo from Ø52.6 to Ø60.3.
+# This is the winner of the inertia A/B/C plate, and it won on the only ground
+# that mattered: +51.7% inertia for +3.4 g, against +41.7% for the +10.0 g that
+# 100% infill costs. Fifteen units of inertia per gram against four.
+#
+# The reason is that infill can only load the CORE -- the arms are narrow
+# enough that five walls meet across them and they print solid at any density,
+# so extra infill lands at a mean radius of 15.2 mm, inside the body's own
+# radius of gyration. Length is the only lever that puts mass where r^2 is
+# large.
+#
+# SOLO ONLY. The modular arm is a separate part on a dovetail and a snap clip,
+# and a longer arm raises both the centrifugal load through the dovetail and
+# the drop moment at the root -- neither of which was sized for it. That wants
+# re-deriving before the modular SKU follows.
+ARM_EXTENSION = 4.0
+ARM_EXTENSION_STEP = 0.25   # sweep resolution; finer than one line width
+
+# --- the fourth ring ------------------------------------------------------
+#
+# The longer arm doubled the plain band outboard of the R22.5 ring, from
+# 3.8 mm to 7.7 mm, so the artwork stopped where the arm used to.
+#
+# The main design note says do not add a fourth ring. That note was written
+# when the arm ended at R26.3 and a fourth ring had nowhere to go; it does now.
+# Radius and count continue the existing progression -- radii 15.5/18.5/22.5
+# step +3/+4, counts 15/20/25 step +5 -- so R26.5 with 30 dashes is the next
+# term rather than a new idea.
+#
+# R26.5 is set by the arm tip, not by taste. The tip is a shallow saddle: it
+# dips to R28.45 on the arm centreline and rises to R30.15 at ±14°. A ring at
+# R26.5 has its outer edge at R27.05, which keeps 1.4 mm of solid between the
+# dashes and the lowest point of that saddle. Push it to R27.5 and the ring
+# breaks out through the dip in the middle of every arm.
+#
+# Phase 6.0 is half of the 12° pitch, which lands a dash exactly on each arm
+# centreline. That is what makes the ring clip cleanly: three whole dashes per
+# arm and no stubs straddling the arm edge. Checked in _validate, not assumed.
+SOLO_TIP_RING = {
+    "name": "arm tip",
+    "radius_mm": 26.5,
+    "dash_count": 30,
+    "phase_deg": 6.0,
+    "target": "arm",
+}
+
+# A SEPARATE list, not an append to br.RING_SPECS. Mutating the shared list
+# would put the fourth ring on the modular spinner and the batch plates too,
+# where the arms still end at R26.3 and the dashes would hang off the end of
+# every one of them.
+SOLO_RING_SPECS = [*br.RING_SPECS, SOLO_TIP_RING]
+
 EDGE_CHAMFER = 0.40   # top and bottom, follows the lobed profile
 CHAMFER_HEIGHT = 0.40
 
 
-def _assembled_silhouette() -> Polygon:
+def _assembled_silhouette(extension: float | None = None) -> Polygon:
     """The Solo outline: a solid R20 core disc plus the arms' outer envelope.
+
+    `extension` lengthens each arm radially by that many mm. Defaults to
+    ARM_EXTENSION. Pass 0.0 for the original Ø52.6 silhouette -- the inertia
+    test plate does exactly that so its baseline stays the shape it measured.
 
     An earlier version took a Z-section through the assembled modular spinner
     and filled its holes. That is fragile and it failed twice. The assembly has
@@ -103,7 +159,9 @@ def _assembled_silhouette() -> Polygon:
 
     Then a morphological closing rounds the concave corner at each arm root.
     """
+    extension = ARM_EXTENSION if extension is None else extension
     from shapely.affinity import rotate as _rotate
+    from shapely.affinity import translate as _translate
     from shapely.geometry import Point as _Point
     from shapely.ops import unary_union as _union
 
@@ -121,14 +179,36 @@ def _assembled_silhouette() -> Polygon:
     outboard = shadow.difference(
         _Point(0.0, 0.0).buffer(base.CORE_DIAMETER / 2.0 - 0.15, resolution=64)
     )
+    if extension > 0.0:
+        # SWEEP the outboard shadow radially; do not translate it. A plain
+        # translation detaches the lobe from the core the moment the extension
+        # exceeds the 0.15 mm overlap -- at 2 mm the union quietly returned just
+        # the R20 core disc, area exactly pi*400, and every downstream check
+        # passed. Sweeping leaves a stem of the arm's own cross-section behind
+        # it, so the arm gets LONGER without getting wider and without ever
+        # letting go of the core.
+        steps = max(2, int(round(extension / ARM_EXTENSION_STEP)) + 1)
+        outboard = _union(
+            [
+                _translate(outboard, xoff=extension * t)
+                for t in np.linspace(0.0, 1.0, steps)
+            ]
+        )
     lobes = [
         _rotate(outboard, -90.0 + 72.0 * index, origin=(0.0, 0.0))
         for index in range(5)
     ]
     profile = _union([core_disc, *lobes])
-    if profile.geom_type != "Polygon":
-        profile = max(printability._components(profile), key=lambda p: p.area)
-    profile = Polygon(profile.exterior)
+    # Taking the largest component here used to be the silent-failure path: if
+    # the lobes ever come off the core, the largest component is the bare R20
+    # disc and every downstream check passes on a plain decagon. Refuse instead.
+    components = printability._components(profile)
+    if len(components) != 1:
+        raise RuntimeError(
+            f"arm extension {extension} mm left {len(components)} disconnected "
+            "islands; the lobes have come off the core"
+        )
+    profile = Polygon(components[0].exterior)
     if not profile.is_valid:
         profile = profile.buffer(0)
     # morphological closing: adds material in concave corners only
@@ -176,9 +256,14 @@ def _stepped_body(profile: Polygon) -> trimesh.Trimesh:
     return base._union(slabs, "Solo body blank")
 
 
-def build_body() -> trimesh.Trimesh:
-    """The one-piece core-and-arms body."""
-    profile = _assembled_silhouette()
+def build_body(extension: float | None = None) -> trimesh.Trimesh:
+    """The one-piece core-and-arms body.
+
+    `extension` defaults to ARM_EXTENSION. Pass 0.0 to reproduce the Ø52.6
+    body -- the surface-pattern test plate does, so that re-running it still
+    produces the part that is sitting on Conall's desk.
+    """
+    profile = _assembled_silhouette(extension)
     body = _stepped_body(profile)
 
     # Bearing features, identical to the modular core including the lead-in
@@ -245,7 +330,7 @@ def build_meshes() -> list[tuple[str, trimesh.Trimesh, int]]:
     # All three broken rings now live on ONE body: the R22.5 arm ring simply
     # stops where the arms stop, which is what it did before across five parts.
     dashes = trimesh.util.concatenate(
-        [br._dash_volume(spec) for spec in br.RING_SPECS]
+        [br._dash_volume(spec) for spec in SOLO_RING_SPECS]
     )
     solo_base, solo_inlay = br._split_flush_inlay(body, dashes, "Oggie Spin Solo")
     solo_inlay, proud = br._raise_inlay(solo_inlay, "Oggie Spin Solo optical inlay")
@@ -302,6 +387,74 @@ def _plate_position(number: int, total: int) -> tuple[float, float, float]:
     cols = math.ceil(math.sqrt(total))
     index = number - 1
     return (128.0 + (index % cols) * 312.0, 128.0 - (index // cols) * 312.0, 0.0)
+
+
+def _tip_ring_audit() -> dict:
+    """Did the fourth ring land whole on every arm, and clear of the tip?
+
+    Two ways this ring can fail quietly. It can straddle the arm edge, leaving
+    stubs -- the clipping happens by intersection, so a half dash is not an
+    error, it just looks like a mistake on the finished part. And it can break
+    out through the arm tip, because the tip is a saddle that dips on the
+    centreline: the ring can sit comfortably inside the outline at ±14° and
+    still cut through open air at 0°.
+
+    Both are measured off the built profile, not reasoned about.
+    """
+    profile = _assembled_silhouette()
+    spec = SOLO_TIP_RING
+    pitch = 360.0 / spec["dash_count"]
+    half_angle = pitch * br.RING_DUTY / 2.0
+    inner = spec["radius_mm"] - br.RING_WIDTH / 2.0
+    outer = spec["radius_mm"] + br.RING_WIDTH / 2.0
+
+    whole, partial, absent = 0, 0, 0
+    worst = float("inf")
+    for index in range(spec["dash_count"]):
+        centre = spec["phase_deg"] + index * pitch
+        sector = br._annular_sector(
+            inner, outer, centre - half_angle, centre + half_angle
+        )
+        kept = sector.intersection(profile).area
+        if kept >= 0.995 * sector.area:
+            whole += 1
+            # How much solid is left outboard of THIS dash. Measured only
+            # across the dashes that survive: sampling the whole circle would
+            # report zero every time, because the outline passes through the
+            # ring's radius at each arm edge where no dash exists.
+            for angle in np.arange(
+                centre - half_angle, centre + half_angle + 0.1, 0.25
+            ):
+                reach = _boundary_radius(profile, math.radians(angle))
+                worst = min(worst, reach - outer)
+        elif kept <= 0.005 * sector.area:
+            absent += 1
+        else:
+            partial += 1
+    return {
+        "whole_dashes": whole,
+        "partial_dashes": partial,
+        "clipped_away": absent,
+        "whole_dashes_per_arm": whole / 5.0,
+        "worst_clearance_to_outline_mm": round(worst, 2),
+    }
+
+
+def _boundary_radius(profile: Polygon, angle: float) -> float:
+    """How far the solid reaches along `angle`, measured on the profile."""
+    from shapely.geometry import LineString
+
+    ray = LineString(
+        [(0.0, 0.0), (40.0 * math.cos(angle), 40.0 * math.sin(angle))]
+    )
+    inside = ray.intersection(profile)
+    if inside.is_empty:
+        return 0.0
+    # a ray through a concave outline can come back as several segments
+    parts = getattr(inside, "geoms", [inside])
+    return max(
+        math.hypot(x, y) for part in parts for x, y in part.coords
+    )
 
 
 def _validate(output: Path, built) -> dict:
@@ -364,6 +517,35 @@ def _validate(output: Path, built) -> dict:
     if not body.is_watertight:
         raise RuntimeError("Solo body is not watertight")
 
+    # --- the fourth ring landed where it was meant to ------------------------
+    tip_ring = _tip_ring_audit()
+    if tip_ring["partial_dashes"]:
+        raise RuntimeError(
+            f"{tip_ring['partial_dashes']} tip-ring dashes straddle an arm edge; "
+            "they will print as stubs. Adjust SOLO_TIP_RING phase_deg"
+        )
+    if tip_ring["whole_dashes"] != 15:
+        raise RuntimeError(
+            f"tip ring kept {tip_ring['whole_dashes']} dashes, expected 3 per "
+            "arm on five arms"
+        )
+    if tip_ring["worst_clearance_to_outline_mm"] < 0.8:
+        raise RuntimeError(
+            f"tip ring leaves only {tip_ring['worst_clearance_to_outline_mm']} mm "
+            "of solid outboard of the dashes; it will break out through the "
+            "saddle in the arm tip. Reduce SOLO_TIP_RING radius_mm"
+        )
+
+    # --- the arm really did get longer ---------------------------------------
+    outer_diameter = 2.0 * float(
+        np.hypot(body.vertices[:, 0], body.vertices[:, 1]).max()
+    )
+    if abs(outer_diameter - 60.33) > 0.15:
+        raise RuntimeError(
+            f"Solo measures Ø{outer_diameter:.2f}; ARM_EXTENSION = "
+            f"{ARM_EXTENSION} should give Ø60.33"
+        )
+
     report = complete.audit_printability([(n, m) for n, m, _e in built])
 
     # --- small parts ---------------------------------------------------------
@@ -390,6 +572,16 @@ def _validate(output: Path, built) -> dict:
             2.0 * float(np.hypot(body.vertices[:, 0], body.vertices[:, 1]).max()), 2
         ),
         "root_fillet_mm": ROOT_FILLET,
+        "arm_extension_mm": ARM_EXTENSION,
+        "tip_ring": {**SOLO_TIP_RING, **tip_ring},
+        "why_the_arms_are_longer": (
+            "winner of the inertia A/B/C plate: +51.7% inertia for +3.4 g, "
+            "against +41.7% for the +10.0 g that 100% infill costs. Infill can "
+            "only load the core, at a mean radius inside the body's own radius "
+            "of gyration; length is the only lever that puts mass where r^2 is "
+            "large. SOLO ONLY -- the modular arm's dovetail and clip were not "
+            "sized for the extra centrifugal and drop load."
+        ),
         "section_area_over_convex_hull": round(hull_ratio, 3),
         "inlay_proud_mm": br.INLAY_PROUD,
         "inlay_proud_volume_mm3": round(_PROUD_MM3, 4),
@@ -468,19 +660,10 @@ def generate(out_dir: Path) -> Path:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument(
-        "--units",
-        type=int,
-        default=0,
-        help="emit a batch project of N complete Solos instead of a single unit",
-    )
     args = parser.parse_args()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        if args.units:
-            print(generate_batch(args.out, args.units))
-        else:
-            print(generate(args.out))
+        print(generate(args.out))
 
 
 if __name__ == "__main__":
