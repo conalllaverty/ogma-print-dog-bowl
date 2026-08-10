@@ -1,0 +1,47 @@
+{
+  "project": "Oggie_Spin_Pattern_Test_P2S.3mf",
+  "question": "does the top-surface pattern contribute anything to the broken-ring illusion, or only to surface finish?",
+  "prediction": "no. Ivory on Marine Blue is 60% Michelson contrast; same-filament extrusion lines on MATTE PLA modulate luminance ~3%, about 20x weaker, and matte is formulated to kill exactly the directional sheen a pattern would need. Concentric is the one to watch: it is rotationally invariant, so it is the only pattern that cannot add noise to a spinning image.",
+  "variants": [
+    {
+      "dots": 1,
+      "top_surface_pattern": "octagramspiral",
+      "why": "Octagram Spiral -- Conall's pick, 8-fold decorative"
+    },
+    {
+      "dots": 2,
+      "top_surface_pattern": "monotonicline",
+      "why": "Monotonic Line -- the shipped default, most uniform"
+    },
+    {
+      "dots": 3,
+      "top_surface_pattern": "concentric",
+      "why": "Concentric -- rotationally invariant, vanishes when spun"
+    }
+  ],
+  "held_constant": [
+    "geometry (bodies differ only by underside identification dots)",
+    "filaments: Marine Blue body, Ivory White inlay",
+    "7 top shell layers, 6 bottom, 100% top surface density",
+    "one plate, so identical thermal history and filament state"
+  ],
+  "identification": "3.0 mm dots recessed 0.4 mm into the UNDERSIDE at R9.0; 1 = octagram, 2 = monotonic, 3 = concentric. Nothing is added to the face under test.",
+  "how_to_verify_before_printing": [
+    "open the plate, switch the left panel to the Objects tab",
+    "click each body in turn and read its Top surface pattern",
+    "you should see octagramspiral, monotonicline, concentric",
+    "if all three read the same, the per-part override did not take -- set it by hand on each object, or tell me and I will split them onto three plates where the override is proven"
+  ],
+  "how_to_judge": [
+    "spin each on the same cartridge, under the same light, and look at the rings -- not the surface",
+    "then look at the still top surface at a grazing angle for banding, blobs and start/stop marks around the 50 dash pockets",
+    "concentric may lose on finish even if it wins on spin: 96% of the top face is within 2 mm of a pocket edge, and concentric fragments around obstacles"
+  ],
+  "body_volumes_mm3": [
+    21460.41,
+    21457.45,
+    21454.49
+  ],
+  "identification_dot_volume_mm3": 2.827,
+  "contrast_note": "Marine Blue is the best pair you own at 60%. Scarlet -- already in the Filament Drop brand palette -- would give 77%, and black 99%. Contrast is the only channel that survives being spun, so that is where a real gain is, not in the extrusion pattern."
+}
