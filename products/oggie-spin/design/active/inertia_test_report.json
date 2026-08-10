@@ -1,0 +1,79 @@
+{
+  "project": "Oggie_Spin_Inertia_Test_P2S.3mf",
+  "question": "arm length, shape or density -- which one actually changes the spin and the feel?",
+  "correction": "I first answered this off the SOLID model and got the ranking backwards. The printed Solo is 80% shell: only 3.3 g of 16.7 g is infill, and none of it lies beyond R23, because five walls meet in the middle of the arms and they print solid at any density. Infill can therefore only load the core, at a mean radius of 15.2 mm -- inside the body's own radius of gyration of 18.65 mm. Hollowing the middle fails in reverse: measured, an R9-17.5 x 9 mm underside pocket loses 3.5% of the inertia to save 1.1 g, because the pocket grows its own shell. Shape is not the free lever. Length is.",
+  "model": "voxel shell+infill model calibrated so it reproduces Bambu's own 16.74 g slice of a one-up Solo; spin time taken as proportional to sqrt(I) at fixed flick energy and fixed bearing drag",
+  "variants": [
+    {
+      "dots": 1,
+      "label": "Baseline",
+      "arm_extension_mm": 0.0,
+      "sparse_infill": "25%",
+      "outer_diameter_mm": 52.6,
+      "predicted_mass_g": 16.68,
+      "inertia_g_mm2": 5804,
+      "radius_of_gyration_mm": 18.65,
+      "inertia_vs_baseline": "+0.0%",
+      "predicted_spin_time_vs_baseline": "x1.00"
+    },
+    {
+      "dots": 2,
+      "label": "Heavy",
+      "arm_extension_mm": 0.0,
+      "sparse_infill": "100%",
+      "outer_diameter_mm": 52.6,
+      "predicted_mass_g": 26.68,
+      "inertia_g_mm2": 8226,
+      "radius_of_gyration_mm": 17.56,
+      "inertia_vs_baseline": "+41.7%",
+      "predicted_spin_time_vs_baseline": "x1.19"
+    },
+    {
+      "dots": 3,
+      "label": "Long arms",
+      "arm_extension_mm": 4.0,
+      "sparse_infill": "25%",
+      "outer_diameter_mm": 60.33,
+      "predicted_mass_g": 20.11,
+      "inertia_g_mm2": 8802,
+      "radius_of_gyration_mm": 20.92,
+      "inertia_vs_baseline": "+51.7%",
+      "predicted_spin_time_vs_baseline": "x1.23"
+    }
+  ],
+  "levers_measured": {
+    "infill 25% -> 100%": "+10.0 g, +41.7% I, x1.19 spin, +4.2 %I per gram",
+    "underside pocket R9-17.5 x 9 mm": "-1.1 g, -3.5% I, x0.98 spin -- NOT on the plate",
+    "arms +4 mm, OD 52.6 -> 60.3": "+3.4 g, +51.6% I, x1.23 spin, +15.2 %I per gram",
+    "arms +4 mm AND 100% infill": "+15.9 g, +118% I, x1.48 spin"
+  },
+  "shape_note": "k/R is 0.709 against a uniform disc's 0.707. As a flywheel the five-arm silhouette is exactly as good as a plain disc of the same diameter and no better. Keep the shape for the look; it is not buying spin.",
+  "held_constant": [
+    "one plate, so identical thermal history and filament state",
+    "one filament, no inlay, no prime tower",
+    "5 walls, 6 top and 6 bottom layers, 0.16 mm, gyroid",
+    "identical bearing pocket, shoulder and retaining-ring counterbore"
+  ],
+  "identification": "2.6 mm dots recessed 0.4 mm into the UNDERSIDE of one arm at R12.0; 1 = baseline, 2 = heavy, 3 = long arms",
+  "how_to_judge": [
+    "same bearing swapped between all three, or the comparison is measuring bearings rather than bodies",
+    "flick each the same way and time it; 2 and 3 should land close to each other and clearly ahead of 1",
+    "then ignore the stopwatch and just hold them. 2 is +10 g, 3 is +3.4 g and 15% wider. Which one is more fun is not a number",
+    "check 3 still fits the hand and the pocket -- OD 60.3 is a real size change and it also moves the R22.5 optical ring off the arm tip, so the broken-ring artwork would need re-cutting to suit"
+  ],
+  "printability": [
+    {
+      "body": "1dot Baseline",
+      "audit": "1dot Baseline:\n  [ warn] overhang-surface: 31.4 mm\u00b2 of downward faces steeper than 45\u00b0 (0.5% of the part)\n  [ warn] @Z0.44 overhang-reach: 5.29 mm\u00b2 reaches 1.30 mm beyond the layer below, anchored on 100% of its outline (a bridge, but a long one)  [1 layer]"
+    },
+    {
+      "body": "2dot Heavy",
+      "audit": "2dot Heavy:\n  [ warn] overhang-surface: 36.7 mm\u00b2 of downward faces steeper than 45\u00b0 (0.6% of the part)\n  [ warn] @Z0.44 overhang-reach: 5.29 mm\u00b2 reaches 1.30 mm beyond the layer below, anchored on 100% of its outline (a bridge, but a long one)  [2 layers]"
+    },
+    {
+      "body": "3dot Long arms",
+      "audit": "3dot Long arms:\n  [ warn] overhang-surface: 47.3 mm\u00b2 of downward faces steeper than 45\u00b0 (0.6% of the part)\n  [ warn] @Z0.44 overhang-reach: 5.29 mm\u00b2 reaches 1.30 mm beyond the layer below, anchored on 100% of its outline (a bridge, but a long one)  [3 layers]"
+    }
+  ],
+  "if_you_only_change_one_thing": "lengthen the arms. It is the only lever that puts mass where r^2 is large, it costs 3.4 g against 10 g for the same spin gain, and it is free in filament terms. The cost is size, not weight."
+}

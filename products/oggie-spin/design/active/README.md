@@ -24,6 +24,10 @@ for the diagnosis and the as-built numbers.
 | `oggie-spin-concept.svg` | current blueprint: assembly, joint, modules, bearing stack |
 | `oggie-spin-thumb-mechanisms.svg` | the four finger-pad interfaces; **B, push-and-turn bayonet**, is what ships here |
 | `snap-clip-sections.png` | sections through the arm latch, taken from the built mesh |
+| `Oggie_Spin_Inertia_Test_P2S.3mf` | heft/inertia A/B/C plate — baseline, 100% infill, long arms |
+| `inertia-test-meshes/` | the three test bodies |
+| `inertia_test_report.json` | measured mass, inertia and predicted spin for each |
+| `inertia-test-plate.png` | what is on the plate and where |
 
 ## The optical pattern
 
@@ -515,3 +519,113 @@ The validator gained the checks that would have caught them: section area over
 convex hull (0.756; above 0.90 means the arms are gone) and that all five gaps
 between arms still reach the core OD. The originals all tested what should be
 *filled* and none tested what should stay *open*.
+
+## Heft and inertia — which lever actually changes the spin
+
+`Oggie_Spin_Inertia_Test_P2S.3mf`, built by
+`products/oggie-spin/generator/oggie_spin_inertia_test.py`.
+
+Conall asked whether arm length, shape or density would move the spin or the
+feel. **The first answer given was wrong, and wrong in a specific way worth
+recording: it was computed on the solid mesh.** It claimed the core was "37% of
+the mass for 16% of the inertia" and called hollowing the middle the free lever,
+with length ranked last.
+
+Re-run against the part as *printed* — 5 walls, 6/6 shell layers, 25% gyroid,
+via `shared/ogma/inertia.py` — the ranking inverts:
+
+| lever | mass | inertia | spin | per gram |
+| ----- | ---- | ------- | ---- | -------- |
+| infill 25% → 100% | +10.0 g | +41.7% | ×1.19 | +4.2 %/g |
+| underside pocket R9–17.5 × 9 mm | −1.1 g | **−3.5%** | ×0.98 | negative |
+| arms +4 mm (OD 52.6 → 60.3) | +3.4 g | +51.6% | ×1.23 | **+15.2 %/g** |
+| arms +4 mm *and* 100% infill | +15.9 g | +118% | ×1.48 | — |
+
+**Why the solid model misleads here.** The printed Solo is **80% shell**: 13.4 g
+of its 16.7 g is perimeter and top/bottom layers, and only 3.3 g is infill.
+None of that infill lies beyond R23 — the arms are narrow enough that five walls
+meet in the middle of them and they print solid at any density. So infill can
+only load the core, at a mean radius of 15.2 mm, which is *inside* the body's
+own radius of gyration of 18.65 mm. Every gram infill adds has below-average
+leverage. That is why 60% more mass buys 42% more inertia and drives k down from
+18.65 to 17.56 mm.
+
+Hollowing fails for the same reason in reverse: the middle is already mostly
+shell, and cutting a pocket into it grows new shell around the pocket walls.
+Measured, it loses 3.5% of the inertia to save 1.1 g. **Shape is not the free
+lever; it is not a lever.** That variant is deliberately not on the plate.
+
+**k/R = 0.709 against a uniform disc's 0.707.** As a flywheel the five-arm
+silhouette is exactly as good as a plain disc of the same diameter and no
+better. Keep the shape for the look — it is not buying spin.
+
+### The model, and what it is calibrated against
+
+`shared/ogma/inertia.py` voxelises at 0.5 mm and classifies each voxel as shell
+or infill using **two** distance fields — in-plane per layer for walls, along Z
+only for faces — because a printed shell is strongly anisotropic and one 3D
+transform gets both directions wrong at once.
+
+Two calibrations, both against something outside the arithmetic:
+
+1. Voxels overstate volume at the boundary; normalised so a 100% part weighs
+   what the mesh says.
+2. The geometric shell under-predicts what the slicer lays down (solid layers
+   over sparse infill, ensure-vertical-shell-thickness, thin features where
+   walls simply meet). `SHELL_FIT = 1.5` is **solved**, not assumed, so the
+   model reproduces Bambu's own 16.74 g slice of a one-up Solo: it lands at
+   16.68 g. Without it the model says 13.4 g and every delta is 20% out, in the
+   direction that flatters the infill lever. Re-run `fit_shell_factor()` if the
+   print profile changes.
+
+Spin time is quoted as √I, not I — a hand flick delivers roughly fixed energy,
+so at fixed bearing drag `t ∝ √I`. The raw inertia percentage overstates what
+a stopwatch will show.
+
+### What is on the plate
+
+Three bodies, one plate, **one filament**, identified by dots recessed 0.40 mm
+into the underside of the core at R12:
+
+| dots | variant | OD | infill | mass | inertia | spin |
+| ---- | ------- | -- | ------ | ---- | ------- | ---- |
+| 1 | Baseline | 52.6 | 25% | 16.7 g | — | ×1.00 |
+| 2 | Heavy | 52.6 | 100% | 26.7 g | +41.7% | ×1.19 |
+| 3 | Long arms | 60.3 | 25% | 20.1 g | +51.7% | ×1.23 |
+
+2 and 3 are the point: they land on essentially the same predicted spin gain by
+opposite means, one by adding 10 g and one by adding 3.4 g. Which is more fun to
+hold is not a number.
+
+The optical inlay is left off all three — 0.13 g at R22.5 is 1.1% of the
+inertia, and dropping it makes this single-filament: no prime tower, no purge,
+roughly half the time. Colour is not the variable under test.
+
+Judge it by swapping **one bearing** between all three, or the comparison
+measures bearings rather than bodies. And check variant 3 still suits the hand
+and the pocket: OD 60.3 is a real size change, and it moves the R22.5 optical
+ring off the arm tip, so the broken-ring artwork would need re-cutting to suit.
+
+### Two things the checks caught
+
+1. **Identification dots at R24 on an arm removed only 63% of their volume.**
+   The 0.40 mm bottom chamfer insets the outermost 0.40 mm of every layer below
+   Z 0.40, so a dot near the arm hangs partly over the chamfer. Moved to R12 on
+   the core disc, where the underside is uninterrupted on all three variants.
+2. **At 14° pitch the dots left a 0.33 mm rib between them** — below one line
+   width, so they would have merged into a single slot and 2 and 3 would have
+   become indistinguishable, quietly wasting the plate. Pitch is now 18°, and
+   the rib is asserted against `PrintSpec.min_feature` rather than left to a
+   warning nobody reads.
+
+Arm extension sweeps the arm's outboard shadow radially rather than translating
+it. A plain translation detaches the lobe from the core the moment the extension
+exceeds the overlap — at 2 mm the union quietly returned just the R20 core disc,
+area exactly π·400, which every downstream check would have passed.
+
+### Regenerate
+
+```bash
+.venv/bin/python products/oggie-spin/generator/oggie_spin_inertia_test.py \
+  --out products/oggie-spin/design/active
+```
