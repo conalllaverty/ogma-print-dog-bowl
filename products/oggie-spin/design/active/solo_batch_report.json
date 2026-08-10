@@ -1,0 +1,23 @@
+{
+  "project": "Oggie_Spin_Solo_Batch_x9_P2S.3mf",
+  "units_per_batch": 9,
+  "plates": 3,
+  "objects": 63,
+  "unique_meshes": 6,
+  "single_filament_plates": [
+    "Tough+ cartridge hubs x18",
+    "Thumb pads x18"
+  ],
+  "worst_object_reach_from_plate_centre_mm": 103.35,
+  "batch_volume_cm3": 234.69,
+  "batch_mass_g_at_1_24": 291.0,
+  "parts_per_batch": {
+    "Solo body": 9,
+    "Solo inlay": 9,
+    "Retaining ring": 9,
+    "Collet hub": 9,
+    "Receiver hub": 9,
+    "Thumb pad": 18
+  },
+  "note": "the prime tower is a per-plate fixed cost. Bambu sliced a one-up Solo at 3.87 g of tower against 16.74 g of model -- 18% of all filament, for 0.13 g of ivory in the part. Nine-up amortises it to 0.43 g each."
+}

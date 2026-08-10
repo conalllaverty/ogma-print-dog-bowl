@@ -468,11 +468,184 @@ def generate(out_dir: Path) -> Path:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument(
+        "--units",
+        type=int,
+        default=0,
+        help="emit a batch project of N complete Solos instead of a single unit",
+    )
     args = parser.parse_args()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        print(generate(args.out))
+        if args.units:
+            print(generate_batch(args.out, args.units))
+        else:
+            print(generate(args.out))
 
 
 if __name__ == "__main__":
     main()
+
+
+# ---------------------------------------------------------------------------
+# Batch: N complete Solos per plate set
+# ---------------------------------------------------------------------------
+
+BATCH_OUTPUT_TEMPLATE = "Oggie_Spin_Solo_Batch_x{units}_P2S.3mf"
+BATCH_MESH_DIR = "solo-batch-meshes"
+BATCH_REPORT_NAME = "solo_batch_report.json"
+
+
+def build_batch_plan(units: int) -> dict:
+    """Plate layout for `units` complete Solo spinners.
+
+    Same shape as the modular batch: group by filament so whole plates purge
+    nothing, and let the retaining rings ride on the body plate because they
+    share the body's filament. The prime tower is a per-PLATE cost, and on a
+    one-up Solo plate it is 18% of all filament -- that is the entire reason
+    this exists.
+    """
+    from oggie_spin_batch import _grid_offsets, _mesh_footprint
+
+    built = build_meshes()
+    by = {name: (mesh, ext) for name, mesh, ext in built}
+    body = next(v for k, v in by.items() if "one-piece body" in k)
+    inlay = next(v for k, v in by.items() if "optical inlay" in k)
+    ring = next(v for k, v in by.items() if "retaining ring" in k)
+    collet = next(v for k, v in by.items() if "split-collet" in k)
+    recv = next(v for k, v in by.items() if "receiver hub" in k)
+    pad = next(v for k, v in by.items() if "thumb pad 1" in k)
+
+    objects: list[tuple[str, trimesh.Trimesh, int]] = []
+    plates: list[dict] = []
+
+    def add(label, entry, count):
+        mesh, ext = entry
+        ids = []
+        for n in range(count):
+            objects.append((f"{label} {n + 1}", mesh, ext))
+            ids.append(len(objects))
+        return ids
+
+    def grid(ids, entry):
+        mesh, _ = entry
+        w, d, cx, cy = _mesh_footprint(mesh)
+        return [(i, x, y, 0.0) for i, (x, y) in zip(ids, _grid_offsets(len(ids), w, d, cx, cy))]
+
+    # plate 1: bodies + their inlays, plus the rings on the same filament
+    body_ids = add("Solo body", body, units)
+    inlay_ids = add("Solo inlay", inlay, units)
+    bw, bd, bcx, bcy = _mesh_footprint(body[0])
+    offs = _grid_offsets(units, bw, bd, bcx, bcy)
+    comps = []
+    for ib, ii, (x, y) in zip(body_ids, inlay_ids, offs):
+        comps.append((ib, x, y, 0.0))
+        comps.append((ii, x, y, 0.0))
+    ring_ids = add("Retaining ring", ring, units)
+    rw, rd, rcx, rcy = _mesh_footprint(ring[0])
+    rows = math.ceil(units / max(1, int((220.0 + 6.0) // (bw + 6.0))))
+    ring_y = -(rows * (bd + 6.0)) / 2.0 - (rd + 6.0) / 2.0
+    for i, (x, _y) in zip(ring_ids, _grid_offsets(units, rw, rd, rcx, rcy)):
+        comps.append((i, x, ring_y - rcy, 0.0))
+    plates.append({"title": f"Solo bodies x{units} + retaining rings x{units}", "components": comps})
+
+    # plate 2: both hubs, Tough+ only -> zero purge
+    hub_ids = add("Collet hub", collet, units) + add("Receiver hub", recv, units)
+    plates.append({"title": f"Tough+ cartridge hubs x{units * 2}",
+                   "components": grid(hub_ids, collet)})
+
+    # plate 3: thumb pads, one colour -> zero purge
+    plates.append({"title": f"Thumb pads x{units * 2}",
+                   "components": grid(add("Thumb pad", pad, units * 2), pad)})
+
+    return {"units": units, "objects": objects, "plates": plates}
+
+
+def generate_batch(out_dir: Path, units: int = 9) -> Path:
+    out_dir = Path(out_dir)
+    plan = build_batch_plan(units)
+    mesh_dir = out_dir / BATCH_MESH_DIR
+    mesh_dir.mkdir(parents=True, exist_ok=True)
+
+    written: dict[int, Path] = {}
+    objects = []
+    for name, mesh, ext in plan["objects"]:
+        key = id(mesh)
+        if key not in written:
+            stem = name.rsplit(" ", 1)[0].lower().replace(" ", "_")
+            path = mesh_dir / f"{len(written) + 1:02d}_{stem}.stl"
+            mesh.export(path)
+            written[key] = path
+        objects.append((name, written[key], ext))
+
+    total = len(plan["plates"])
+    plates = [
+        base.Plate(p["title"], tuple(p["components"]), _plate_position(n, total))
+        for n, p in enumerate(plan["plates"], start=1)
+    ]
+    output = out_dir / BATCH_OUTPUT_TEMPLATE.format(units=units)
+    previous = (base.PLATES, base.FILAMENTS, base._preview_png,
+                base._model_settings, base._configure_filament_slots)
+    try:
+        base.PLATES = plates
+        base.FILAMENTS = br.VARIANT_FILAMENTS
+        base._preview_png = br._preview_png
+        base._model_settings = br.ORIGINAL_MODEL_SETTINGS
+        base._configure_filament_slots = br._configure_variant_filaments
+        base.build_bambu_project(output, objects)
+    finally:
+        (base.PLATES, base.FILAMENTS, base._preview_png,
+         base._model_settings, base._configure_filament_slots) = previous
+    br._rewrite_variant_project_settings(output)
+
+    # --- validate ---------------------------------------------------------
+    from shapely.geometry import box as _box
+    half = 128.0
+    worst = 0.0
+    for number, plate in enumerate(plan["plates"], start=1):
+        rects = []
+        for oid, dx, dy, _dz in plate["components"]:
+            name, mesh, _e = plan["objects"][oid - 1]
+            lo, hi = mesh.bounds[0], mesh.bounds[1]
+            for v in (lo[0] + dx, hi[0] + dx, lo[1] + dy, hi[1] + dy):
+                worst = max(worst, abs(v))
+                if abs(v) > half:
+                    raise RuntimeError(f"plate {number} object {oid} falls off its bed")
+            if "inlay" not in name.lower():
+                rects.append(_box(lo[0] + dx, lo[1] + dy, hi[0] + dx, hi[1] + dy))
+        for a in range(len(rects)):
+            for b in range(a + 1, len(rects)):
+                hit = rects[a].intersection(rects[b])
+                if not hit.is_empty and hit.area > 1e-9:
+                    raise RuntimeError(f"plate {number}: parts overlap by {hit.area:.3f} mm2")
+
+    counts: dict[str, int] = {}
+    for name, _m, _e in plan["objects"]:
+        counts[name.rsplit(" ", 1)[0]] = counts.get(name.rsplit(" ", 1)[0], 0) + 1
+    expected = {"Solo body": units, "Solo inlay": units, "Retaining ring": units,
+                "Collet hub": units, "Receiver hub": units, "Thumb pad": units * 2}
+    for key, want in expected.items():
+        if counts.get(key) != want:
+            raise RuntimeError(f"not a matched set: {want}x {key} expected, {counts.get(key)} present")
+
+    volume = sum(float(m.volume) for _n, m, _e in plan["objects"]) / 1000.0
+    report = {
+        "project": output.name,
+        "units_per_batch": units,
+        "plates": len(plan["plates"]),
+        "objects": len(plan["objects"]),
+        "unique_meshes": len(written),
+        "single_filament_plates": [plan["plates"][1]["title"], plan["plates"][2]["title"]],
+        "worst_object_reach_from_plate_centre_mm": round(worst, 2),
+        "batch_volume_cm3": round(volume, 2),
+        "batch_mass_g_at_1_24": round(volume * 1.24, 1),
+        "parts_per_batch": counts,
+        "note": (
+            "the prime tower is a per-plate fixed cost. Bambu sliced a one-up "
+            "Solo at 3.87 g of tower against 16.74 g of model -- 18% of all "
+            "filament, for 0.13 g of ivory in the part. Nine-up amortises it to "
+            "0.43 g each."
+        ),
+    }
+    (out_dir / BATCH_REPORT_NAME).write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    return output
