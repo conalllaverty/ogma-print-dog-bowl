@@ -34,8 +34,8 @@ weighs. The optical inlay survives because it lives only in the top 0.64 mm.
 
 Treat this as a second SKU, not a replacement.
 
-    .venv/bin/python backend/generator/oggie_spin_onepiece.py \\
-        --out design/modular-spinner/active
+    .venv/bin/python products/oggie-spin/generator/oggie_spin_onepiece.py \\
+        --out products/oggie-spin/design/active
 """
 
 from __future__ import annotations
@@ -54,13 +54,15 @@ import trimesh
 from shapely.geometry import Polygon
 
 GENERATOR_DIR = Path(__file__).resolve().parent
-if str(GENERATOR_DIR) not in sys.path:
-    sys.path.insert(0, str(GENERATOR_DIR))
+_REPO = next(p for p in GENERATOR_DIR.parents if (p / "shared" / "ogma").is_dir())
+for _p in (GENERATOR_DIR, _REPO / "shared"):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
 import oggie_spin_bayonet as base  # noqa: E402
 import oggie_spin_broken_rings as br  # noqa: E402
 import oggie_spin_complete as complete  # noqa: E402
-import printability  # noqa: E402
+from ogma import printability  # noqa: E402
 
 OUTPUT_NAME = "Oggie_Spin_Solo_OnePiece_P2S.3mf"
 MESH_DIR_NAME = "onepiece-meshes"
@@ -129,6 +131,47 @@ SOLO_TIP_RING = {
 # where the arms still end at R26.3 and the dashes would hang off the end of
 # every one of them.
 SOLO_RING_SPECS = [*br.RING_SPECS, SOLO_TIP_RING]
+
+# --- top surface pattern --------------------------------------------------
+#
+# Concentric, decided by the A/B/C plate rather than by argument.
+#
+# The reasoning it was printed to test: a spinner rotates about its own axis,
+# so concentric extrusion lines are ROTATIONALLY INVARIANT. They look identical
+# at every angle and therefore contribute nothing at all to the spinning image.
+# Every other pattern has a direction, so its texture rotates with the part and
+# can only add noise to the illusion. If any pattern helps, it is the one that
+# disappears.
+#
+# It also carried the plate's real risk: 96% of the top face lies within 2 mm
+# of a dash pocket, and concentric fragments into small rings around obstacles.
+# It could have theorised well and printed badly. It did not.
+#
+# Applied as a per-PART override rather than a project default. That mechanism
+# is no longer a hopeful one -- the three test bodies came off the same plate
+# looking different, which is proof the override takes. Kept off the project
+# default so the modular spinner's arms, which are not round, do not inherit a
+# pattern chosen for a disc.
+TOP_SURFACE_PATTERN = "concentric"
+TOP_SURFACE_PART_MATCH = "body"
+
+# --- flush dashes ---------------------------------------------------------
+#
+# br.INLAY_PROUD is 0.32 mm, which stands the dashes above the top face. The
+# Solo overrides it to zero. SOLO ONLY -- the shared default is untouched, so
+# the modular spinner keeps its raised dashes.
+#
+# The proud cap costs two of the four white layers, and it costs the WORST two:
+# above the top face there is no blue on the layer at all, so those layers are
+# sixty-five free-standing white islands printed in open air with nothing
+# around them to wipe the nozzle on. Flush dashes sit in blue-walled pockets
+# that scrape the nozzle at every entry and exit, and they remove the need for
+# z-hop over a raised feature.
+#
+# What it costs: the relief. Raised dashes catch light at a grazing angle and
+# you can feel them. That is a real part of how the thing reads in the hand,
+# and it is being traded for a clean top face.
+INLAY_PROUD = 0.0
 
 EDGE_CHAMFER = 0.40   # top and bottom, follows the lobed profile
 CHAMFER_HEIGHT = 0.40
@@ -333,7 +376,9 @@ def build_meshes() -> list[tuple[str, trimesh.Trimesh, int]]:
         [br._dash_volume(spec) for spec in SOLO_RING_SPECS]
     )
     solo_base, solo_inlay = br._split_flush_inlay(body, dashes, "Oggie Spin Solo")
-    solo_inlay, proud = br._raise_inlay(solo_inlay, "Oggie Spin Solo optical inlay")
+    solo_inlay, proud = br._raise_inlay(
+        solo_inlay, "Oggie Spin Solo optical inlay", proud=INLAY_PROUD
+    )
 
     global _PROUD_MM3
     _PROUD_MM3 = proud
@@ -381,6 +426,40 @@ SOLO_PLATES_SPEC = [
     ("Tough+ split-collet cartridge", ((4, -13.0, 0.0, 0.0), (5, 13.0, 0.0, 0.0))),
     ("Removable bayonet thumb pads", ((6, -13.0, 0.0, 0.0), (7, 13.0, 0.0, 0.0))),
 ]
+
+
+def _solo_model_settings(expected_bodies: int):
+    """br's model settings, plus the concentric top surface on the bodies.
+
+    Matched by part NAME, not by part id. The single project and the batch
+    number their parts differently and the batch renumbers whenever the unit
+    count changes, so an id-based rule would go stale silently -- and silently
+    is how the pattern would end up on the wrong part, or on nothing at all.
+    """
+
+    def _settings(objects, meshes) -> bytes:
+        root = ET.fromstring(br.ORIGINAL_MODEL_SETTINGS(objects, meshes))
+        hits = 0
+        for part in root.iter("part"):
+            name = next(
+                (
+                    meta.get("value")
+                    for meta in part.findall("./metadata")
+                    if meta.get("key") == "name"
+                ),
+                "",
+            )
+            if TOP_SURFACE_PART_MATCH in name.lower() and "inlay" not in name.lower():
+                br._set_metadata(part, "top_surface_pattern", TOP_SURFACE_PATTERN)
+                hits += 1
+        if hits != expected_bodies:
+            raise RuntimeError(
+                f"top surface pattern applied to {hits} parts, expected "
+                f"{expected_bodies} bodies -- the name match has gone stale"
+            )
+        return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+    return _settings
 
 
 def _plate_position(number: int, total: int) -> tuple[float, float, float]:
@@ -583,7 +662,10 @@ def _validate(output: Path, built) -> dict:
             "sized for the extra centrifugal and drop load."
         ),
         "section_area_over_convex_hull": round(hull_ratio, 3),
-        "inlay_proud_mm": br.INLAY_PROUD,
+        # the Solo's own value, not the shared default -- reporting br's would
+        # have said 0.32 on a part whose dashes are flush
+        "inlay_proud_mm": INLAY_PROUD,
+        "shared_default_inlay_proud_mm": br.INLAY_PROUD,
         "inlay_proud_volume_mm3": round(_PROUD_MM3, 4),
         "removed_from_the_modular_design": [
             "five arm slots", "dovetail tongues", "clip cantilever beams",
@@ -640,7 +722,7 @@ def generate(out_dir: Path) -> Path:
         base.PLATES = plates
         base.FILAMENTS = br.VARIANT_FILAMENTS
         base._preview_png = br._preview_png
-        base._model_settings = br.ORIGINAL_MODEL_SETTINGS
+        base._model_settings = _solo_model_settings(1)
         base._configure_filament_slots = br._configure_variant_filaments
         base.build_bambu_project(output, objects)
     finally:
@@ -649,6 +731,7 @@ def generate(out_dir: Path) -> Path:
             base._model_settings, base._configure_filament_slots,
         ) = previous
     br._rewrite_variant_project_settings(output)
+    br.rewrite_project_settings(output, br.ANTI_STRINGING_SETTINGS)
 
     report = _validate(output, built)
     (out_dir / REPORT_NAME).write_text(
@@ -773,13 +856,14 @@ def generate_batch(out_dir: Path, units: int = 9) -> Path:
         base.PLATES = plates
         base.FILAMENTS = br.VARIANT_FILAMENTS
         base._preview_png = br._preview_png
-        base._model_settings = br.ORIGINAL_MODEL_SETTINGS
+        base._model_settings = _solo_model_settings(units)
         base._configure_filament_slots = br._configure_variant_filaments
         base.build_bambu_project(output, objects)
     finally:
         (base.PLATES, base.FILAMENTS, base._preview_png,
          base._model_settings, base._configure_filament_slots) = previous
     br._rewrite_variant_project_settings(output)
+    br.rewrite_project_settings(output, br.ANTI_STRINGING_SETTINGS)
 
     # --- validate ---------------------------------------------------------
     from shapely.geometry import box as _box

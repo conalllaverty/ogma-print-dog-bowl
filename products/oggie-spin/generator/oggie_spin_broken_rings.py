@@ -23,8 +23,10 @@ import trimesh
 from shapely.geometry import Polygon
 
 GENERATOR_DIR = Path(__file__).resolve().parent
-if str(GENERATOR_DIR) not in sys.path:
-    sys.path.insert(0, str(GENERATOR_DIR))
+_REPO = next(p for p in GENERATOR_DIR.parents if (p / "shared" / "ogma").is_dir())
+for _p in (GENERATOR_DIR, _REPO / "shared"):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
 import oggie_spin_bayonet as base  # noqa: E402
 import oggie_spin_complete as complete  # noqa: E402
@@ -669,6 +671,54 @@ def _flush_matrix() -> list[str]:
         for a in VARIANT_FILAMENTS
         for b in VARIANT_FILAMENTS
     ]
+
+
+def rewrite_project_settings(path: Path, changes: dict) -> None:
+    """Apply project-settings changes to an already-written 3MF, in place.
+
+    Opt-in and per-caller on purpose. The obvious place for these would be
+    _rewrite_variant_project_settings, but that runs for the modular spinner
+    too, and the settings below are chosen for a disc with sixty white islands
+    on its top face. The modular arms are neither.
+    """
+    temp_path = path.with_suffix(".tmp.3mf")
+    with (
+        zipfile.ZipFile(path, "r") as source,
+        zipfile.ZipFile(temp_path, "w", zipfile.ZIP_DEFLATED, compresslevel=7) as target,
+    ):
+        for item in source.infolist():
+            data = source.read(item.filename)
+            if item.filename == "Metadata/project_settings.config":
+                settings = json.loads(data)
+                settings.update(changes)
+                data = json.dumps(settings, indent=2, ensure_ascii=False).encode()
+            target.writestr(item, data)
+    temp_path.replace(path)
+
+
+# The anti-stringing set for a top face made of many small white islands.
+#
+# arachne: with `classic`, a loop around a 1.10 mm dash pocket lays 0.42 mm in
+# from each side and leaves 0.26 mm uncovered down the middle -- too narrow for
+# another loop, so classic fills it with a separate gap-fill sliver at
+# 250 mm/s. That is an extra start and stop inside EVERY dash, sixty-five per
+# layer, 260 per part. Arachne fits the same strip with two ~0.55 mm beads: no
+# sliver, no second start-stop, solid dash.
+#
+# top surface speed AND acceleration: the speed cap alone does almost nothing
+# here, and it is worth being clear about why. A 3 mm dash accelerating at
+# 2000 mm/s2 peaks at sqrt(a*d) = 77 mm/s and then decelerates -- it never
+# comes near the 200 mm/s cap, so lowering the cap to 150 or 100 would change
+# nothing at all. Dropping the cap to 50 and the acceleration to 800 gives
+# sqrt(800*3) = 49 mm/s, about a third off the peak. Lower speed at the end of
+# a dash means lower pressure left in the nozzle when the travel starts, which
+# is the thing that oozes.
+ANTI_STRINGING_SETTINGS = {
+    "wall_generator": "arachne",
+    "min_bead_width": "70%",
+    "top_surface_speed": ["50", "50"],
+    "top_surface_acceleration": ["800", "800"],
+}
 
 
 def _rewrite_variant_project_settings(path: Path) -> None:

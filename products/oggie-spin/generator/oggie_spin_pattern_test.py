@@ -55,8 +55,10 @@ import numpy as np
 import trimesh
 
 GENERATOR_DIR = Path(__file__).resolve().parent
-if str(GENERATOR_DIR) not in sys.path:
-    sys.path.insert(0, str(GENERATOR_DIR))
+_REPO = next(p for p in GENERATOR_DIR.parents if (p / "shared" / "ogma").is_dir())
+for _p in (GENERATOR_DIR, _REPO / "shared"):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
 import oggie_spin_bayonet as base  # noqa: E402
 import oggie_spin_broken_rings as br  # noqa: E402

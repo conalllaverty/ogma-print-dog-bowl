@@ -10,7 +10,7 @@ The project is deliberately a mechanism prototype, not the final spinner:
 
 Run from the repository root:
 
-    .venv/bin/python backend/generator/oggie_spin_bayonet.py \
+    .venv/bin/python products/oggie-spin/generator/oggie_spin_bayonet.py \
         --out design/modular-spinner/bayonet-fit-test
 """
 
@@ -36,10 +36,14 @@ from PIL import Image, ImageDraw
 from shapely.geometry import Polygon
 
 GENERATOR_DIR = Path(__file__).resolve().parent
-if str(GENERATOR_DIR) not in sys.path:
-    sys.path.insert(0, str(GENERATOR_DIR))
+_REPO = next(p for p in GENERATOR_DIR.parents if (p / "shared" / "ogma").is_dir())
+for _p in (GENERATOR_DIR, _REPO / "shared"):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
-import build_bambu_project as bambu  # noqa: E402
+from ogma import assets  # noqa: E402
+
+from ogma import bambu_project as bambu  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Locked concept envelope and first-print tolerances (millimetres)
@@ -77,12 +81,16 @@ R188_WIDTH = 4.76
 # until the current machine, filament and flow calibration are measured
 # directly. That is what oggie_spin_bearing_gauge.py is for.
 #
-# 12.92 in the meantime: +0.08, four times the last increment, chosen to be a
-# change large enough to feel rather than another number inside the noise. It
-# sits above the old loose datum deliberately -- that datum is from a different
-# print and cannot be trusted against this one. If it now drops out, the gauge
-# will say by how much.
-BEARING_POCKET_DIAMETER = 12.92
+# 12.92 was the first response: +0.08, four times the last increment, chosen to
+# be large enough to feel rather than another number inside the noise.
+#
+# 12.88 is where it settled -- halfway back, and the bearing is being retained
+# with adhesive rather than by the fit. That changes what this number is for.
+# It no longer has to grip; it has to CENTRE the bearing and let it go in by
+# hand. 0.18 mm of nominal clearance on the 12.70 outer race does both, and
+# leaves the glue a bond line to sit in rather than being squeezed out by an
+# interference fit -- which is how a glued press fit ends up dry.
+BEARING_POCKET_DIAMETER = 12.88
 BEARING_SHOULDER_OPENING = 10.60
 BEARING_SEAT_Z = (CORE_HEIGHT - R188_WIDTH) / 2.0
 CORE_FACE_TO_RACE = BEARING_SEAT_Z
@@ -708,7 +716,7 @@ def build_bambu_project(
     for (name, _, _), mesh in zip(objects, meshes):
         _finish(mesh, name)
     bambu.OBJECTS = objects
-    template_path = GENERATOR_DIR / "blank_project.3mf"
+    template_path = assets.BLANK_PROJECT
     with (
         zipfile.ZipFile(template_path) as template,
         zipfile.ZipFile(

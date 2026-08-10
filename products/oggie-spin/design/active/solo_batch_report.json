@@ -9,8 +9,8 @@
     "Thumb pads x18"
   ],
   "worst_object_reach_from_plate_centre_mm": 113.33,
-  "batch_volume_cm3": 277.78,
-  "batch_mass_g_at_1_24": 344.4,
+  "batch_volume_cm3": 277.2,
+  "batch_mass_g_at_1_24": 343.7,
   "parts_per_batch": {
     "Solo body": 9,
     "Solo inlay": 9,
