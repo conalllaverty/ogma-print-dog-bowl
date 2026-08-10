@@ -23,10 +23,8 @@ import trimesh
 from shapely.geometry import Polygon
 
 GENERATOR_DIR = Path(__file__).resolve().parent
-_REPO = next(p for p in GENERATOR_DIR.parents if (p / "shared" / "ogma").is_dir())
-for _p in (GENERATOR_DIR, _REPO / "shared"):
-    if str(_p) not in sys.path:
-        sys.path.insert(0, str(_p))
+if str(GENERATOR_DIR) not in sys.path:
+    sys.path.insert(0, str(GENERATOR_DIR))
 
 import oggie_spin_bayonet as base  # noqa: E402
 import oggie_spin_complete as complete  # noqa: E402
@@ -527,6 +525,46 @@ def _configure_variant_filaments(settings: dict) -> None:
         ("filament_density", "1.21"),
     ):
         _set_slot_group(settings, key, tough_index, value)
+
+    # --- the optical slot oozes, and the geometry makes it show ------------
+    #
+    # Sixty dashes per body means sixty island-to-island hops per white layer.
+    # Measured off RING_SPECS: 184.6 mm extruded against 170.4 mm travelled --
+    # a travel-to-extrusion ratio of 0.92. The white spends nearly half its
+    # distance in the air. The blue, printing continuous perimeters, travels
+    # almost not at all, which is why only the white strings even though both
+    # are the same material at the same temperature. It is not a worse
+    # filament; it is forty-five times more opportunities per layer.
+    #
+    # So the lever is ooze RATE, and the two things that set it are melt
+    # viscosity and how much pressure is left in the nozzle during a hop.
+    #
+    # 210 C rather than the stock 220: the optical inlay is 2-4 top-surface
+    # layers with no structural role, no bridge and no overhang, so the usual
+    # reason to keep PLA hot does not apply here. Viscosity rises steeply on
+    # the way down. Not lower than this without care -- the AMS cut and ram
+    # depend on a clean tip, and a cold tip is how a multi-material print jams.
+    #
+    # Retraction 1.2 mm rather than 0.8: the stock value is short for the melt
+    # zone on a direct drive. Faster (60 mm/s) so the extra distance does not
+    # buy more airtime -- retract plus deretract currently costs 53 ms against
+    # 34 ms of actual travel, so retraction, not travel, is most of each hop.
+    #
+    # If the dashes come out starved at their starts, back the length off to
+    # 1.0 before touching anything else. A gap at the start of a dash is worse
+    # than a string: the dash pattern IS the product, and a string can be
+    # picked off.
+    optical_index = OPTICAL_EXTRUDER - 1
+    for key, value in (
+        ("nozzle_temperature", "210"),
+        ("nozzle_temperature_initial_layer", "210"),
+        ("filament_retraction_length", "1.2"),
+        ("filament_retraction_speed", "60"),
+        ("filament_deretraction_speed", "60"),
+        ("filament_retract_before_wipe", "70%"),
+        ("filament_wipe", "1"),
+    ):
+        _set_slot_group(settings, key, optical_index, value)
 
 
 def _preview_png(plate_number: int, size: int = 512) -> bytes:

@@ -11,7 +11,7 @@
       "sparse_infill": "25%",
       "outer_diameter_mm": 52.6,
       "predicted_mass_g": 16.68,
-      "inertia_g_mm2": 5804,
+      "inertia_g_mm2": 5805,
       "radius_of_gyration_mm": 18.65,
       "inertia_vs_baseline": "+0.0%",
       "predicted_spin_time_vs_baseline": "x1.00"
@@ -22,7 +22,7 @@
       "arm_extension_mm": 0.0,
       "sparse_infill": "100%",
       "outer_diameter_mm": 52.6,
-      "predicted_mass_g": 26.68,
+      "predicted_mass_g": 26.67,
       "inertia_g_mm2": 8226,
       "radius_of_gyration_mm": 17.56,
       "inertia_vs_baseline": "+41.7%",
@@ -35,9 +35,9 @@
       "sparse_infill": "25%",
       "outer_diameter_mm": 60.33,
       "predicted_mass_g": 20.11,
-      "inertia_g_mm2": 8802,
+      "inertia_g_mm2": 8803,
       "radius_of_gyration_mm": 20.92,
-      "inertia_vs_baseline": "+51.7%",
+      "inertia_vs_baseline": "+51.6%",
       "predicted_spin_time_vs_baseline": "x1.23"
     }
   ],

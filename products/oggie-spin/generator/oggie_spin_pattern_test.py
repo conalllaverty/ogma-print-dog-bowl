@@ -55,10 +55,8 @@ import numpy as np
 import trimesh
 
 GENERATOR_DIR = Path(__file__).resolve().parent
-_REPO = next(p for p in GENERATOR_DIR.parents if (p / "shared" / "ogma").is_dir())
-for _p in (GENERATOR_DIR, _REPO / "shared"):
-    if str(_p) not in sys.path:
-        sys.path.insert(0, str(_p))
+if str(GENERATOR_DIR) not in sys.path:
+    sys.path.insert(0, str(GENERATOR_DIR))
 
 import oggie_spin_bayonet as base  # noqa: E402
 import oggie_spin_broken_rings as br  # noqa: E402
@@ -145,6 +143,53 @@ def _model_settings_factory(built):
     return _settings
 
 
+def _rewrite_wall_generator(path: Path) -> None:
+    """Switch this plate to the Arachne wall generator.
+
+    The leading suspect for the white stringing, and it is arithmetic rather
+    than opinion. The dash pockets are RING_WIDTH = 1.1 mm wide. The project
+    runs `wall_generator = classic` at a 0.42 mm outer wall, so a loop around a
+    1.1 mm strip lays 0.42 mm in from each side and leaves 0.26 mm uncovered
+    down the middle -- too narrow for another loop, so classic fills it with a
+    gap-fill sliver. That is a separate, very short, very fast (250 mm/s)
+    extrusion with its own start and stop, in EVERY one of the sixty dashes,
+    on every white layer. Sixty extra pressure spikes per layer is a stringing
+    machine.
+
+    Arachne instead fits the strip with two variable-width beads of ~0.55 mm.
+    No sliver, no second start-stop, and the dash comes out solid. It does not
+    move the outer wall, so nothing dimensional changes on this plate.
+
+    Scoped to THIS plate deliberately. Arachne would also change the modular
+    spinner's 0.80 mm clip beam from one compressed loop to two 0.40 mm beads,
+    which makes the beam slightly stiffer -- and the snap force, the fatigue
+    margin and the 0.50 mm engagement ceiling were all computed against the
+    beam as it prints today. That wants re-deriving before the main project
+    moves, not a quiet flag flip.
+
+    Thirty-second check before printing: open the plate, Preview, drag to the
+    top layers, and look at a dash. Classic shows a thin line down the centre
+    of each one in the gap-fill colour. If that line is not there, this theory
+    is wrong and the temperature and retraction changes are doing the work.
+    """
+    temp_path = path.with_suffix(".tmp.3mf")
+    with (
+        zipfile.ZipFile(path, "r") as source,
+        zipfile.ZipFile(temp_path, "w", zipfile.ZIP_DEFLATED, compresslevel=7) as target,
+    ):
+        for item in source.infolist():
+            data = source.read(item.filename)
+            if item.filename == "Metadata/project_settings.config":
+                settings = json.loads(data)
+                settings["wall_generator"] = "arachne"
+                # let a bead get thin enough to be worth printing rather than
+                # falling back to gap fill again
+                settings["min_bead_width"] = "70%"
+                data = json.dumps(settings, indent=2, ensure_ascii=False).encode()
+            target.writestr(item, data)
+    temp_path.replace(path)
+
+
 def generate(out_dir: Path) -> Path:
     out_dir = Path(out_dir)
     mesh_dir = out_dir / MESH_DIR_NAME
@@ -180,6 +225,7 @@ def generate(out_dir: Path) -> Path:
         (base.PLATES, base.FILAMENTS, base._preview_png,
          base._model_settings, base._configure_filament_slots) = previous
     br._rewrite_variant_project_settings(output)
+    _rewrite_wall_generator(output)
 
     # --- validate -----------------------------------------------------------
     with zipfile.ZipFile(output) as package:

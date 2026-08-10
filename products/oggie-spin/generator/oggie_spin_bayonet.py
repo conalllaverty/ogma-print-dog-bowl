@@ -10,7 +10,7 @@ The project is deliberately a mechanism prototype, not the final spinner:
 
 Run from the repository root:
 
-    .venv/bin/python products/oggie-spin/generator/oggie_spin_bayonet.py \
+    .venv/bin/python backend/generator/oggie_spin_bayonet.py \
         --out design/modular-spinner/bayonet-fit-test
 """
 
@@ -36,14 +36,10 @@ from PIL import Image, ImageDraw
 from shapely.geometry import Polygon
 
 GENERATOR_DIR = Path(__file__).resolve().parent
-_REPO = next(p for p in GENERATOR_DIR.parents if (p / "shared" / "ogma").is_dir())
-for _p in (GENERATOR_DIR, _REPO / "shared"):
-    if str(_p) not in sys.path:
-        sys.path.insert(0, str(_p))
+if str(GENERATOR_DIR) not in sys.path:
+    sys.path.insert(0, str(GENERATOR_DIR))
 
-from ogma import assets  # noqa: E402
-
-from ogma import bambu_project as bambu  # noqa: E402
+import build_bambu_project as bambu  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Locked concept envelope and first-print tolerances (millimetres)
@@ -67,13 +63,26 @@ R188_WIDTH = 4.76
 # outer-race retaining ring provides axial capture, so move halfway from the
 # tight Ø12.78 result toward the known-loose Ø12.86 result.
 #
-# 2026-08-06: Ø12.82 still reported slightly tight to insert. Most of that was
-# the missing lead-in at the pocket mouth (see BEARING_POCKET_LEAD_IN) -- the
-# bore itself measures 12.8197-12.8200 on the exported mesh, so it was never a
-# sizing error. Nudged 0.02 as well, which keeps it BELOW the 12.86 that was
-# measurably loose. Do not go past 12.86: the pocket sets the bearing's
-# concentricity, and a loose one shows up as vibration at speed.
-BEARING_POCKET_DIAMETER = 12.84
+# 2026-08-06: Ø12.82 still reported slightly tight. I attributed that to the
+# missing lead-in at the pocket mouth (see BEARING_POCKET_LEAD_IN), noted the
+# bore measured 12.8197-12.8200 on the mesh, and concluded it "was never a
+# sizing error". Then I nudged the diameter by 0.02 anyway -- a change four
+# times smaller than the width of the bracket it was meant to move within,
+# which could not have told us anything either way.
+#
+# 2026-08-10: Ø12.84 needs PLIERS. That cannot be reconciled with Ø12.86
+# falling out under gravity: the two results are 0.02 mm apart and describe
+# opposite failures. The honest reading is that the print-to-print variation is
+# WIDER THAN THE ENTIRE DESIGN WINDOW, so no single number here is reliable
+# until the current machine, filament and flow calibration are measured
+# directly. That is what oggie_spin_bearing_gauge.py is for.
+#
+# 12.92 in the meantime: +0.08, four times the last increment, chosen to be a
+# change large enough to feel rather than another number inside the noise. It
+# sits above the old loose datum deliberately -- that datum is from a different
+# print and cannot be trusted against this one. If it now drops out, the gauge
+# will say by how much.
+BEARING_POCKET_DIAMETER = 12.92
 BEARING_SHOULDER_OPENING = 10.60
 BEARING_SEAT_Z = (CORE_HEIGHT - R188_WIDTH) / 2.0
 CORE_FACE_TO_RACE = BEARING_SEAT_Z
@@ -125,6 +134,14 @@ FILAMENTS = [
     ("Marine Blue Matte", "#3A8FCF"),
     ("Lemon Yellow Matte", "#F0C14A"),
 ]
+
+# Which plate is actually on the machine. Bambu derives the bed temperature
+# from this, so getting it wrong runs the whole print at another plate's
+# temperature. Valid values are the strings Bambu Studio uses: "Cool Plate",
+# "Engineering Plate", "High Temp Plate", "Textured PEI Plate", "Supertack
+# Plate". Change this here rather than in the slicer, so a regenerated project
+# cannot quietly go back to the template's default.
+BED_TYPE = "Textured PEI Plate"
 
 
 @dataclass(frozen=True)
@@ -691,7 +708,7 @@ def build_bambu_project(
     for (name, _, _), mesh in zip(objects, meshes):
         _finish(mesh, name)
     bambu.OBJECTS = objects
-    template_path = assets.BLANK_PROJECT
+    template_path = GENERATOR_DIR / "blank_project.3mf"
     with (
         zipfile.ZipFile(template_path) as template,
         zipfile.ZipFile(
@@ -728,6 +745,16 @@ def build_bambu_project(
         settings["inner_wall_speed"] = ["100", "100"]
         settings["small_perimeter_speed"] = "50%"
         settings["precise_outer_wall"] = "1"
+        # The blank template ships curr_bed_type = "Supertack Plate", and every
+        # project generated before this line inherited it silently. Supertack
+        # runs the bed at 40 C. The machine has the textured PEI plate, which
+        # Bambu runs at 55 C for PLA -- and that 55 C has been sitting unused in
+        # textured_plate_temp the whole time. Fifteen degrees cold on the first
+        # layer is not enough to stop a part sticking (textured PEI grips
+        # anyway), which is exactly why it went unnoticed: it does not fail, it
+        # just never presses properly into the plate texture, and the underside
+        # comes out porous while every other surface is fine.
+        settings["curr_bed_type"] = BED_TYPE
         _configure_filament_slots(settings)
         output.writestr(
             "Metadata/project_settings.config",
@@ -742,6 +769,24 @@ def build_bambu_project(
 
     with zipfile.ZipFile(output_path) as package:
         bambu.assert_object_id_hygiene(package)
+        written = json.loads(package.read("Metadata/project_settings.config"))
+        if written.get("curr_bed_type") != BED_TYPE:
+            raise RuntimeError(
+                f"project says the bed is {written.get('curr_bed_type')!r}, "
+                f"expected {BED_TYPE!r} -- the bed temperature follows this"
+            )
+        temp_key = {
+            "Textured PEI Plate": "textured_plate_temp",
+            "High Temp Plate": "hot_plate_temp",
+            "Engineering Plate": "eng_plate_temp",
+            "Cool Plate": "cool_plate_temp",
+            "Supertack Plate": "supertack_plate_temp",
+        }[BED_TYPE]
+        temps = {value for value in written.get(temp_key, [])}
+        if temps and temps != {"55"}:
+            raise RuntimeError(
+                f"{temp_key} is {sorted(temps)}; Bambu PLA on this plate wants 55 C"
+            )
     return output_path
 
 

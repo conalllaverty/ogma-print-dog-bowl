@@ -38,9 +38,9 @@
     "concentric may lose on finish even if it wins on spin: 96% of the top face is within 2 mm of a pocket edge, and concentric fragments around obstacles"
   ],
   "body_volumes_mm3": [
-    21460.41,
-    21457.45,
-    21454.49
+    21452.69,
+    21449.73,
+    21446.77
   ],
   "identification_dot_volume_mm3": 2.827,
   "contrast_note": "Marine Blue is the best pair you own at 60%. Scarlet -- already in the Filament Drop brand palette -- would give 77%, and black 99%. Contrast is the only channel that survives being spun, so that is where a real gain is, not in the extrusion pattern."

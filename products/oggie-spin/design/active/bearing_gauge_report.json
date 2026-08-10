@@ -1,0 +1,74 @@
+{
+  "project": "Oggie_Spin_Bearing_Gauge_P2S.3mf",
+  "why": "the pocket has been guessed three times. 12.84 needs pliers and 12.86 falls out, 0.02 mm apart -- the print-to-print variation is wider than the design window, so the existing numbers are noise, not a bracket. This plate puts every candidate in one print.",
+  "bearing": {
+    "designation": "R188",
+    "outer_diameter_mm": 12.7,
+    "width_mm": 4.76
+  },
+  "current_shipped_pocket_mm": 12.92,
+  "variants": [
+    {
+      "dots": 1,
+      "nominal_pocket_mm": 12.86,
+      "relieved": false,
+      "clearance_on_R188_mm": 0.16,
+      "land_bottom_mm": 12.8592,
+      "audit": "gauge 1:\n  [ warn] overhang-surface: 5.3 mm\u00b2 of downward faces steeper than 45\u00b0 (0.2% of the part)\n  [ warn] @Z0.44 overhang-reach: 5.29 mm\u00b2 reaches 1.30 mm beyond the layer below, anchored on 100% of its outline (a bridge, but a long one)  [1 layer]"
+    },
+    {
+      "dots": 2,
+      "nominal_pocket_mm": 12.9,
+      "relieved": false,
+      "clearance_on_R188_mm": 0.2,
+      "land_bottom_mm": 12.8992,
+      "audit": "gauge 2:\n  [ warn] overhang-surface: 10.6 mm\u00b2 of downward faces steeper than 45\u00b0 (0.5% of the part)\n  [ warn] @Z0.44 overhang-reach: 5.29 mm\u00b2 reaches 1.30 mm beyond the layer below, anchored on 100% of its outline (a bridge, but a long one)  [2 layers]"
+    },
+    {
+      "dots": 3,
+      "nominal_pocket_mm": 12.94,
+      "relieved": false,
+      "clearance_on_R188_mm": 0.24,
+      "land_bottom_mm": 12.9392,
+      "audit": "gauge 3:\n  [ warn] overhang-surface: 15.9 mm\u00b2 of downward faces steeper than 45\u00b0 (0.7% of the part)\n  [ warn] @Z0.44 overhang-reach: 5.29 mm\u00b2 reaches 1.30 mm beyond the layer below, anchored on 100% of its outline (a bridge, but a long one)  [3 layers]"
+    },
+    {
+      "dots": 4,
+      "nominal_pocket_mm": 12.98,
+      "relieved": false,
+      "clearance_on_R188_mm": 0.28,
+      "land_bottom_mm": 12.9792,
+      "audit": "gauge 4:\n  [ warn] overhang-surface: 21.2 mm\u00b2 of downward faces steeper than 45\u00b0 (1.0% of the part)\n  [ warn] @Z0.44 overhang-reach: 5.29 mm\u00b2 reaches 1.30 mm beyond the layer below, anchored on 100% of its outline (a bridge, but a long one)  [4 layers]"
+    },
+    {
+      "dots": 5,
+      "nominal_pocket_mm": 13.02,
+      "relieved": false,
+      "clearance_on_R188_mm": 0.32,
+      "land_bottom_mm": 13.0192,
+      "audit": "gauge 5:\n  [ warn] overhang-surface: 26.5 mm\u00b2 of downward faces steeper than 45\u00b0 (1.2% of the part)\n  [ warn] @Z0.44 overhang-reach: 5.29 mm\u00b2 reaches 1.30 mm beyond the layer below, anchored on 100% of its outline (a bridge, but a long one)  [5 layers]"
+    },
+    {
+      "dots": 6,
+      "nominal_pocket_mm": 12.94,
+      "relieved": true,
+      "clearance_on_R188_mm": 0.24,
+      "land_bottom_mm": 12.9381,
+      "relief_middle_mm": 13.238,
+      "audit": "gauge 6:\n  [ warn] overhang-surface: 37.9 mm\u00b2 of downward faces steeper than 45\u00b0 (1.7% of the part)\n  [ warn] @Z0.44 overhang-reach: 5.29 mm\u00b2 reaches 1.30 mm beyond the layer below, anchored on 100% of its outline (a bridge, but a long one)  [6 layers]"
+    }
+  ],
+  "relief": {
+    "land_mm": 1.0,
+    "extra_diameter_mm": 0.3,
+    "sliding_contact_reduction": "58%",
+    "hypothesis": "if puck 6 seats by thumb and puck 3 at the same diameter does not, the problem was engagement length, not diameter, and the real pocket should be relieved"
+  },
+  "how_to_judge": [
+    "use the SAME bearing in every puck, in order, and put it in and out twice -- a pocket that is right the first time and loose the second is shaving, not fitting",
+    "the one you want goes in with steady thumb pressure and does not fall out when you turn the puck over and tap it",
+    "if two adjacent pucks both feel right, take the smaller",
+    "if NONE of 1-5 feel right but 6 does, tell me and I will relieve the pocket in the real part rather than chase the diameter any further",
+    "then give me the dot count and I will set the constant from it once, with the measurement written down"
+  ]
+}
