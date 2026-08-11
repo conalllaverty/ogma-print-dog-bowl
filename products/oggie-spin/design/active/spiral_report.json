@@ -1,0 +1,97 @@
+{
+  "project": "Oggie_Spin_Solo_Spiral_P2S.3mf",
+  "what": "complete Solo prototype carrying a self-similar spiral optical pattern instead of the three broken rings. Everything else is the shipping configuration: O52.6, 100% body infill, flush dashes, concentric top surface, arachne walls, textured PEI, O12.88 pocket.",
+  "the_two_regimes": "at speed a spiral is indistinguishable from plain rings -- rotation preserves radius, so the time-average is the angular duty cycle at each radius and all angular structure cancels. Below that it gives apparent radial flow and the spiral aftereffect, neither of which concentric dashes can produce at any speed.",
+  "rings": [
+    {
+      "radius_mm": 9.0,
+      "dash_count": 16,
+      "phase_deg": 0.0,
+      "duty": 0.5,
+      "thickness_mm": 0.84
+    },
+    {
+      "radius_mm": 10.72,
+      "dash_count": 16,
+      "phase_deg": 9.0,
+      "duty": 0.5,
+      "thickness_mm": 0.84
+    },
+    {
+      "radius_mm": 12.76,
+      "dash_count": 16,
+      "phase_deg": 18.0,
+      "duty": 0.5,
+      "thickness_mm": 1.0
+    },
+    {
+      "radius_mm": 15.2,
+      "dash_count": 16,
+      "phase_deg": 27.0,
+      "duty": 0.5,
+      "thickness_mm": 1.19
+    },
+    {
+      "radius_mm": 18.1,
+      "dash_count": 16,
+      "phase_deg": 36.0,
+      "duty": 0.5,
+      "thickness_mm": 1.41
+    },
+    {
+      "radius_mm": 22.5,
+      "dash_count": 25,
+      "phase_deg": 10.8,
+      "duty": 0.52,
+      "thickness_mm": 1.1
+    }
+  ],
+  "measured": {
+    "dashes_drawn": 105,
+    "whole_dashes": 95,
+    "partial_dashes": 0,
+    "clipped_away": 10,
+    "smallest_feature_mm": 0.84,
+    "white_extruded_mm_per_layer": 280.2,
+    "white_travelled_mm_per_layer": 274.5,
+    "travel_to_extrusion_ratio": 0.98
+  },
+  "against_the_shipped_pattern": {
+    "whole_dashes": "95 vs 65",
+    "white_travel_mm": "274.5 vs 183.2",
+    "cost": "about half again more white islands and travel per layer, which is the stringing budget. Against that, zero partial dashes -- the shipped arm ring leaves stubs at the arm edges."
+  },
+  "how_to_judge": [
+    "stationary first, in good light, at arm's length -- this is where a spiral earns its keep and where the toy spends most of its life",
+    "then spin it SLOWLY, about one turn a second, and look for flow rather than rotation",
+    "then stare at it turning for twenty seconds and look at your hand. If it swells or shrinks, that is the spiral aftereffect and no version of the ring pattern can do it",
+    "then spin it hard. It should look like the current one, because at speed it is the current one",
+    "finally check the top face for stringing against the ring version -- half again more travel is the price of this pattern"
+  ],
+  "printability": [
+    {
+      "part": "Oggie Spin Solo spiral body",
+      "audit": "Oggie Spin Solo spiral body:\n  [ warn] overhang-surface: 26.1 mm\u00b2 of downward faces steeper than 45\u00b0 (0.4% of the part)\n  [ warn] @Z13.88 thin-feature: 2.61 mm\u00b2 narrower than 0.80 mm  [25 layers]"
+    },
+    {
+      "part": "R188 outer-race retaining ring",
+      "audit": "R188 outer-race retaining ring: printable, no findings"
+    },
+    {
+      "part": "Tough+ split-collet through-axle hub",
+      "audit": "Tough+ split-collet through-axle hub:\n  [ warn] overhang-surface: 5.3 mm\u00b2 of downward faces steeper than 45\u00b0 (0.5% of the part)\n  [ warn] @Z0.76 overhang-reach: 1.75 mm\u00b2 reaches 1.27 mm beyond the layer below, anchored on 29% of its outline (a bridge, but a long one)  [3 layers]"
+    },
+    {
+      "part": "Tough+ through-bore receiver hub",
+      "audit": "Tough+ through-bore receiver hub:\n  [ warn] overhang-surface: 5.3 mm\u00b2 of downward faces steeper than 45\u00b0 (0.7% of the part)\n  [ warn] @Z0.76 overhang-reach: 1.75 mm\u00b2 reaches 1.27 mm beyond the layer below, anchored on 29% of its outline (a bridge, but a long one)  [3 layers]"
+    },
+    {
+      "part": "Socketed thumb pad 1",
+      "audit": "Socketed thumb pad 1:\n  [ warn] overhang-surface: 13.1 mm\u00b2 of downward faces steeper than 45\u00b0 (1.0% of the part)\n  [ warn] @Z5.88 overhang-reach: 4.38 mm\u00b2 reaches 1.16 mm beyond the layer below, anchored on 55% of its outline (a bridge, but a long one)  [3 layers]"
+    },
+    {
+      "part": "Socketed thumb pad 2",
+      "audit": "Socketed thumb pad 2:\n  [ warn] overhang-surface: 13.1 mm\u00b2 of downward faces steeper than 45\u00b0 (1.0% of the part)\n  [ warn] @Z5.88 overhang-reach: 4.38 mm\u00b2 reaches 1.16 mm beyond the layer below, anchored on 55% of its outline (a bridge, but a long one)  [3 layers]"
+    }
+  ]
+}
