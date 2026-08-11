@@ -21,7 +21,7 @@
  * OrbitControls binds to exactly one.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
@@ -56,7 +56,14 @@ export default function Viewer({
   const host = useRef<HTMLDivElement>(null);
   const canvasHost = useRef<HTMLDivElement>(null);
   const api = useRef<ReturnType<typeof createStage> | null>(null);
-  const [loading, setLoading] = useState(false);
+  // "Loading" is derived, not stored. Which URL we have finished with is the
+  // fact; whether a spinner shows follows from comparing it to the URL we were
+  // asked for. Setting a `loading` flag at the top of the effect instead would
+  // be a synchronous setState inside an effect body — a cascading render, and
+  // React's own lint rule says so.
+  const [settledUrl, setSettledUrl] = useState<string | null>(null);
+  const loading = !!url && url !== settledUrl;
+
   // Which roles the loaded model actually contains. Kept so a mismatch between
   // the generator's roles and the spec's filament roles is visible rather than
   // silently rendering everything the same colour.
@@ -73,6 +80,12 @@ export default function Viewer({
     };
   }, []);
 
+  // `onReady` is something this effect *does*, not something it depends on: a
+  // parent that re-creates the callback each render would otherwise reload the
+  // whole model every render. React 19.2's useEffectEvent says exactly that,
+  // and replaces the exhaustive-deps suppression this used to carry.
+  const announceReady = useEffectEvent(() => onReady?.());
+
   useEffect(() => {
     if (!api.current) return;
     if (!url) {
@@ -80,21 +93,19 @@ export default function Viewer({
       return;
     }
     let cancelled = false;
-    setLoading(true);
     api.current
       .load(url)
       .then(() => {
         if (cancelled) return;
-        setLoading(false);
-        onReady?.();
+        setSettledUrl(url);
+        announceReady();
       })
-      .catch(() => !cancelled && setLoading(false));
+      // A failed load still counts as settled: the spinner should stop, and the
+      // parent already shows the failure from the job status.
+      .catch(() => !cancelled && setSettledUrl(url));
     return () => {
       cancelled = true;
     };
-    // onReady is intentionally not a dependency — a parent that re-creates the
-    // callback each render would otherwise reload the model every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]);
 
   useEffect(() => {
@@ -179,7 +190,9 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // PCFSoftShadowMap is deprecated as of three 0.185 and silently falls back
+  // to this anyway; asking for it directly stops the console warning.
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   // Tuned so a swatch reads as its palette hex. ACES plus an environment map
   // lifts mid-tones, and a customer choosing Caramel should see caramel rather
@@ -253,6 +266,17 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
   let raf = 0;
   let spin = true; // gentle idle rotation until the user touches it
 
+  // Render on demand.
+  //
+  // The loop used to draw every frame forever, which in four-view mode means
+  // re-rasterising ~90k triangles four times a frame for a picture that is not
+  // changing. On a machine without a real GPU that saturates the main thread —
+  // it was enough to visibly delay React from painting a validation error next
+  // to the form. Nothing here animates unless someone moves it, so draw only
+  // when something actually changed.
+  let dirty = true;
+  const invalidate = () => { dirty = true; };
+
   function applyPerspective() {
     const { theta, phi, radius } = orbit;
     persp.position.set(
@@ -309,6 +333,7 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
     orbit.theta -= (e.clientX - last.x) * 0.008;
     orbit.phi = clamp(orbit.phi - (e.clientY - last.y) * 0.008, 0.18, Math.PI - 0.18);
     last = { x: e.clientX, y: e.clientY };
+    invalidate();
   }
   function onUp(e: PointerEvent) {
     dragging = false;
@@ -318,6 +343,7 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
     e.preventDefault();
     spin = false;
     orbit.radius = clamp(orbit.radius * (1 + Math.sign(e.deltaY) * 0.08), radiusBase * 0.45, radiusBase * 2.6);
+    invalidate();
   }
   renderer.domElement.addEventListener("pointerdown", onDown);
   renderer.domElement.addEventListener("pointermove", onMove);
@@ -333,6 +359,7 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
     renderer.setSize(W, H, false);
     persp.aspect = W / H;
     persp.updateProjectionMatrix();
+    invalidate();
   });
   ro.observe(mount);
 
@@ -343,7 +370,16 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
 
   function tick() {
     raf = requestAnimationFrame(tick);
-    if (spin && !reduceMotion) orbit.theta += 0.0022;
+    // No idle rotation in four-view mode: three of the four are orthographic
+    // elevations, so spinning redraws all four viewports to animate a quarter
+    // of the picture — and a technical drawing that drifts is harder to read,
+    // not nicer.
+    if (spin && mode === "solid" && !reduceMotion) {
+      orbit.theta += 0.0022;
+      dirty = true;
+    }
+    if (!dirty) return;
+    dirty = false;
     applyPerspective();
 
     renderer.setScissorTest(mode === "quad");
@@ -377,6 +413,7 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
   function clear() {
     for (const child of [...root.children]) root.remove(child);
     for (const d of disposables.splice(0)) d.dispose();
+    invalidate();
   }
 
   function materialFor(role: string) {
@@ -430,6 +467,7 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
           cam.left = -s; cam.right = s; cam.top = s; cam.bottom = -s;
           cam.updateProjectionMatrix();
           spin = true;
+          invalidate();
           resolve();
         },
         undefined,
@@ -455,10 +493,12 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
       }
       m.needsUpdate = true;
     }
+    invalidate();
   }
 
   function setMode(next: ViewMode) {
     mode = next;
+    invalidate();
   }
 
   function dispose() {

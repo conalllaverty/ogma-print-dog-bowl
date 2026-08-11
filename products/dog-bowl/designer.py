@@ -221,6 +221,22 @@ class DogBowlGenerator:
             "rail_outer_deg": result.rail_outer_deg,
         }
 
+    def warm(self) -> None:
+        """Measure every lettering face's glyphs so the first fit check is fast.
+
+        Ordered, and the order matters. The default font first, because that
+        makes the *verdict* fast within a few seconds and the verdict is what
+        gates the button. The other six after, because the *hint* names a style
+        that fits, which means measuring the name in all of them — with only the
+        default warm, a rejected name still took ~2.6 s to explain itself.
+
+        ~55 s of background CPU at boot, on a daemon thread that holds no lock.
+        """
+        # By id, not by position: PARAMS is reordered whenever the form is.
+        default = SPEC.param("font_style").default
+        for style in (default, *(f for f in FONT_STYLES if f != default)):
+            name_fit.warm_cache(font_style=style)
+
     def preview(self, values: dict[str, Any], out_path) -> dict:
         """A role-tagged GLB of the assembled stand.
 

@@ -55,15 +55,25 @@ export default function Dropdown({ items, value, onChange, ariaLabel, sample }: 
 
   const close = useCallback(() => setOpen(false), []);
 
+  /** Opening highlights whatever is currently selected.
+   *
+   * Done here rather than in an effect that watches `open`. Syncing state to
+   * state inside an effect is a cascading render, and it belongs in the event
+   * that caused it — the list opens *because* someone asked it to, and that is
+   * the moment the highlight is decided. */
+  const openList = useCallback(() => {
+    setActive(selectedIndex);
+    setOpen(true);
+  }, [selectedIndex]);
+
   useEffect(() => {
     if (!open) return;
-    setActive(selectedIndex);
     const onDocDown = (e: MouseEvent) => {
       if (!root.current?.contains(e.target as Node)) close();
     };
     document.addEventListener("mousedown", onDocDown);
     return () => document.removeEventListener("mousedown", onDocDown);
-  }, [open, selectedIndex, close]);
+  }, [open, close]);
 
   // Keep the active option in view when arrowing through a long palette.
   useEffect(() => {
@@ -94,7 +104,7 @@ export default function Dropdown({ items, value, onChange, ariaLabel, sample }: 
       case "ArrowDown":
       case "ArrowUp":
         e.preventDefault();
-        if (!open) { setOpen(true); return; }
+        if (!open) { openList(); return; }
         step(e.key === "ArrowDown" ? 1 : -1);
         return;
       case "Home":
@@ -107,7 +117,7 @@ export default function Dropdown({ items, value, onChange, ariaLabel, sample }: 
       case " ":
         e.preventDefault();
         if (open) commit(active);
-        else setOpen(true);
+        else openList();
         return;
       case "Escape":
         if (open) { e.preventDefault(); close(); }
@@ -149,7 +159,7 @@ export default function Dropdown({ items, value, onChange, ariaLabel, sample }: 
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={ariaLabel}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => (open ? close() : openList())}
         onKeyDown={onKeyDown}
       >
         {selected?.swatch ? (
