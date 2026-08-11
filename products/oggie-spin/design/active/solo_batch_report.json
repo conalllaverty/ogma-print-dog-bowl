@@ -8,9 +8,9 @@
     "Tough+ cartridge hubs x18",
     "Thumb pads x18"
   ],
-  "worst_object_reach_from_plate_centre_mm": 113.33,
-  "batch_volume_cm3": 277.2,
-  "batch_mass_g_at_1_24": 343.7,
+  "worst_object_reach_from_plate_centre_mm": 103.35,
+  "batch_volume_cm3": 234.19,
+  "batch_mass_g_at_1_24": 290.4,
   "parts_per_batch": {
     "Solo body": 9,
     "Solo inlay": 9,

@@ -80,57 +80,40 @@ ROOT_FILLET = 2.5
 
 # --- arm length -----------------------------------------------------------
 #
-# Each arm is swept 4.0 mm further out, taking the Solo from Ø52.6 to Ø60.3.
-# This is the winner of the inertia A/B/C plate, and it won on the only ground
-# that mattered: +51.7% inertia for +3.4 g, against +41.7% for the +10.0 g that
-# 100% infill costs. Fifteen units of inertia per gram against four.
+# ZERO. The Solo is Ø52.6 again.
 #
-# The reason is that infill can only load the CORE -- the arms are narrow
-# enough that five walls meet across them and they print solid at any density,
-# so extra infill lands at a mean radius of 15.2 mm, inside the body's own
-# radius of gyration. Length is the only lever that puts mass where r^2 is
-# large.
+# The inertia A/B/C plate predicted the long-arm variant would win: +51.6%
+# inertia for +3.4 g against +41.7% for the +10.0 g that 100% infill costs.
+# Printed and flicked with the SAME bearing swapped between all three, the
+# heavy one won instead. Measurement beats the model, so the model was missing
+# something -- and the likely candidate is air.
 #
-# SOLO ONLY. The modular arm is a separate part on a dovetail and a snap clip,
-# and a longer arm raises both the centrifugal load through the dovetail and
-# the drop moment at the root -- neither of which was sized for it. That wants
-# re-deriving before the modular SKU follows.
-ARM_EXTENSION = 4.0
+# Spin time was estimated as proportional to sqrt(I) at fixed bearing drag.
+# That ignores aerodynamic drag entirely, and the long-arm variant is 15% wider,
+# so its tips move 15% faster and sweep a bigger circle. Drag torque on a
+# spinning disc climbs very steeply with radius. The two effects -- more
+# inertia, more air drag -- evidently landed on the wrong side of each other.
+#
+# The heavy variant does not have that problem: identical silhouette, identical
+# swept area, and the extra mass is pure inertia. It only costs grams and print
+# time, both of which are cheap.
+ARM_EXTENSION = 0.0
 ARM_EXTENSION_STEP = 0.25   # sweep resolution; finer than one line width
 
-# --- the fourth ring ------------------------------------------------------
+# --- the fourth ring: REMOVED ---------------------------------------------
 #
-# The longer arm doubled the plain band outboard of the R22.5 ring, from
-# 3.8 mm to 7.7 mm, so the artwork stopped where the arm used to.
+# It only ever existed because the 4 mm longer arm doubled the plain band
+# outboard of the R22.5 ring. With ARM_EXTENSION back to zero there is nowhere
+# to put it, and that is geometry rather than preference:
 #
-# The main design note says do not add a fourth ring. That note was written
-# when the arm ended at R26.3 and a fourth ring had nowhere to go; it does now.
-# Radius and count continue the existing progression -- radii 15.5/18.5/22.5
-# step +3/+4, counts 15/20/25 step +5 -- so R26.5 with 30 dashes is the next
-# term rather than a new idea.
+#   the arm tip on the Ø52.6 profile reaches only R24.45 on the centreline
+#   the existing R22.5 ring already has its outer edge at R23.05
+#   a fourth ring would need to sit inboard of ~R23.1 to keep any material
+#   outboard of it -- which is on top of the ring that is already there
 #
-# R26.5 is set by the arm tip, not by taste. The tip is a shallow saddle: it
-# dips to R28.45 on the arm centreline and rises to R30.15 at ±14°. A ring at
-# R26.5 has its outer edge at R27.05, which keeps 1.4 mm of solid between the
-# dashes and the lowest point of that saddle. Push it to R27.5 and the ring
-# breaks out through the dip in the middle of every arm.
-#
-# Phase 6.0 is half of the 12° pitch, which lands a dash exactly on each arm
-# centreline. That is what makes the ring clip cleanly: three whole dashes per
-# arm and no stubs straddling the arm edge. Checked in _validate, not assumed.
-SOLO_TIP_RING = {
-    "name": "arm tip",
-    "radius_mm": 26.5,
-    "dash_count": 30,
-    "phase_deg": 6.0,
-    "target": "arm",
-}
-
-# A SEPARATE list, not an append to br.RING_SPECS. Mutating the shared list
-# would put the fourth ring on the modular spinner and the batch plates too,
-# where the arms still end at R26.3 and the dashes would hang off the end of
-# every one of them.
-SOLO_RING_SPECS = [*br.RING_SPECS, SOLO_TIP_RING]
+# So the Solo is back to the shipped three rings, and br.RING_SPECS is used
+# directly rather than through a Solo-specific list.
+SOLO_RING_SPECS = br.RING_SPECS
 
 # --- top surface pattern --------------------------------------------------
 #
@@ -154,6 +137,16 @@ SOLO_RING_SPECS = [*br.RING_SPECS, SOLO_TIP_RING]
 # pattern chosen for a disc.
 TOP_SURFACE_PATTERN = "concentric"
 TOP_SURFACE_PART_MATCH = "body"
+
+# --- body infill ----------------------------------------------------------
+#
+# 100%, the winner of the A/B/C plate. Solid rather than 25% gyroid takes the
+# body from 16.7 g to 26.7 g and the inertia up 41.7%.
+#
+# Applied per-part to the BODY only. The retaining ring, the two cartridge hubs
+# and the thumb pads have no reason to be solid -- they are small, they are not
+# spinning mass, and filling them would just cost time.
+BODY_INFILL = "100%"
 
 # --- flush dashes ---------------------------------------------------------
 #
@@ -429,7 +422,8 @@ SOLO_PLATES_SPEC = [
 
 
 def _solo_model_settings(expected_bodies: int):
-    """br's model settings, plus the concentric top surface on the bodies.
+    """br's model settings, plus the concentric top surface and 100% infill
+    on the bodies.
 
     Matched by part NAME, not by part id. The single project and the batch
     number their parts differently and the batch renumbers whenever the unit
@@ -451,6 +445,8 @@ def _solo_model_settings(expected_bodies: int):
             )
             if TOP_SURFACE_PART_MATCH in name.lower() and "inlay" not in name.lower():
                 br._set_metadata(part, "top_surface_pattern", TOP_SURFACE_PATTERN)
+                br._set_metadata(part, "sparse_infill_density", BODY_INFILL)
+                br._set_metadata(part, "sparse_infill_pattern", "gyroid")
                 hits += 1
         if hits != expected_bodies:
             raise RuntimeError(
@@ -466,74 +462,6 @@ def _plate_position(number: int, total: int) -> tuple[float, float, float]:
     cols = math.ceil(math.sqrt(total))
     index = number - 1
     return (128.0 + (index % cols) * 312.0, 128.0 - (index // cols) * 312.0, 0.0)
-
-
-def _tip_ring_audit() -> dict:
-    """Did the fourth ring land whole on every arm, and clear of the tip?
-
-    Two ways this ring can fail quietly. It can straddle the arm edge, leaving
-    stubs -- the clipping happens by intersection, so a half dash is not an
-    error, it just looks like a mistake on the finished part. And it can break
-    out through the arm tip, because the tip is a saddle that dips on the
-    centreline: the ring can sit comfortably inside the outline at ±14° and
-    still cut through open air at 0°.
-
-    Both are measured off the built profile, not reasoned about.
-    """
-    profile = _assembled_silhouette()
-    spec = SOLO_TIP_RING
-    pitch = 360.0 / spec["dash_count"]
-    half_angle = pitch * br.RING_DUTY / 2.0
-    inner = spec["radius_mm"] - br.RING_WIDTH / 2.0
-    outer = spec["radius_mm"] + br.RING_WIDTH / 2.0
-
-    whole, partial, absent = 0, 0, 0
-    worst = float("inf")
-    for index in range(spec["dash_count"]):
-        centre = spec["phase_deg"] + index * pitch
-        sector = br._annular_sector(
-            inner, outer, centre - half_angle, centre + half_angle
-        )
-        kept = sector.intersection(profile).area
-        if kept >= 0.995 * sector.area:
-            whole += 1
-            # How much solid is left outboard of THIS dash. Measured only
-            # across the dashes that survive: sampling the whole circle would
-            # report zero every time, because the outline passes through the
-            # ring's radius at each arm edge where no dash exists.
-            for angle in np.arange(
-                centre - half_angle, centre + half_angle + 0.1, 0.25
-            ):
-                reach = _boundary_radius(profile, math.radians(angle))
-                worst = min(worst, reach - outer)
-        elif kept <= 0.005 * sector.area:
-            absent += 1
-        else:
-            partial += 1
-    return {
-        "whole_dashes": whole,
-        "partial_dashes": partial,
-        "clipped_away": absent,
-        "whole_dashes_per_arm": whole / 5.0,
-        "worst_clearance_to_outline_mm": round(worst, 2),
-    }
-
-
-def _boundary_radius(profile: Polygon, angle: float) -> float:
-    """How far the solid reaches along `angle`, measured on the profile."""
-    from shapely.geometry import LineString
-
-    ray = LineString(
-        [(0.0, 0.0), (40.0 * math.cos(angle), 40.0 * math.sin(angle))]
-    )
-    inside = ray.intersection(profile)
-    if inside.is_empty:
-        return 0.0
-    # a ray through a concave outline can come back as several segments
-    parts = getattr(inside, "geoms", [inside])
-    return max(
-        math.hypot(x, y) for part in parts for x, y in part.coords
-    )
 
 
 def _validate(output: Path, built) -> dict:
@@ -596,33 +524,15 @@ def _validate(output: Path, built) -> dict:
     if not body.is_watertight:
         raise RuntimeError("Solo body is not watertight")
 
-    # --- the fourth ring landed where it was meant to ------------------------
-    tip_ring = _tip_ring_audit()
-    if tip_ring["partial_dashes"]:
-        raise RuntimeError(
-            f"{tip_ring['partial_dashes']} tip-ring dashes straddle an arm edge; "
-            "they will print as stubs. Adjust SOLO_TIP_RING phase_deg"
-        )
-    if tip_ring["whole_dashes"] != 15:
-        raise RuntimeError(
-            f"tip ring kept {tip_ring['whole_dashes']} dashes, expected 3 per "
-            "arm on five arms"
-        )
-    if tip_ring["worst_clearance_to_outline_mm"] < 0.8:
-        raise RuntimeError(
-            f"tip ring leaves only {tip_ring['worst_clearance_to_outline_mm']} mm "
-            "of solid outboard of the dashes; it will break out through the "
-            "saddle in the arm tip. Reduce SOLO_TIP_RING radius_mm"
-        )
-
-    # --- the arm really did get longer ---------------------------------------
+    # --- the silhouette is the size it is meant to be -------------------------
     outer_diameter = 2.0 * float(
         np.hypot(body.vertices[:, 0], body.vertices[:, 1]).max()
     )
-    if abs(outer_diameter - 60.33) > 0.15:
+    expected_od = 52.60 if ARM_EXTENSION == 0.0 else 60.33
+    if abs(outer_diameter - expected_od) > 0.15:
         raise RuntimeError(
             f"Solo measures Ø{outer_diameter:.2f}; ARM_EXTENSION = "
-            f"{ARM_EXTENSION} should give Ø60.33"
+            f"{ARM_EXTENSION} should give Ø{expected_od}"
         )
 
     report = complete.audit_printability([(n, m) for n, m, _e in built])
@@ -652,14 +562,13 @@ def _validate(output: Path, built) -> dict:
         ),
         "root_fillet_mm": ROOT_FILLET,
         "arm_extension_mm": ARM_EXTENSION,
-        "tip_ring": {**SOLO_TIP_RING, **tip_ring},
-        "why_the_arms_are_longer": (
-            "winner of the inertia A/B/C plate: +51.7% inertia for +3.4 g, "
-            "against +41.7% for the +10.0 g that 100% infill costs. Infill can "
-            "only load the core, at a mean radius inside the body's own radius "
-            "of gyration; length is the only lever that puts mass where r^2 is "
-            "large. SOLO ONLY -- the modular arm's dovetail and clip were not "
-            "sized for the extra centrifugal and drop load."
+        "why_this_configuration": (
+            "inertia A/B/C plate, judged with ONE bearing swapped between all "
+            "three bodies. The model predicted the long-arm variant; the heavy "
+            "one measured better, so the arms went back to O52.6 and the body "
+            "went to 100% infill. The likely gap in the model is aerodynamic "
+            "drag, which sqrt(I) at fixed bearing drag ignores entirely and "
+            "which punishes a 15% wider part hardest."
         ),
         "section_area_over_convex_hull": round(hull_ratio, 3),
         # the Solo's own value, not the shared default -- reporting br's would
