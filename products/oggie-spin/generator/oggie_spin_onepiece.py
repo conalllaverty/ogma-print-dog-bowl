@@ -148,6 +148,36 @@ TOP_SURFACE_PART_MATCH = "body"
 # spinning mass, and filling them would just cost time.
 BODY_INFILL = "100%"
 
+# --- one white layer ------------------------------------------------------
+#
+# The inlay pocket is ONE LAYER deep, and the layer is 0.20 mm.
+#
+# Two layers of pocket meant the 65 white islands were printed twice: 130
+# island starts and 366 mm of white travel per part. One layer halves both,
+# and it is worth more than the nozzle temperature and retraction changes put
+# together -- those were second-order, this is a factor of two.
+#
+# It also makes white the LAST thing printed, with nothing after it, so the
+# filament changes drop from two to one. Half the purge, and the prime tower
+# only has to absorb a single change.
+#
+# The reason the layer is 0.20 rather than 0.16 is opacity. One 0.16 mm layer
+# of ivory over Marine Blue would very likely ghost blue through, and contrast
+# is the only channel that survives being spun -- trading it away to fix a
+# cosmetic defect on the same surface would be a bad trade. 0.20 is the
+# thickest layer that is still routine for a 0.4 nozzle.
+#
+# 0.20 also divides the part exactly: 14.00 / 0.20 = 70 layers, against
+# 0.20 + 86 x 0.16 = 13.96 which threw away the top 0.04 mm and left the inlay
+# printing 0.28 mm instead of the 0.32 it was drawn at. The white is now the
+# thickness it says it is.
+#
+# SOLO ONLY, applied through br.rewrite_project_settings. The modular spinner's
+# clip beam, engagement ceiling and fatigue margin were all derived at 0.16 mm
+# layers and none of that has been redone.
+LAYER_HEIGHT = 0.20
+SOLO_INLAY_DEPTH = 0.20
+
 # --- flush dashes ---------------------------------------------------------
 #
 # br.INLAY_PROUD is 0.32 mm, which stands the dashes above the top face. The
@@ -366,7 +396,7 @@ def build_meshes() -> list[tuple[str, trimesh.Trimesh, int]]:
     # All three broken rings now live on ONE body: the R22.5 arm ring simply
     # stops where the arms stop, which is what it did before across five parts.
     dashes = trimesh.util.concatenate(
-        [br._dash_volume(spec) for spec in SOLO_RING_SPECS]
+        [br._dash_volume(spec, depth=SOLO_INLAY_DEPTH) for spec in SOLO_RING_SPECS]
     )
     solo_base, solo_inlay = br._split_flush_inlay(body, dashes, "Oggie Spin Solo")
     solo_inlay, proud = br._raise_inlay(
@@ -640,7 +670,9 @@ def generate(out_dir: Path) -> Path:
             base._model_settings, base._configure_filament_slots,
         ) = previous
     br._rewrite_variant_project_settings(output)
-    br.rewrite_project_settings(output, br.ANTI_STRINGING_SETTINGS)
+    br.rewrite_project_settings(
+        output, {**br.ANTI_STRINGING_SETTINGS, "layer_height": str(LAYER_HEIGHT)}
+    )
 
     report = _validate(output, built)
     (out_dir / REPORT_NAME).write_text(
@@ -772,7 +804,9 @@ def generate_batch(out_dir: Path, units: int = 9) -> Path:
         (base.PLATES, base.FILAMENTS, base._preview_png,
          base._model_settings, base._configure_filament_slots) = previous
     br._rewrite_variant_project_settings(output)
-    br.rewrite_project_settings(output, br.ANTI_STRINGING_SETTINGS)
+    br.rewrite_project_settings(
+        output, {**br.ANTI_STRINGING_SETTINGS, "layer_height": str(LAYER_HEIGHT)}
+    )
 
     # --- validate ---------------------------------------------------------
     from shapely.geometry import box as _box

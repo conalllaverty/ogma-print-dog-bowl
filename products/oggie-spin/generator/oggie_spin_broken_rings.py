@@ -241,13 +241,19 @@ def _annular_sector(
     return Polygon(outer + inner)
 
 
-def _dash_volume(spec: dict) -> trimesh.Trimesh:
+def _dash_volume(spec: dict, depth: float | None = None) -> trimesh.Trimesh:
+    """`depth` overrides INLAY_DEPTH for callers that want a shallower pocket.
+
+    The Solo passes ONE LAYER. Two layers of pocket means the white islands are
+    printed twice, and the island count is the whole stringing problem.
+    """
+    depth = INLAY_DEPTH if depth is None else depth
     pitch = 360.0 / spec["dash_count"]
     dash_angle = pitch * RING_DUTY
     inner_r = spec["radius_mm"] - RING_WIDTH / 2.0
     outer_r = spec["radius_mm"] + RING_WIDTH / 2.0
-    z0 = base.CORE_HEIGHT - INLAY_DEPTH
-    height = INLAY_DEPTH + INLAY_TOP_OVERTRAVEL
+    z0 = base.CORE_HEIGHT - depth
+    height = depth + INLAY_TOP_OVERTRAVEL
     pieces = []
     for index in range(spec["dash_count"]):
         centre = spec["phase_deg"] + index * pitch

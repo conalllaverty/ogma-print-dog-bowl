@@ -3,7 +3,7 @@
   "status": "one-piece core-and-arms variant; no arm joint. Geometry validated, physical gates open.",
   "plates": 4,
   "objects": 7,
-  "body_volume_cm3": 21.46,
+  "body_volume_cm3": 21.48,
   "body_mass_g_at_1_24": 26.7,
   "body_outer_diameter_mm": 52.6,
   "root_fillet_mm": 2.5,

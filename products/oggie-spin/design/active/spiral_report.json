@@ -71,7 +71,7 @@
   "printability": [
     {
       "part": "Oggie Spin Solo spiral body",
-      "audit": "Oggie Spin Solo spiral body:\n  [ warn] overhang-surface: 26.1 mm\u00b2 of downward faces steeper than 45\u00b0 (0.4% of the part)\n  [ warn] @Z13.88 thin-feature: 2.61 mm\u00b2 narrower than 0.80 mm  [25 layers]"
+      "audit": "Oggie Spin Solo spiral body:\n  [ warn] overhang-surface: 26.1 mm\u00b2 of downward faces steeper than 45\u00b0 (0.4% of the part)\n  [ warn] @Z13.90 thin-feature: 2.61 mm\u00b2 narrower than 0.80 mm  [15 layers]"
     },
     {
       "part": "R188 outer-race retaining ring",
@@ -79,19 +79,19 @@
     },
     {
       "part": "Tough+ split-collet through-axle hub",
-      "audit": "Tough+ split-collet through-axle hub:\n  [ warn] overhang-surface: 5.3 mm\u00b2 of downward faces steeper than 45\u00b0 (0.5% of the part)\n  [ warn] @Z0.76 overhang-reach: 1.75 mm\u00b2 reaches 1.27 mm beyond the layer below, anchored on 29% of its outline (a bridge, but a long one)  [3 layers]"
+      "audit": "Tough+ split-collet through-axle hub:\n  [ warn] overhang-surface: 5.3 mm\u00b2 of downward faces steeper than 45\u00b0 (0.5% of the part)\n  [ warn] @Z0.90 overhang-reach: 1.75 mm\u00b2 reaches 1.27 mm beyond the layer below, anchored on 31% of its outline (a bridge, but a long one)  [3 layers]"
     },
     {
       "part": "Tough+ through-bore receiver hub",
-      "audit": "Tough+ through-bore receiver hub:\n  [ warn] overhang-surface: 5.3 mm\u00b2 of downward faces steeper than 45\u00b0 (0.7% of the part)\n  [ warn] @Z0.76 overhang-reach: 1.75 mm\u00b2 reaches 1.27 mm beyond the layer below, anchored on 29% of its outline (a bridge, but a long one)  [3 layers]"
+      "audit": "Tough+ through-bore receiver hub:\n  [ warn] overhang-surface: 5.3 mm\u00b2 of downward faces steeper than 45\u00b0 (0.7% of the part)\n  [ warn] @Z0.90 overhang-reach: 1.75 mm\u00b2 reaches 1.27 mm beyond the layer below, anchored on 31% of its outline (a bridge, but a long one)  [3 layers]"
     },
     {
       "part": "Socketed thumb pad 1",
-      "audit": "Socketed thumb pad 1:\n  [ warn] overhang-surface: 13.1 mm\u00b2 of downward faces steeper than 45\u00b0 (1.0% of the part)\n  [ warn] @Z5.88 overhang-reach: 4.38 mm\u00b2 reaches 1.16 mm beyond the layer below, anchored on 55% of its outline (a bridge, but a long one)  [3 layers]"
+      "audit": "Socketed thumb pad 1:\n  [ warn] overhang-surface: 13.1 mm\u00b2 of downward faces steeper than 45\u00b0 (1.0% of the part)\n  [ warn] @Z5.90 overhang-reach: 4.38 mm\u00b2 reaches 1.16 mm beyond the layer below, anchored on 55% of its outline (a bridge, but a long one)  [3 layers]"
     },
     {
       "part": "Socketed thumb pad 2",
-      "audit": "Socketed thumb pad 2:\n  [ warn] overhang-surface: 13.1 mm\u00b2 of downward faces steeper than 45\u00b0 (1.0% of the part)\n  [ warn] @Z5.88 overhang-reach: 4.38 mm\u00b2 reaches 1.16 mm beyond the layer below, anchored on 55% of its outline (a bridge, but a long one)  [3 layers]"
+      "audit": "Socketed thumb pad 2:\n  [ warn] overhang-surface: 13.1 mm\u00b2 of downward faces steeper than 45\u00b0 (1.0% of the part)\n  [ warn] @Z5.90 overhang-reach: 4.38 mm\u00b2 reaches 1.16 mm beyond the layer below, anchored on 55% of its outline (a bridge, but a long one)  [3 layers]"
     }
   ]
 }

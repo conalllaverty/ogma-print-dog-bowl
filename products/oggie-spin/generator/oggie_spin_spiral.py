@@ -144,8 +144,10 @@ def dash_polygons(rings: list[dict]):
 
 
 def dash_volume(rings: list[dict]) -> trimesh.Trimesh:
-    z0 = base.CORE_HEIGHT - br.INLAY_DEPTH
-    height = br.INLAY_DEPTH + br.INLAY_TOP_OVERTRAVEL
+    # ONE layer deep, at the Solo's 0.20 mm. Two layers meant every white
+    # island was printed twice, which is the whole stringing budget.
+    z0 = base.CORE_HEIGHT - solo.SOLO_INLAY_DEPTH
+    height = solo.SOLO_INLAY_DEPTH + br.INLAY_TOP_OVERTRAVEL
     pieces = [base._extrude(poly, height, z0) for _ring, poly in dash_polygons(rings)]
     return base._finish(trimesh.util.concatenate(pieces), "spiral cutting volume")
 
@@ -255,7 +257,7 @@ def generate(out_dir: Path) -> Path:
             continue
         rep = printability.audit(
             mesh,
-            printability.PrintSpec(layer_height=0.16, first_layer_height=0.20),
+            printability.PrintSpec(layer_height=solo.LAYER_HEIGHT, first_layer_height=0.20),
             name=name,
         )
         if rep.blocking:
@@ -287,7 +289,10 @@ def generate(out_dir: Path) -> Path:
         (base.PLATES, base.FILAMENTS, base._preview_png,
          base._model_settings, base._configure_filament_slots) = previous
     br._rewrite_variant_project_settings(output)
-    br.rewrite_project_settings(output, br.ANTI_STRINGING_SETTINGS)
+    br.rewrite_project_settings(
+        output,
+        {**br.ANTI_STRINGING_SETTINGS, "layer_height": str(solo.LAYER_HEIGHT)},
+    )
 
     with zipfile.ZipFile(output) as package:
         if package.testzip() is not None:
