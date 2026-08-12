@@ -82,11 +82,29 @@ REPORT_NAME = "spiral_report.json"
 LINE_WIDTH = 0.42
 
 # --- the spiral ------------------------------------------------------------
-CORE_INNER_R = 9.0          # clear of the O15.15 retaining-ring counterbore
+# The inner limit is set by the THUMB PAD, not by the bearing counterbore.
+# The pad is O20 and sits 0.4 mm above the face, so everything inside R10.00 is
+# hidden looking straight down -- and much more than that at any oblique angle:
+# the pad is 6.4 mm tall, so at 45 deg it occludes the far side out to R16.4.
+#
+# The first version started at R9.00. Sixteen of its ninety-five dashes were
+# under the pad and could never be seen from any angle, while still costing
+# their full share of the white travel that causes the stringing. They are gone.
+#
+# R10.8 puts the innermost ring's inner edge at R10.38, just clear of the pad.
+#
+# Worth being honest about what this costs the illusion: the reference spirals
+# all converge to a point, and this one cannot. There is a 20 mm thumb pad in
+# the middle of it. The Solo's spiral is an annulus, not a vortex, and that is
+# structural rather than something a different pattern would fix.
+CORE_INNER_R = 10.8
 CORE_OUTER_R = 18.1         # stays on the core disc, nothing to clip
-CORE_RINGS = 5
+CORE_RINGS = 4              # was 5; the innermost lived under the thumb pad
 CORE_COUNT = 16             # CONSTANT per ring -- this is what forms the arms
-CORE_TWIST_DEG = 9.0        # progressive phase = the spiral
+# 12 deg over four rings preserves the 36 deg of total spiral arc that five
+# rings gave at 9 deg. Fewer rings with the same twist would have straightened
+# the arms out, which is the whole point of the pattern.
+CORE_TWIST_DEG = 12.0
 CORE_DUTY = 0.50
 THICKNESS_PER_RADIUS = 0.078
 MIN_THICKNESS = 2 * LINE_WIDTH   # below this the inner rings print as dots

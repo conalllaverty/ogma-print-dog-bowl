@@ -4,30 +4,23 @@
   "the_two_regimes": "at speed a spiral is indistinguishable from plain rings -- rotation preserves radius, so the time-average is the angular duty cycle at each radius and all angular structure cancels. Below that it gives apparent radial flow and the spiral aftereffect, neither of which concentric dashes can produce at any speed.",
   "rings": [
     {
-      "radius_mm": 9.0,
+      "radius_mm": 10.8,
       "dash_count": 16,
       "phase_deg": 0.0,
       "duty": 0.5,
       "thickness_mm": 0.84
     },
     {
-      "radius_mm": 10.72,
+      "radius_mm": 12.83,
       "dash_count": 16,
-      "phase_deg": 9.0,
-      "duty": 0.5,
-      "thickness_mm": 0.84
-    },
-    {
-      "radius_mm": 12.76,
-      "dash_count": 16,
-      "phase_deg": 18.0,
+      "phase_deg": 12.0,
       "duty": 0.5,
       "thickness_mm": 1.0
     },
     {
-      "radius_mm": 15.2,
+      "radius_mm": 15.24,
       "dash_count": 16,
-      "phase_deg": 27.0,
+      "phase_deg": 24.0,
       "duty": 0.5,
       "thickness_mm": 1.19
     },
@@ -47,18 +40,18 @@
     }
   ],
   "measured": {
-    "dashes_drawn": 105,
-    "whole_dashes": 95,
+    "dashes_drawn": 89,
+    "whole_dashes": 79,
     "partial_dashes": 0,
     "clipped_away": 10,
     "smallest_feature_mm": 0.84,
-    "white_extruded_mm_per_layer": 280.2,
-    "white_travelled_mm_per_layer": 274.5,
+    "white_extruded_mm_per_layer": 252.5,
+    "white_travelled_mm_per_layer": 246.8,
     "travel_to_extrusion_ratio": 0.98
   },
   "against_the_shipped_pattern": {
-    "whole_dashes": "95 vs 65",
-    "white_travel_mm": "274.5 vs 183.2",
+    "whole_dashes": "79 vs 65",
+    "white_travel_mm": "246.8 vs 183.2",
     "cost": "about half again more white islands and travel per layer, which is the stringing budget. Against that, zero partial dashes -- the shipped arm ring leaves stubs at the arm edges."
   },
   "how_to_judge": [
