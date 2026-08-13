@@ -6,9 +6,10 @@ only.
 | Product | Guide |
 |---|---|
 | dog-bowl | [products/dog-bowl/AGENTS.md](products/dog-bowl/AGENTS.md) |
-| oggie-spin | [products/oggie-spin/AGENTS.md](products/oggie-spin/AGENTS.md) |
-| lamps | [products/lamps/STATUS.md](products/lamps/STATUS.md) |
-| clickers | [products/clickers/county-package/DEVELOPMENT.md](products/clickers/county-package/DEVELOPMENT.md) |
+
+The clickers, lamps, Oggie Spin and Squspi ball moved to `_other-products/` on
+2026-08-13 and are leaving for their own repo. Do not build on them from here —
+see [`_other-products/MIGRATION.md`](_other-products/MIGRATION.md).
 
 Plan of record: [OGMA-PRINT-STUDIO-PLAN.md](OGMA-PRINT-STUDIO-PLAN.md).
 
@@ -27,9 +28,12 @@ Plan of record: [OGMA-PRINT-STUDIO-PLAN.md](OGMA-PRINT-STUDIO-PLAN.md).
   scale is a *reflection*: self-consistent, every interference check still
   passes, and the exported part is a mirror image. That shipped once. Route
   orientation changes through `printability.assert_rigid()`.
-- **Same-named helpers are not interchangeable.** `_union` and `_difference` are
-  each defined five times across the products with four distinct behaviours.
-  Do not consolidate them without per-product goldens.
+- **Same-named helpers are not interchangeable.** This rule existed because
+  `_union` and `_difference` were each defined five times across the products
+  with four distinct behaviours. All ten definitions left with the products on
+  2026-08-13; the bowl uses `boolean_union` / `boolean_difference`, defined once
+  in `cooper_bowl_design.py`. Keep the rule in mind if a product ever returns —
+  it still applies over in `_other-products/`.
 - **Numbers come from code, not prose.** Force figures, clearances and volumes
   get derived in a function and asserted, never quoted from a previous doc.
 - **Bambu Matte palette IDs only** — no free hex colour pickers.

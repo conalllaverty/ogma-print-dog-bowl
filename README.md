@@ -1,17 +1,19 @@
-# Ogma Print Studio
+# Ogma Print Studio — dog bowl
 
-Parametric generators that turn design parameters into print-ready Bambu Studio
-`.3mf` projects. One repo, several products, one shared toolkit.
+A parametric generator that turns design parameters into print-ready Bambu
+Studio `.3mf` projects, with a web configurator in front of it.
 
 | Product | What it is | Where to start |
 |---|---|---|
-| **[dog-bowl](products/dog-bowl/)** | Named dog bowl stand configurator — 3 styles, FastAPI + Next.js | [STATUS](products/dog-bowl/STATUS.md) · [AGENTS](products/dog-bowl/AGENTS.md) |
-| **[clickers](products/clickers/)** | 32 Irish county MX-switch clickers + salmon nigiri clicker | [county README](products/clickers/county-package/README.md) |
-| **[lamps](products/lamps/)** | Bouclé Stack and Golf Tee, both on the Bambu LED Kit 001 | [STATUS](products/lamps/STATUS.md) |
-| **[oggie-spin](products/oggie-spin/)** | Modular fidget spinner, Broken Ring Illusion | [STATUS](products/oggie-spin/STATUS.md) · [AGENTS](products/oggie-spin/AGENTS.md) |
-| **[squspi-ball](products/squspi-ball/)** | Squspi ball reconstruction + twin-rail review | — |
+| **[dog-bowl](products/dog-bowl/)** | Named dog bowl stand configurator — 4 styles, FastAPI + Next.js | [STATUS](products/dog-bowl/STATUS.md) · [AGENTS](products/dog-bowl/AGENTS.md) |
 
-Only the dog bowl has a web front end. Everything else is CLI-generated.
+This repo used to carry five products. On 2026-08-13 the other four — clickers,
+lamps, Oggie Spin and the Squspi ball — moved to `_other-products/`, on their way
+to a repo of their own. See [`_other-products/MIGRATION.md`](_other-products/MIGRATION.md).
+
+The split was clean because of the seam work that preceded it: nothing outside
+`products/` imported a product, and no product imported another. The toolkit is
+still built to that rule.
 
 ## Layout
 
@@ -22,18 +24,23 @@ shared/ogma/        the toolkit — knows nothing about any product
   paint.py          fuzzy-skin triangle painting (FuzzyPainter protocol)
   printability.py   slicer-style layer audit — anchor ratio, not distance
   geom.py assets.py fonts/ palette.json bambu/
-products/<name>/
-  generator/        the parametric design
-  coupons/          physical fit-test generators (dog bowl)
-  app/ web/         API + configurator (dog bowl only)
+products/dog-bowl/
+  generator/        the parametric design + the style registry
+  coupons/          physical fit-test generators
+  designer.py       the configurator spec the studio renders from
+  assets/           style thumbnails, rendered from the real meshes
   design/           concept sheets, renders, shipped packages
-tests/              goldens.py, smoke_imports.py
+studio/
+  api/              FastAPI — product-agnostic, composes the catalogue
+  web/              Next.js configurator — no product knowledge in it
+tests/              goldens.py, smoke_imports.py, audit_3mf.py, test_name_fit.py
 out/                job output (gitignored)
+_other-products/    on its way out — see MIGRATION.md
 ```
 
 `products` depend on `shared`. `shared` depends on nothing of ours — that
-direction is enforced by `tests/smoke_imports.py` and is the reason a lamp no
-longer imports the dog bowl.
+direction is enforced by `tests/smoke_imports.py`, and it is what made the
+2026-08-13 split a move rather than an untangling.
 
 ## Quick start
 
@@ -45,10 +52,11 @@ python3 -m venv .venv
 .venv/bin/python products/dog-bowl/generator/pipeline.py \
   --name MAX --style cooper --out out/max
 
-# API + web
-cd products/dog-bowl && ../../.venv/bin/python -m uvicorn app.main:app --reload --port 8000
-cd products/dog-bowl/web && PIPELINE_API_URL=http://127.0.0.1:8000 npm run dev
+# API + web together — installs anything missing, refuses a busy port
+make dev            # API on :8000, configurator on :3000
 ```
+
+`make api` and `make web` run the two halves separately if you need them apart.
 
 ## Before you change anything
 

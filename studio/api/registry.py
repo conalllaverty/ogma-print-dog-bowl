@@ -20,7 +20,7 @@ for _p in (REPO / "shared",):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-from ogma.designer import ProductRegistry, ProductSpec  # noqa: E402
+from ogma.designer import ProductRegistry  # noqa: E402
 
 REGISTRY = ProductRegistry()
 
@@ -54,34 +54,11 @@ for _dir in ("dog-bowl",):
         REGISTRY.register(_spec)
 
 
-# Declared but not yet designable. They appear in the picker so the range is
-# visible, and each carries a real spec, so wiring one later is generator work
-# rather than UI work.
-REGISTRY.register(
-    ProductSpec(
-        id="lamp",
-        name="Solas lamp",
-        tagline="Light, shaped.",
-        description=(
-            "Parametric shades for the Bambu LED Kit 001. Two designs exist as "
-            "print packages today; the configurator is not wired up yet."
-        ),
-        params=(),
-        available=False,
-        print_note="8 plates · not yet configurable",
-    )
-)
-REGISTRY.register(
-    ProductSpec(
-        id="oggie-spin",
-        name="Oggie Spin",
-        tagline="Broken Ring Illusion.",
-        description=(
-            "Modular fidget spinner with swappable colour arms. Printed and "
-            "working; the configurator is not wired up yet."
-        ),
-        params=(),
-        available=False,
-        print_note="9 plates · not yet configurable",
-    )
-)
+# There used to be two "coming soon" entries here — a lamp and Oggie Spin —
+# declared inline so the picker could show the range before either had a
+# generator. Both products now live outside this repo, under `_other-products/`,
+# so advertising them would promise a designer that nothing here can ever build.
+#
+# If one comes back, it returns the way the spec intends: a `designer.py` in its
+# own product directory and one entry in the loop above. A placeholder declared
+# here is not a step towards that — it is a second place to keep in sync.

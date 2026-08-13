@@ -1,0 +1,18 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic-settings>=2.6.0
+python-dotenv>=1.0.0
+trimesh>=4.5.0
+# The backend trimesh.simplify_quadric_decimation() dispatches to. Without it
+# the call raises ModuleNotFoundError, which shared/ogma/preview.py catches —
+# so every preview silently shipped at full print resolution (a 490k-triangle,
+# 8.4 MB honeycomb) instead of the 90k budget it asks for.
+fast-simplification>=0.1.7
+numpy>=2.0.0
+shapely>=2.0.0
+manifold3d>=3.0.0
+mapbox-earcut>=1.0.0
+Pillow>=10.0.0
+scipy>=1.14.0
+networkx>=3.0
+rtree>=1.0.0
