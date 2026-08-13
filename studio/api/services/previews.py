@@ -76,6 +76,15 @@ def request_preview(product_id: str, raw_values: dict[str, Any]) -> Preview:
 
     with _lock:
         existing = _previews.get(key)
+        # A "ready" entry is only trustworthy while its file is still there. The
+        # reaper calls forget_preview() when it evicts one, but a file can also
+        # go missing underneath us — a volume restored from a snapshot, someone
+        # clearing the directory by hand — and a stale `ready` hands the client
+        # a URL that 404s forever, because the status itself is cached. Checking
+        # is one stat().
+        if existing and existing.status == "ready" and not existing.path.is_file():
+            del _previews[key]
+            existing = None
         if existing and existing.status != "failed":
             return existing
         # Survives a restart: the file on disk is the cache, the dict is a
@@ -92,6 +101,17 @@ def request_preview(product_id: str, raw_values: dict[str, Any]) -> Preview:
         target=_build, args=(spec.id, key, values), daemon=True
     ).start()
     return preview
+
+
+def forget_preview(key: str) -> None:
+    """Drop a preview from the in-memory index.
+
+    Called by the reaper after it deletes the GLB. Without this the dict still
+    says `ready` for a key whose file is gone, so the client is handed a URL
+    that 404s — and because the status is cached, it would never recover.
+    """
+    with _lock:
+        _previews.pop(key, None)
 
 
 def get_preview(key: str) -> Preview | None:

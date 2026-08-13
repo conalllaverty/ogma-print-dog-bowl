@@ -12,10 +12,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.api.studio import router
 from api.config import get_settings
 from api.registry import REGISTRY
+from api.services.retention import start_reaper
 
 log = logging.getLogger("ogma.studio")
 
 settings = get_settings()
+
+# Python's root logger defaults to WARNING, and uvicorn only configures its own
+# loggers — so every `log.info` under `ogma.*` was being dropped. That included
+# the retention sweep, which deletes customers' generated files and was
+# reporting it to nobody. Set the level on our namespace only; uvicorn's access
+# and error logs keep their own configuration.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)-7s %(name)s — %(message)s",
+)
+logging.getLogger("ogma").setLevel(logging.INFO)
 
 
 def _warm_caches() -> None:
@@ -63,6 +75,10 @@ async def lifespan(_: FastAPI):
     # `@app.on_event("startup")` is deprecated in FastAPI; lifespan is the
     # supported hook and also gives us a place to shut things down later.
     threading.Thread(target=_warm_caches, daemon=True, name="warm-caches").start()
+    # Jobs and previews accumulate on the volume until something removes them.
+    # Started here rather than as a cron job on the side because the sweep has
+    # to ask this process which jobs are still building.
+    start_reaper()
     yield
 
 

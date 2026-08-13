@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
@@ -19,6 +19,7 @@ from api.config import get_settings
 from api.registry import REGISTRY
 from api.services.jobs import create_job, get_job
 from api.services.previews import get_preview, request_preview
+from api.services.ratelimit import enforce
 from ogma import assets
 from ogma.designer import ValidationError
 
@@ -133,13 +134,17 @@ def validate(product_id: str, body: ValuesRequest):
 
 
 @router.post("/products/{product_id}/preview")
-def preview(product_id: str, body: ValuesRequest):
+def preview(product_id: str, body: ValuesRequest, request: Request):
     """Ask for a 3D preview of these values.
 
     Returns immediately. If an identical *geometry* has been built before —
     same name, style and lettering, any colour — this is a cache hit and comes
     back `ready` on the first call.
     """
+    # Rate-limited before the cache lookup, deliberately: a miss is what costs
+    # the build lock, and the caller does not get to find out which it was by
+    # spending someone else's throughput.
+    enforce(request, "preview")
     spec = _spec_or_404(product_id)
     try:
         return request_preview(spec.id, body.values).to_json()
@@ -170,7 +175,8 @@ def preview_status(key: str):
 
 
 @router.post("/products/{product_id}/generate")
-def generate(product_id: str, body: ValuesRequest):
+def generate(product_id: str, body: ValuesRequest, request: Request):
+    enforce(request, "generate")
     spec = _spec_or_404(product_id)
     try:
         job = create_job(spec.id, body.values)
@@ -218,8 +224,10 @@ class BowlRequest(BaseModel):
 
 
 @router.post("/bowl/generate", deprecated=True)
-def bowl_generate(body: BowlRequest):
-    return generate("dog-bowl", ValuesRequest(values=body.model_dump()))
+def bowl_generate(body: BowlRequest, request: Request):
+    # Forwards the Request so the alias is limited on the same budget as the
+    # route it delegates to — otherwise it is a way around the limiter.
+    return generate("dog-bowl", ValuesRequest(values=body.model_dump()), request)
 
 
 @router.get("/bowl/jobs/{job_id}", deprecated=True)

@@ -121,6 +121,35 @@ def get_job(job_id: str) -> Job | None:
     return job
 
 
+def active_job_ids() -> set[str]:
+    """Jobs that are queued or building right now.
+
+    The reaper asks before deleting a directory: a job's files are only safe to
+    remove once nothing is writing into them, and this process is the only thing
+    that knows which those are.
+    """
+    with _lock:
+        return {
+            j.id
+            for j in _jobs.values()
+            if j.status in (JobStatus.queued, JobStatus.running)
+        }
+
+
+def forget_finished(job_id: str) -> None:
+    """Drop a finished job from the in-memory index.
+
+    `_jobs` is a cache over `status.json`, but it only ever grew — every job
+    ever seen stayed resident for the life of the process. Dropping a finished
+    entry costs nothing, because `get_job()` reloads it from disk on the next
+    request; once the reaper has removed the directory too, it correctly 404s.
+    """
+    with _lock:
+        job = _jobs.get(job_id)
+        if job and job.status in (JobStatus.succeeded, JobStatus.failed):
+            del _jobs[job_id]
+
+
 def _run_job(job_id: str) -> None:
     job = get_job(job_id)
     if not job:

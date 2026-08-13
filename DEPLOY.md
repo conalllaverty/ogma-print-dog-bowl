@@ -114,13 +114,64 @@ the web container alone:
   locally. One case (`cooper`/`REX`/`bold`), so treat it as strong evidence
   rather than proof across every style.
 
-## Still missing before this should take public traffic
+## Retention
 
-Neither is a blocker for a private or unadvertised URL; both are for anything
-linked publicly.
+Nothing used to delete anything. A single completed job leaves **14.1 MB** on
+the volume — meshes, visuals and the `.3mf` — measured, not estimated. At that
+rate a modest volume fills in a few hundred orders, and a full volume is an
+outage.
 
-- **No disk reaper.** Every job writes its meshes, visuals and a `.3mf` (1.7–5 MB)
-  and nothing ever deletes them. The in-memory `_jobs` dict grows for the life of
-  the process too. A volume that fills takes the site down.
-- **No rate limit.** `/generate` and `/preview` are anonymous and share one
-  global build lock, so a single visitor in a loop queues everyone behind them.
+A reaper runs in-process on a daemon thread, sweeping on `REAPER_INTERVAL_MINUTES`
+(default 60, floored at 60 s). Two policies, because the two caches mean
+different things:
+
+| | Policy | Setting |
+|---|---|---|
+| Jobs | expire by age | `JOB_RETENTION_HOURS` (default 168 = 7 days) |
+| Previews | LRU eviction to a size budget | `PREVIEW_CACHE_MAX_MB` (default 512) |
+
+Jobs expire because a job is a record of something a customer asked for — worth
+keeping while a download link might be reused, worthless long after. Previews
+are pure cache: the key is a hash of the geometry so the bytes can never be
+wrong, only absent, and rebuilding costs a few seconds. Age tells you nothing
+there, so the policy is a budget and eviction by least-recently-*accessed*.
+
+It runs in-process rather than as a cron job on the volume because the sweep has
+to skip jobs that are still building, and this process is the only thing that
+knows which those are.
+
+## Rate limiting
+
+`/generate` and `/preview` both take the single global build lock, so throughput
+is one build at a time for the whole service and one anonymous caller in a loop
+can queue everyone behind them.
+
+```
+RATE_LIMIT_ENABLED=true      # default
+GENERATE_PER_HOUR=20         # default
+PREVIEW_PER_HOUR=120         # default
+```
+
+A token bucket per caller, not a fixed window — a fixed window lets someone
+spend a full budget at the end of one window and again at the start of the next.
+Over budget returns **429** with a `Retry-After`.
+
+Callers are identified by the left-most `x-forwarded-for` entry, because in this
+topology every request reaches the API from the web container and limiting on
+the socket peer would throttle all customers as one. **That trust is only safe
+while the API has no public domain.** If you ever expose it directly, this has
+to become a trusted-proxy check — otherwise a caller sets the header themselves
+and the limit means nothing.
+
+Counters are in-process, so they reset on deploy and are not shared between
+replicas. The API is pinned to one replica anyway; if that ever changes it needs
+a real queue first.
+
+## Still missing
+
+- **No authentication.** Anonymous by design for the MVP, per the product
+  decisions in `products/dog-bowl/STATUS.md`. The rate limit is the only thing
+  standing between the build lock and the open internet.
+- **Bambu Studio has still never opened a generated 3MF.** `tests/audit_3mf.py`
+  passes 14/14 against a P2S profile, but that is not the same as the slicer
+  accepting the file. This is the largest unverified risk in the stack.

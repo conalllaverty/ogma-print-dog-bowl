@@ -15,6 +15,8 @@ import tempfile
 import time
 from pathlib import Path
 
+import pytest
+
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "products" / "dog-bowl" / "generator"))
 sys.path.insert(0, str(REPO / "shared"))
@@ -50,6 +52,44 @@ def build_rail_deg(name: str, font_style: str) -> float:
         except C.NameFitError:
             pass  # the angle is still recorded; that IS the rejection
         return C.NAME_RAIL_OUTER_DEG
+
+
+# --------------------------------------------------------------------------
+# pytest entry points.
+#
+# This file was named test_*.py but contained only a main(), so `pytest tests`
+# collected it and found nothing to run — it reported success while asserting
+# nothing. The script form below is kept, because reading its table is how you
+# see *which* case drifted; these make it fail a CI run rather than a habit.
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("name,font_style", CASES)
+def test_precheck_agrees_with_the_build(name: str, font_style: str) -> None:
+    """The pre-check is only safe while it is identical to the real verdict."""
+    pre = name_fit.required_rail_deg(name, font_style)
+    real = build_rail_deg(name, font_style)
+    assert abs(pre - real) < TOLERANCE_DEG, (
+        f"{name}/{font_style}: pre-check says ±{pre:.6f}°, "
+        f"the build says ±{real:.6f}° — the designer would be lying"
+    )
+
+
+@pytest.mark.parametrize("style", FONT_STYLES)
+def test_every_lettering_style_is_measurable(style: str) -> None:
+    """A missing or unreadable face would otherwise surface only when a
+    customer happened to pick that style."""
+    assert name_fit.required_rail_deg("MAX", style) > 0
+
+
+def test_the_cache_makes_a_warm_lookup_fast() -> None:
+    """The 9 ms claim is what lets validation run on every keystroke."""
+    name_fit.required_rail_deg("WWWWWWWW", "bold")  # warm it
+    t = time.perf_counter()
+    for _ in range(50):
+        name_fit.required_rail_deg("WWWWWWWW", "bold")
+    warm_ms = (time.perf_counter() - t) / 50 * 1000
+    assert warm_ms < 5.0, f"warm lookup took {warm_ms:.2f} ms — cache not working"
 
 
 def main() -> int:

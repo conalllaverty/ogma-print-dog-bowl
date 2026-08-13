@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: API and generators
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - run: pip install -r requirements-dev.txt
+
+      # Every generator module imports in a fresh interpreter. Cheap, and it is
+      # the net that catches a broken import in code no other test loads.
+      - name: Smoke imports
+        run: python tests/smoke_imports.py
+
+      - name: Unit tests
+        run: python -m pytest tests -q
+
+  geometry:
+    name: Generators still build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      # Runs the golden harness for its side effect: all five cases must build
+      # a complete 3MF without raising.
+      #
+      # It does NOT diff against a committed baseline. trimesh shifts triangle
+      # counts by ~1% between versions while volumes hold to 7 decimal places,
+      # so a byte-level baseline would fail on an unrelated dependency bump and
+      # train everyone to ignore it. Comparing volumes across versions is worth
+      # doing; it needs a tolerance-aware comparison this does not have yet.
+      - name: Build all five golden cases
+        run: python tests/goldens.py /tmp/goldens.json /tmp/goldenjobs
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: goldens
+          path: /tmp/goldens.json
+
+  web:
+    name: Configurator
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: studio/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: studio/web/package-lock.json
+
+      # `npm ci`, not `npm install` — it is also the assertion that the lockfile
+      # is in sync. The committed one used to be resolved on macOS and omitted
+      # Linux-only optional deps, so the Docker image could never build.
+      - run: npm ci
+      - run: npx eslint src
+      - run: npx next build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
+  images:
+    name: Docker images build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      # The API image builds from the repo root: it composes studio/api,
+      # products/dog-bowl and shared/ogma, and assets.py derives every path from
+      # shared/../ . The previous Dockerfile referenced a layout that had not
+      # existed for weeks and nothing noticed, because nothing built it.
+      - name: API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: studio/Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Web image
+        uses: docker/build-push-action@v6
+        with:
+          context: studio/web
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
