@@ -18,6 +18,7 @@ A configurator for elevated dog-bowl stands (Bambu Lab P2S) that all seat the **
 | `cooper` | **Live**             | 4 plates — base · paw panel · top ring · letters |
 | `wave`   | **Print-proven**     | 4 plates — lower · upper shell · seat · letters  |
 | `hex`    | **Live (first cut)** | 2 plates — solid honeycomb body · letters        |
+| `fluted` | **Live (first cut)** | added 2026-08-08 (`6aad2c0`) — the style registry's first real test |
 
 Bowl size is locked to Cooper’s insert — no multi-rim presets for now.
 
@@ -32,8 +33,8 @@ Related product: [`ogma-print-core`](https://github.com/conalllaverty/ogma-print
 | --------------------------------- | ----------- | -------------------------------------------------------------- |
 | 0 — Parameterised generator       | **Done**    | `name`, `font_style`, Matte IDs, fit gate (±45°), fuzzy on/off |
 | 1 — Local FastAPI + Next.js       | **Done**    | Generate → poll → download 3MF verified (`MAX`, `REX`)         |
-| 1b — Hybrid GLB preview           | Not started | Client mock only in UI today                                   |
-| 2 — Railway deploy                | Not started | Dockerfiles present; need services + volume for jobs           |
+| 1b — Hybrid GLB preview           | **Done**    | Real role-tagged GLB from the printed meshes; all four styles  |
+| 2 — Railway deploy                | Images done | Both build and run; needs a Railway project. See `DEPLOY.md`   |
 | 2b — Filament stock / allow-lists | Not started | Optional; core already has this                                |
 | 3 — Commerce / checkout           | Not started | Deferred auth pattern from core if needed                      |
 
@@ -135,20 +136,33 @@ orientations. The LUNA pocket, seating, proudness, and removal checks passed.
 
 ## Known gaps / risks
 
-1. **Preview** is a CSS mock, not real GLB geometry
+<!-- Software items updated 2026-08-13. The physical decisions above this line
+     are unchanged and remain authoritative — they were earned from real prints
+     and must not be paraphrased. -->
+
+1. ~~**Preview** is a CSS mock~~ — it is real GLB geometry now, decimated from
+   the meshes that print, with colour applied in the viewer by role
 2. **Cursive is research-only** — Pacifico needs a title-case whole-word mesh path and physical coupon
-3. **Job storage** is local disk / in-process threads — fine locally; Railway needs a volume or object storage + possibly a worker
-4. **No automated tests** yet
+3. **Job storage** is local disk + an in-process index. A retention sweep now
+   bounds it; Railway still needs the volume. A second replica would corrupt
+   builds — see `DEPLOY.md`
+4. ~~**No automated tests**~~ — 30 pytest cases plus the goldens, smoke-import
+   and 3MF-audit harnesses, wired into CI
 5. Condensed style helps long names; packing still rejects if rail > ±45°
 6. Original design assets / print notes also live under `Ogma Print Files/cooper_dog_bowl/`
+7. **Bambu Studio has never opened a generated 3MF.** `tests/audit_3mf.py`
+   passes 14/14 against a P2S profile; that is not the same as the slicer
+   accepting the file
 
 ---
 
 ## Immediate next steps (priority)
 
-1. Print revised `MAX_Honeycomb_P2S.3mf`; inspect grooves, tighter name field, bottom chamfer, seat underside, and pocket fit
-2. Confirm the Honeycomb print before locking the style as print-proven
-3. Preserve the print-proven Wave geometry while moving on to product preview work
-4. Confirm fonts + `.gitignore` are acceptable for a public GitHub repo
-5. Add `preview.glb` export from generator; show in web viewer
-6. Deploy backend + web on Railway; set `PIPELINE_API_URL`, `JOBS_ROOT`, CORS
+1. **Open a generated 3MF in Bambu Studio.** Twenty minutes, and it retires the
+   largest unverified risk in the stack
+2. Print revised `MAX_Honeycomb_P2S.3mf`; inspect grooves, tighter name field, bottom chamfer, seat underside, and pocket fit
+3. Confirm the Honeycomb print before locking the style as print-proven
+4. Print one stand of each style (gate G2), then load-test one (G3)
+5. ~~Add `preview.glb` export~~ — done
+6. Deploy on Railway — images build and run; see `DEPLOY.md` for the two-service
+   layout and the settings that matter
