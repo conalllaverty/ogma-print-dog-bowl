@@ -1,0 +1,2275 @@
+{
+  "cooper/MAX/bold": {
+    "dimensions": {
+      "bowl": {
+        "base_diameter": 100.0,
+        "body_outer_diameter": 130.0,
+        "body_to_wall_radial_clearance": 12.599999999999994,
+        "bowl_rim_recess_mm": 1.8,
+        "depth": 35.0,
+        "estimated_suspended_bottom_height": 41.2,
+        "rim_outer_diameter": 140.0,
+        "seat_diameter": 142.0,
+        "seat_landing_z": 76.2,
+        "seat_slope_angle_degrees": 46.97493401088196,
+        "seat_slope_height": 4.200000000000003,
+        "seat_type": "separate upright-printed self-centering conical ring",
+        "stand_opening": 133.0
+      },
+      "design": "Cooper Paw-Lattice Bowl Stand",
+      "letters": {
+        "arc_centers": [
+          -15.010379656594255,
+          0.37045849619177734,
+          15.380838152786032
+        ],
+        "back_radius": 85.15,
+        "end_margin": 2.5,
+        "face_radius": 87.4,
+        "height": 15.0,
+        "mount": "recessed glyph pockets with cylindrical backs; glue only",
+        "name_rail_flat_deg": 16.046138516865117,
+        "name_rail_outer_deg": 17.546138516865117,
+        "pocket_depth": 0.85,
+        "pocket_floor_gap": 0.06,
+        "pocket_outline_clearance": 0.1,
+        "proud_thickness": 1.4,
+        "tangential_gap": 1.2,
+        "text": "MAX",
+        "widths": [
+          13.559959888458252,
+          14.03991985321045,
+          12.839919090270996
+        ]
+      },
+      "stand": {
+        "assembly": "base tongue/groove plus eight pinned top-ring joints",
+        "base_triangles": 3072,
+        "base_volume_mm3": 89812.03145681863,
+        "base_watertight": true,
+        "bounds": [
+          [
+            -85.0,
+            -86.0,
+            0.0
+          ],
+          [
+            85.0,
+            85.0,
+            78.0
+          ]
+        ],
+        "diameter": 170.0,
+        "height": 78.0,
+        "panel_triangles": 122418,
+        "panel_volume_mm3": 129400.73229956006,
+        "panel_watertight": true,
+        "top_ring_triangles": 8464,
+        "top_ring_volume_mm3": 48687.88001993418,
+        "top_ring_watertight": true,
+        "wall_thickness": 4.0
+      },
+      "units": "mm"
+    },
+    "job": {
+      "font_style": "bold",
+      "fuzzy_enabled": true,
+      "letter_filament_id": "matte-ivory-white",
+      "letter_hex": "#FFFFFF",
+      "name": "MAX",
+      "rail_outer_deg": 17.546138516865117,
+      "stand_filament_id": "matte-caramel",
+      "stand_hex": "#AE835B",
+      "style": "cooper",
+      "threemf": "MAX_Paw_Lattice_P2S.3mf"
+    },
+    "meshes": {
+      "OPTIONAL_bowl_fit_gauge_60deg.stl": {
+        "area_mm2": 2247.496712,
+        "bounds": [
+          [
+            -38.0,
+            -76.0,
+            0.0
+          ],
+          [
+            38.0,
+            -57.590691,
+            5.0
+          ]
+        ],
+        "triangles": 682,
+        "vertices": 2046,
+        "volume_mm3": 2701.555539,
+        "watertight": false
+      },
+      "REFERENCE_ONLY_metal_bowl.stl": {
+        "area_mm2": 47135.538709,
+        "bounds": [
+          [
+            -70.0,
+            -70.0,
+            41.200001
+          ],
+          [
+            70.0,
+            70.0,
+            77.199997
+          ]
+        ],
+        "triangles": 2688,
+        "vertices": 8064,
+        "volume_mm3": 77322.515332,
+        "watertight": false
+      },
+      "assembly_letter_1_M.stl": {
+        "area_mm2": 512.566887,
+        "bounds": [
+          [
+            -21.616953,
+            -87.272896,
+            33.0
+          ],
+          [
+            -7.823215,
+            -82.456596,
+            47.999958
+          ]
+        ],
+        "triangles": 1290,
+        "vertices": 3870,
+        "volume_mm3": 307.772737,
+        "watertight": false
+      },
+      "assembly_letter_2_A.stl": {
+        "area_mm2": 373.869251,
+        "bounds": [
+          [
+            -6.660206,
+            -87.42897,
+            33.000042
+          ],
+          [
+            7.390354,
+            -84.818687,
+            47.999958
+          ]
+        ],
+        "triangles": 1622,
+        "vertices": 4866,
+        "volume_mm3": 218.270118,
+        "watertight": false
+      },
+      "assembly_letter_3_X.stl": {
+        "area_mm2": 381.875624,
+        "bounds": [
+          [
+            8.541574,
+            -87.174088,
+            33.000042
+          ],
+          [
+            21.622375,
+            -82.456665,
+            47.999958
+          ]
+        ],
+        "triangles": 2396,
+        "vertices": 7188,
+        "volume_mm3": 204.499871,
+        "watertight": false
+      },
+      "assembly_paw_panel.stl": {
+        "area_mm2": 68314.574321,
+        "bounds": [
+          [
+            -81.599998,
+            -86.0,
+            9.0
+          ],
+          [
+            81.599998,
+            81.599998,
+            75.0
+          ]
+        ],
+        "triangles": 122418,
+        "vertices": 367254,
+        "volume_mm3": 129400.7323,
+        "watertight": false
+      },
+      "assembly_top_seat_ring.stl": {
+        "area_mm2": 23656.235259,
+        "bounds": [
+          [
+            -85.0,
+            -85.0,
+            72.0
+          ],
+          [
+            85.0,
+            85.0,
+            78.0
+          ]
+        ],
+        "triangles": 8464,
+        "vertices": 25392,
+        "volume_mm3": 48687.88002,
+        "watertight": false
+      },
+      "cooper_base.stl": {
+        "area_mm2": 31375.8965,
+        "bounds": [
+          [
+            -85.0,
+            -85.0,
+            0.0
+          ],
+          [
+            85.0,
+            85.0,
+            12.0
+          ]
+        ],
+        "triangles": 3072,
+        "vertices": 9216,
+        "volume_mm3": 89812.031457,
+        "watertight": false
+      },
+      "cooper_paw_panel.stl": {
+        "area_mm2": 68314.574321,
+        "bounds": [
+          [
+            -81.599998,
+            -86.0,
+            0.0
+          ],
+          [
+            81.599998,
+            81.599998,
+            66.0
+          ]
+        ],
+        "triangles": 122418,
+        "vertices": 367254,
+        "volume_mm3": 129400.7323,
+        "watertight": false
+      },
+      "cooper_top_seat_ring.stl": {
+        "area_mm2": 23656.235259,
+        "bounds": [
+          [
+            -85.0,
+            -85.0,
+            0.0
+          ],
+          [
+            85.0,
+            85.0,
+            6.0
+          ]
+        ],
+        "triangles": 8464,
+        "vertices": 25392,
+        "volume_mm3": 48687.88002,
+        "watertight": false
+      },
+      "letter_1_M.stl": {
+        "area_mm2": 512.566884,
+        "bounds": [
+          [
+            -6.77996,
+            -7.5,
+            0.0
+          ],
+          [
+            6.780001,
+            7.499958,
+            2.536212
+          ]
+        ],
+        "triangles": 1290,
+        "vertices": 3870,
+        "volume_mm3": 307.772738,
+        "watertight": false
+      },
+      "letter_2_A.stl": {
+        "area_mm2": 373.869252,
+        "bounds": [
+          [
+            -7.01996,
+            -7.499958,
+            0.0
+          ],
+          [
+            7.01996,
+            7.499958,
+            2.550799
+          ]
+        ],
+        "triangles": 1622,
+        "vertices": 4866,
+        "volume_mm3": 218.270119,
+        "watertight": false
+      },
+      "letter_3_X.stl": {
+        "area_mm2": 381.875609,
+        "bounds": [
+          [
+            -6.419961,
+            -7.499958,
+            0.0
+          ],
+          [
+            6.41996,
+            7.499958,
+            2.508599
+          ]
+        ],
+        "triangles": 2396,
+        "vertices": 7188,
+        "volume_mm3": 204.499853,
+        "watertight": false
+      }
+    },
+    "threemf": {
+      "MAX_Paw_Lattice_P2S.3mf": {
+        "3D/3dmodel.model": {
+          "bytes": 3043,
+          "sha256": "87aca877446c5169"
+        },
+        "3D/Objects/object_1.model": {
+          "bytes": 235582,
+          "sha256": "3440fa3a35d561b7"
+        },
+        "3D/Objects/object_2.model": {
+          "bytes": 10260722,
+          "sha256": "6c1ee06ec20b9246"
+        },
+        "3D/Objects/object_3.model": {
+          "bytes": 656401,
+          "sha256": "d4bd22aa13b5a19f"
+        },
+        "3D/Objects/object_4.model": {
+          "bytes": 96061,
+          "sha256": "c98f28cf1ea21c52"
+        },
+        "3D/Objects/object_5.model": {
+          "bytes": 120722,
+          "sha256": "358d058c74fbb247"
+        },
+        "3D/Objects/object_6.model": {
+          "bytes": 179619,
+          "sha256": "1a7d3d0cd9c876ab"
+        },
+        "3D/_rels/3dmodel.model.rels": {
+          "bytes": 933,
+          "sha256": "66f98cc122d9d799"
+        },
+        "Metadata/filament_sequence.json": {
+          "bytes": 72,
+          "sha256": "b22b4b14fba30815"
+        },
+        "Metadata/model_settings.config": {
+          "bytes": 11626,
+          "sha256": "2f451a9cc635219f"
+        },
+        "Metadata/pick_1.png": {
+          "bytes": 3229,
+          "sha256": "b2f3b7f5fc867977"
+        },
+        "Metadata/pick_2.png": {
+          "bytes": 3429,
+          "sha256": "ad6061c6d0b31b02"
+        },
+        "Metadata/pick_3.png": {
+          "bytes": 3258,
+          "sha256": "017901d30ac70ed0"
+        },
+        "Metadata/pick_4.png": {
+          "bytes": 2158,
+          "sha256": "146f8814d07eaac7"
+        },
+        "Metadata/plate_1.png": {
+          "bytes": 6466,
+          "sha256": "f8a38297c4ed6b13"
+        },
+        "Metadata/plate_1_small.png": {
+          "bytes": 2509,
+          "sha256": "08b1692c7c713c45"
+        },
+        "Metadata/plate_2.png": {
+          "bytes": 25317,
+          "sha256": "a4f9550900d905f9"
+        },
+        "Metadata/plate_2_small.png": {
+          "bytes": 4341,
+          "sha256": "2f664c086d550c10"
+        },
+        "Metadata/plate_3.png": {
+          "bytes": 4859,
+          "sha256": "6768b328f7fdb52d"
+        },
+        "Metadata/plate_3_small.png": {
+          "bytes": 1939,
+          "sha256": "eaf42e817af0efa6"
+        },
+        "Metadata/plate_4.png": {
+          "bytes": 11092,
+          "sha256": "b81c881832cb4d9d"
+        },
+        "Metadata/plate_4_small.png": {
+          "bytes": 4132,
+          "sha256": "9219c6cb33bc43e0"
+        },
+        "Metadata/plate_no_light_1.png": {
+          "bytes": 2708,
+          "sha256": "36f11f8d111d5a81"
+        },
+        "Metadata/plate_no_light_2.png": {
+          "bytes": 4386,
+          "sha256": "c77c7aacaff19d61"
+        },
+        "Metadata/plate_no_light_3.png": {
+          "bytes": 2654,
+          "sha256": "42be9c2c8b7667df"
+        },
+        "Metadata/plate_no_light_4.png": {
+          "bytes": 4740,
+          "sha256": "28486df2061ef7df"
+        },
+        "Metadata/project_settings.config": {
+          "bytes": 56720,
+          "sha256": "13412040064f3127"
+        },
+        "Metadata/slice_info.config": {
+          "bytes": 205,
+          "sha256": "13766246db5e3a24"
+        },
+        "Metadata/top_1.png": {
+          "bytes": 7059,
+          "sha256": "36a23c1b1a48b203"
+        },
+        "Metadata/top_2.png": {
+          "bytes": 7372,
+          "sha256": "6fc10d9f4af5084a"
+        },
+        "Metadata/top_3.png": {
+          "bytes": 6759,
+          "sha256": "4a21e91bf6d1e42b"
+        },
+        "Metadata/top_4.png": {
+          "bytes": 3135,
+          "sha256": "b7a7db16ec884ff0"
+        },
+        "[Content_Types].xml": {
+          "bytes": 432,
+          "sha256": "4acce1f577c7f0af"
+        },
+        "_rels/.rels": {
+          "bytes": 673,
+          "sha256": "eba9728f3f5482ec"
+        }
+      }
+    }
+  },
+  "cooper/WILLIAMS/condensed": {
+    "dimensions": {
+      "bowl": {
+        "base_diameter": 100.0,
+        "body_outer_diameter": 130.0,
+        "body_to_wall_radial_clearance": 12.599999999999994,
+        "bowl_rim_recess_mm": 1.8,
+        "depth": 35.0,
+        "estimated_suspended_bottom_height": 41.2,
+        "rim_outer_diameter": 140.0,
+        "seat_diameter": 142.0,
+        "seat_landing_z": 76.2,
+        "seat_slope_angle_degrees": 46.97493401088196,
+        "seat_slope_height": 4.200000000000003,
+        "seat_type": "separate upright-printed self-centering conical ring",
+        "stand_opening": 133.0
+      },
+      "design": "Cooper Paw-Lattice Bowl Stand",
+      "letters": {
+        "arc_centers": [
+          -27.98386114850093,
+          -18.647321347030253,
+          -12.333937612465116,
+          -3.4943213740767334,
+          2.8190623604884055,
+          10.057870498014449,
+          20.810079847682644,
+          30.821941004898207
+        ],
+        "back_radius": 85.15,
+        "end_margin": 2.5,
+        "face_radius": 87.4,
+        "height": 15.0,
+        "mount": "recessed glyph pockets with cylindrical backs; glue only",
+        "name_rail_flat_deg": 24.469903367215277,
+        "name_rail_outer_deg": 25.969903367215277,
+        "pocket_depth": 0.85,
+        "pocket_floor_gap": 0.06,
+        "pocket_outline_clearance": 0.1,
+        "proud_thickness": 1.4,
+        "tangential_gap": 1.2,
+        "text": "WILLIAMS",
+        "widths": [
+          13.31991958618164,
+          2.5199999809265137,
+          7.440000057220459,
+          7.440000057220459,
+          2.5199999809265137,
+          9.239919662475586,
+          9.359999656677246,
+          7.799959897994995
+        ]
+      },
+      "stand": {
+        "assembly": "base tongue/groove plus eight pinned top-ring joints",
+        "base_triangles": 3072,
+        "base_volume_mm3": 89812.03145681863,
+        "base_watertight": true,
+        "bounds": [
+          [
+            -85.0,
+            -86.0,
+            0.0
+          ],
+          [
+            85.0,
+            85.0,
+            78.0
+          ]
+        ],
+        "diameter": 170.0,
+        "height": 78.0,
+        "panel_triangles": 116388,
+        "panel_volume_mm3": 133050.31465323447,
+        "panel_watertight": true,
+        "top_ring_triangles": 8464,
+        "top_ring_volume_mm3": 48687.88001993418,
+        "top_ring_watertight": true,
+        "wall_thickness": 4.0
+      },
+      "units": "mm"
+    },
+    "job": {
+      "font_style": "condensed",
+      "fuzzy_enabled": true,
+      "letter_filament_id": "matte-ivory-white",
+      "letter_hex": "#FFFFFF",
+      "name": "WILLIAMS",
+      "rail_outer_deg": 25.969903367215277,
+      "stand_filament_id": "matte-caramel",
+      "stand_hex": "#AE835B",
+      "style": "cooper",
+      "threemf": "WILLIAMS_Paw_Lattice_P2S.3mf"
+    },
+    "meshes": {
+      "OPTIONAL_bowl_fit_gauge_60deg.stl": {
+        "area_mm2": 2247.496712,
+        "bounds": [
+          [
+            -38.0,
+            -76.0,
+            0.0
+          ],
+          [
+            38.0,
+            -57.590691,
+            5.0
+          ]
+        ],
+        "triangles": 682,
+        "vertices": 2046,
+        "volume_mm3": 2701.555539,
+        "watertight": false
+      },
+      "REFERENCE_ONLY_metal_bowl.stl": {
+        "area_mm2": 47135.538709,
+        "bounds": [
+          [
+            -70.0,
+            -70.0,
+            41.200001
+          ],
+          [
+            70.0,
+            70.0,
+            77.199997
+          ]
+        ],
+        "triangles": 2688,
+        "vertices": 8064,
+        "volume_mm3": 77322.515332,
+        "watertight": false
+      },
+      "assembly_letter_1_W.stl": {
+        "area_mm2": 485.872608,
+        "bounds": [
+          [
+            -33.829662,
+            -85.054329,
+            33.0
+          ],
+          [
+            -20.393642,
+            -78.47094,
+            48.0
+          ]
+        ],
+        "triangles": 1594,
+        "vertices": 4782,
+        "volume_mm3": 266.36675,
+        "watertight": false
+      },
+      "assembly_letter_2_I.stl": {
+        "area_mm2": 154.714328,
+        "bounds": [
+          [
+            -19.7376,
+            -85.685066,
+            33.000042
+          ],
+          [
+            -16.79561,
+            -82.93351,
+            48.0
+          ]
+        ],
+        "triangles": 44,
+        "vertices": 132,
+        "volume_mm3": 85.537756,
+        "watertight": false
+      },
+      "assembly_letter_3_L.stl": {
+        "area_mm2": 199.901133,
+        "bounds": [
+          [
+            -15.97606,
+            -87.054382,
+            33.0
+          ],
+          [
+            -8.279811,
+            -83.686317,
+            48.0
+          ]
+        ],
+        "triangles": 76,
+        "vertices": 228,
+        "volume_mm3": 111.17804,
+        "watertight": false
+      },
+      "assembly_letter_4_L.stl": {
+        "area_mm2": 199.920549,
+        "bounds": [
+          [
+            -7.210418,
+            -87.478844,
+            33.0
+          ],
+          [
+            0.317045,
+            -84.844559,
+            48.0
+          ]
+        ],
+        "triangles": 78,
+        "vertices": 234,
+        "volume_mm3": 111.125347,
+        "watertight": false
+      },
+      "assembly_letter_5_I.stl": {
+        "area_mm2": 154.899058,
+        "bounds": [
+          [
+            1.485845,
+            -87.395172,
+            33.000042
+          ],
+          [
+            4.077918,
+            -85.045326,
+            48.0
+          ]
+        ],
+        "triangles": 56,
+        "vertices": 168,
+        "volume_mm3": 85.421825,
+        "watertight": false
+      },
+      "assembly_letter_6_A.stl": {
+        "area_mm2": 305.291396,
+        "bounds": [
+          [
+            5.171655,
+            -87.352402,
+            33.000042
+          ],
+          [
+            14.625088,
+            -83.917671,
+            47.999958
+          ]
+        ],
+        "triangles": 1096,
+        "vertices": 3288,
+        "volume_mm3": 163.425691,
+        "watertight": false
+      },
+      "assembly_letter_7_M.stl": {
+        "area_mm2": 381.805777,
+        "bounds": [
+          [
+            15.501536,
+            -86.03804,
+            33.0
+          ],
+          [
+            25.161974,
+            -81.502922,
+            48.0
+          ]
+        ],
+        "triangles": 758,
+        "vertices": 2274,
+        "volume_mm3": 219.148491,
+        "watertight": false
+      },
+      "assembly_letter_8_S.stl": {
+        "area_mm2": 302.077151,
+        "bounds": [
+          [
+            25.715611,
+            -83.36837,
+            33.000042
+          ],
+          [
+            33.846996,
+            -78.471214,
+            48.0
+          ]
+        ],
+        "triangles": 1770,
+        "vertices": 5310,
+        "volume_mm3": 152.511176,
+        "watertight": false
+      },
+      "assembly_paw_panel.stl": {
+        "area_mm2": 68580.240794,
+        "bounds": [
+          [
+            -81.599998,
+            -86.0,
+            9.0
+          ],
+          [
+            81.599998,
+            81.599998,
+            75.0
+          ]
+        ],
+        "triangles": 116388,
+        "vertices": 349164,
+        "volume_mm3": 133050.314653,
+        "watertight": false
+      },
+      "assembly_top_seat_ring.stl": {
+        "area_mm2": 23656.235259,
+        "bounds": [
+          [
+            -85.0,
+            -85.0,
+            72.0
+          ],
+          [
+            85.0,
+            85.0,
+            78.0
+          ]
+        ],
+        "triangles": 8464,
+        "vertices": 25392,
+        "volume_mm3": 48687.88002,
+        "watertight": false
+      },
+      "cooper_base.stl": {
+        "area_mm2": 31375.8965,
+        "bounds": [
+          [
+            -85.0,
+            -85.0,
+            0.0
+          ],
+          [
+            85.0,
+            85.0,
+            12.0
+          ]
+        ],
+        "triangles": 3072,
+        "vertices": 9216,
+        "volume_mm3": 89812.031457,
+        "watertight": false
+      },
+      "cooper_paw_panel.stl": {
+        "area_mm2": 68580.240794,
+        "bounds": [
+          [
+            -81.599998,
+            -86.0,
+            0.0
+          ],
+          [
+            81.599998,
+            81.599998,
+            66.0
+          ]
+        ],
+        "triangles": 116388,
+        "vertices": 349164,
+        "volume_mm3": 133050.314653,
+        "watertight": false
+      },
+      "cooper_top_seat_ring.stl": {
+        "area_mm2": 23656.235259,
+        "bounds": [
+          [
+            -85.0,
+            -85.0,
+            0.0
+          ],
+          [
+            85.0,
+            85.0,
+            6.0
+          ]
+        ],
+        "triangles": 8464,
+        "vertices": 25392,
+        "volume_mm3": 48687.88002,
+        "watertight": false
+      },
+      "letter_1_W.stl": {
+        "area_mm2": 485.872558,
+        "bounds": [
+          [
+            -6.659959,
+            -7.5,
+            0.0
+          ],
+          [
+            6.65996,
+            7.5,
+            2.519678
+          ]
+        ],
+        "triangles": 1594,
+        "vertices": 4782,
+        "volume_mm3": 266.366715,
+        "watertight": false
+      },
+      "letter_2_I.stl": {
+        "area_mm2": 154.714329,
+        "bounds": [
+          [
+            -1.26,
+            -7.499958,
+            0.0
+          ],
+          [
+            1.26,
+            7.5,
+            2.269431
+          ]
+        ],
+        "triangles": 44,
+        "vertices": 132,
+        "volume_mm3": 85.537757,
+        "watertight": false
+      },
+      "letter_3_L.stl": {
+        "area_mm2": 199.901131,
+        "bounds": [
+          [
+            -3.719999,
+            -7.5,
+            0.0
+          ],
+          [
+            3.720001,
+            7.5,
+            2.347708
+          ]
+        ],
+        "triangles": 76,
+        "vertices": 228,
+        "volume_mm3": 111.17804,
+        "watertight": false
+      },
+      "letter_4_L.stl": {
+        "area_mm2": 199.920548,
+        "bounds": [
+          [
+            -3.72,
+            -7.5,
+            0.0
+          ],
+          [
+            3.72,
+            7.5,
+            2.338783
+          ]
+        ],
+        "triangles": 78,
+        "vertices": 234,
+        "volume_mm3": 111.125348,
+        "watertight": false
+      },
+      "letter_5_I.stl": {
+        "area_mm2": 154.899053,
+        "bounds": [
+          [
+            -1.26,
+            -7.499958,
+            0.0
+          ],
+          [
+            1.26,
+            7.5,
+            2.275541
+          ]
+        ],
+        "triangles": 56,
+        "vertices": 168,
+        "volume_mm3": 85.421821,
+        "watertight": false
+      },
+      "letter_6_A.stl": {
+        "area_mm2": 305.291384,
+        "bounds": [
+          [
+            -4.61996,
+            -7.499958,
+            0.0
+          ],
+          [
+            4.61996,
+            7.499958,
+            2.391716
+          ]
+        ],
+        "triangles": 1096,
+        "vertices": 3288,
+        "volume_mm3": 163.425679,
+        "watertight": false
+      },
+      "letter_7_M.stl": {
+        "area_mm2": 381.805757,
+        "bounds": [
+          [
+            -4.680002,
+            -7.5,
+            0.0
+          ],
+          [
+            4.68,
+            7.5,
+            2.395064
+          ]
+        ],
+        "triangles": 758,
+        "vertices": 2274,
+        "volume_mm3": 219.148472,
+        "watertight": false
+      },
+      "letter_8_S.stl": {
+        "area_mm2": 302.077094,
+        "bounds": [
+          [
+            -3.899962,
+            -7.499958,
+            0.0
+          ],
+          [
+            3.9,
+            7.5,
+            2.349344
+          ]
+        ],
+        "triangles": 1770,
+        "vertices": 5310,
+        "volume_mm3": 152.511126,
+        "watertight": false
+      }
+    },
+    "threemf": {
+      "WILLIAMS_Paw_Lattice_P2S.3mf": {
+        "3D/3dmodel.model": {
+          "bytes": 5097,
+          "sha256": "b4752e784ac320e7"
+        },
+        "3D/Objects/object_1.model": {
+          "bytes": 235582,
+          "sha256": "3440fa3a35d561b7"
+        },
+        "3D/Objects/object_10.model": {
+          "bytes": 56342,
+          "sha256": "61e2090b495f07a6"
+        },
+        "3D/Objects/object_11.model": {
+          "bytes": 131865,
+          "sha256": "8776bc7bec9dd19d"
+        },
+        "3D/Objects/object_2.model": {
+          "bytes": 9756556,
+          "sha256": "71c9f2cc714f402e"
+        },
+        "3D/Objects/object_3.model": {
+          "bytes": 656401,
+          "sha256": "d4bd22aa13b5a19f"
+        },
+        "3D/Objects/object_4.model": {
+          "bytes": 118684,
+          "sha256": "101f80f1f0e9ab5c"
+        },
+        "3D/Objects/object_5.model": {
+          "bytes": 3777,
+          "sha256": "c8493c5068e167df"
+        },
+        "3D/Objects/object_6.model": {
+          "bytes": 6059,
+          "sha256": "c456d08840737844"
+        },
+        "3D/Objects/object_7.model": {
+          "bytes": 6201,
+          "sha256": "ff9f404ce1861ad1"
+        },
+        "3D/Objects/object_8.model": {
+          "bytes": 4639,
+          "sha256": "ae2048f5827717ef"
+        },
+        "3D/Objects/object_9.model": {
+          "bytes": 81543,
+          "sha256": "404d82880600cdc9"
+        },
+        "3D/_rels/3dmodel.model.rels": {
+          "bytes": 1597,
+          "sha256": "df1b40b757a5c7e5"
+        },
+        "Metadata/filament_sequence.json": {
+          "bytes": 72,
+          "sha256": "b22b4b14fba30815"
+        },
+        "Metadata/model_settings.config": {
+          "bytes": 19175,
+          "sha256": "057d038a9f72ba7d"
+        },
+        "Metadata/pick_1.png": {
+          "bytes": 3229,
+          "sha256": "b2f3b7f5fc867977"
+        },
+        "Metadata/pick_2.png": {
+          "bytes": 3429,
+          "sha256": "ad6061c6d0b31b02"
+        },
+        "Metadata/pick_3.png": {
+          "bytes": 3258,
+          "sha256": "017901d30ac70ed0"
+        },
+        "Metadata/pick_4.png": {
+          "bytes": 2158,
+          "sha256": "146f8814d07eaac7"
+        },
+        "Metadata/plate_1.png": {
+          "bytes": 6466,
+          "sha256": "f8a38297c4ed6b13"
+        },
+        "Metadata/plate_1_small.png": {
+          "bytes": 2509,
+          "sha256": "08b1692c7c713c45"
+        },
+        "Metadata/plate_2.png": {
+          "bytes": 25317,
+          "sha256": "a4f9550900d905f9"
+        },
+        "Metadata/plate_2_small.png": {
+          "bytes": 4341,
+          "sha256": "2f664c086d550c10"
+        },
+        "Metadata/plate_3.png": {
+          "bytes": 4859,
+          "sha256": "6768b328f7fdb52d"
+        },
+        "Metadata/plate_3_small.png": {
+          "bytes": 1939,
+          "sha256": "eaf42e817af0efa6"
+        },
+        "Metadata/plate_4.png": {
+          "bytes": 11092,
+          "sha256": "b81c881832cb4d9d"
+        },
+        "Metadata/plate_4_small.png": {
+          "bytes": 4132,
+          "sha256": "9219c6cb33bc43e0"
+        },
+        "Metadata/plate_no_light_1.png": {
+          "bytes": 2708,
+          "sha256": "36f11f8d111d5a81"
+        },
+        "Metadata/plate_no_light_2.png": {
+          "bytes": 4386,
+          "sha256": "c77c7aacaff19d61"
+        },
+        "Metadata/plate_no_light_3.png": {
+          "bytes": 2654,
+          "sha256": "42be9c2c8b7667df"
+        },
+        "Metadata/plate_no_light_4.png": {
+          "bytes": 4740,
+          "sha256": "28486df2061ef7df"
+        },
+        "Metadata/project_settings.config": {
+          "bytes": 56720,
+          "sha256": "13412040064f3127"
+        },
+        "Metadata/slice_info.config": {
+          "bytes": 205,
+          "sha256": "13766246db5e3a24"
+        },
+        "Metadata/top_1.png": {
+          "bytes": 7059,
+          "sha256": "36a23c1b1a48b203"
+        },
+        "Metadata/top_2.png": {
+          "bytes": 7372,
+          "sha256": "6fc10d9f4af5084a"
+        },
+        "Metadata/top_3.png": {
+          "bytes": 6759,
+          "sha256": "4a21e91bf6d1e42b"
+        },
+        "Metadata/top_4.png": {
+          "bytes": 3135,
+          "sha256": "b7a7db16ec884ff0"
+        },
+        "[Content_Types].xml": {
+          "bytes": 432,
+          "sha256": "4acce1f577c7f0af"
+        },
+        "_rels/.rels": {
+          "bytes": 673,
+          "sha256": "eba9728f3f5482ec"
+        }
+      }
+    }
+  },
+  "fluted/MAX/bold": {
+    "dimensions": {
+      "bowl": {
+        "note": "Locked to Cooper metal bowl size",
+        "opening": 133.0,
+        "rim_outer_diameter": 140.0,
+        "rim_recess": 1.8,
+        "seat_diameter": 142.0
+      },
+      "design": "Ogma Fluted Drum Bowl Stand",
+      "fluted": {
+        "construction": "solid continuous wall with inward-cut vertical flutes",
+        "flute_count": 64.0,
+        "flute_depth": 1.1,
+        "flute_pitch": 8.011061266653972,
+        "flute_profile": "depth * (0.5 + 0.5 * sin(count * theta)), subtracted",
+        "name_fade": 6.0,
+        "name_keepout": "smoothstep fade over name_fade mm; no hard edge",
+        "profile_validation": "all radial/Z cross-sections simple and positive-area",
+        "provenance": "profile from the archived Named Bowl v4.5 generator; sign inverted so the OD is unchanged",
+        "reference_r": 81.6,
+        "remaining_web": 2.9,
+        "smooth_name_height": 20.0,
+        "smooth_name_width": 46.58286799506035,
+        "supports": "none \u2014 flutes are constant in Z, so every layer footprint is identical"
+      },
+      "letters": {
+        "arc_centers": [
+          -14.459390845703629,
+          0.3537792070980984,
+          14.813170052801727
+        ],
+        "face_radius": 83.0,
+        "font_style": "bold",
+        "height": 15.0,
+        "letter_center_z": 39.0,
+        "name_rail_flat_deg": 16.324568379633547,
+        "name_rail_outer_deg": 17.824568379633547,
+        "pocket_depth": 0.85,
+        "proud_thickness": 1.4,
+        "text": "MAX"
+      },
+      "stand": {
+        "body_triangles": 504010,
+        "body_volume_mm3": 193689.2712592592,
+        "body_watertight": true,
+        "minimum_flute_web": 2.9,
+        "parts": "single-piece drum plus separate glue-in letters",
+        "support_overhang_deg": 39.01504768488457,
+        "support_start_z": 58.0,
+        "wall_thickness": 4.0
+      },
+      "style": "fluted",
+      "units": "mm"
+    },
+    "job": {
+      "font_style": "bold",
+      "fuzzy_enabled": false,
+      "letter_filament_id": "matte-ivory-white",
+      "letter_hex": "#FFFFFF",
+      "name": "MAX",
+      "rail_outer_deg": 17.824568379633547,
+      "stand_filament_id": "matte-caramel",
+      "stand_hex": "#AE835B",
+      "style": "fluted",
+      "threemf": "MAX_Fluted_P2S.3mf"
+    },
+    "meshes": {
+      "assembly_fluted_body.stl": {
+        "area_mm2": 88205.41199,
+        "bounds": [
+          [
+            -82.026138,
+            -82.026138,
+            0.0
+          ],
+          [
+            82.026138,
+            82.026138,
+            78.0
+          ]
+        ],
+        "triangles": 504010,
+        "vertices": 1512030,
+        "volume_mm3": 193689.271259,
+        "watertight": false
+      },
+      "assembly_letter_1_M.stl": {
+        "area_mm2": 625.703928,
+        "bounds": [
+          [
+            -21.826391,
+            -87.252266,
+            31.5
+          ],
+          [
+            -7.873689,
+            -81.504143,
+            46.499958
+          ]
+        ],
+        "triangles": 1108,
+        "vertices": 3324,
+        "volume_mm3": 445.592402,
+        "watertight": false
+      },
+      "assembly_letter_2_A.stl": {
+        "area_mm2": 461.506469,
+        "bounds": [
+          [
+            -6.662068,
+            -87.429131,
+            31.50004
+          ],
+          [
+            7.392429,
+            -83.919319,
+            46.499958
+          ]
+        ],
+        "triangles": 1356,
+        "vertices": 4068,
+        "volume_mm3": 324.226456,
+        "watertight": false
+      },
+      "assembly_letter_3_X.stl": {
+        "area_mm2": 479.244241,
+        "bounds": [
+          [
+            8.58532,
+            -87.151459,
+            31.50004
+          ],
+          [
+            21.833757,
+            -81.476837,
+            46.499958
+          ]
+        ],
+        "triangles": 2076,
+        "vertices": 6228,
+        "volume_mm3": 305.044394,
+        "watertight": false
+      },
+      "fluted_body.stl": {
+        "area_mm2": 88205.41199,
+        "bounds": [
+          [
+            -82.026138,
+            -82.026138,
+            0.0
+          ],
+          [
+            82.026138,
+            82.026138,
+            78.0
+          ]
+        ],
+        "triangles": 504010,
+        "vertices": 1512030,
+        "volume_mm3": 193689.271259,
+        "watertight": false
+      },
+      "letter_1_M.stl": {
+        "area_mm2": 625.70392,
+        "bounds": [
+          [
+            -6.77996,
+            -7.5,
+            0.0
+          ],
+          [
+            6.78,
+            7.499958,
+            3.450007
+          ]
+        ],
+        "triangles": 1108,
+        "vertices": 3324,
+        "volume_mm3": 445.592392,
+        "watertight": false
+      },
+      "letter_2_A.stl": {
+        "area_mm2": 461.50647,
+        "bounds": [
+          [
+            -7.01996,
+            -7.49996,
+            0.0
+          ],
+          [
+            7.019959,
+            7.499958,
+            3.450007
+          ]
+        ],
+        "triangles": 1356,
+        "vertices": 4068,
+        "volume_mm3": 324.226458,
+        "watertight": false
+      },
+      "letter_3_X.stl": {
+        "area_mm2": 479.244221,
+        "bounds": [
+          [
+            -6.41996,
+            -7.49996,
+            0.0
+          ],
+          [
+            6.41996,
+            7.499958,
+            3.450007
+          ]
+        ],
+        "triangles": 2076,
+        "vertices": 6228,
+        "volume_mm3": 305.044371,
+        "watertight": false
+      }
+    },
+    "threemf": {
+      "MAX_Fluted_P2S.3mf": {
+        "3D/3dmodel.model": {
+          "bytes": 2218,
+          "sha256": "d864b1f9f4f98176"
+        },
+        "3D/Objects/object_1.model": {
+          "bytes": 42111043,
+          "sha256": "98b74296464a645d"
+        },
+        "3D/Objects/object_2.model": {
+          "bytes": 82537,
+          "sha256": "f60b7c70d8983d3d"
+        },
+        "3D/Objects/object_3.model": {
+          "bytes": 100937,
+          "sha256": "bcc7f1806e36198e"
+        },
+        "3D/Objects/object_4.model": {
+          "bytes": 154919,
+          "sha256": "dfe3a19c8d616edf"
+        },
+        "3D/_rels/3dmodel.model.rels": {
+          "bytes": 669,
+          "sha256": "7db2e92d91393837"
+        },
+        "Metadata/filament_sequence.json": {
+          "bytes": 72,
+          "sha256": "b22b4b14fba30815"
+        },
+        "Metadata/model_settings.config": {
+          "bytes": 8578,
+          "sha256": "821f6551d8e3964d"
+        },
+        "Metadata/pick_1.png": {
+          "bytes": 3429,
+          "sha256": "ad6061c6d0b31b02"
+        },
+        "Metadata/pick_2.png": {
+          "bytes": 2158,
+          "sha256": "146f8814d07eaac7"
+        },
+        "Metadata/plate_1.png": {
+          "bytes": 25317,
+          "sha256": "a4f9550900d905f9"
+        },
+        "Metadata/plate_2.png": {
+          "bytes": 11092,
+          "sha256": "b81c881832cb4d9d"
+        },
+        "Metadata/plate_no_light_1.png": {
+          "bytes": 4386,
+          "sha256": "c77c7aacaff19d61"
+        },
+        "Metadata/plate_no_light_2.png": {
+          "bytes": 4740,
+          "sha256": "28486df2061ef7df"
+        },
+        "Metadata/project_settings.config": {
+          "bytes": 56671,
+          "sha256": "906b915fddc1857b"
+        },
+        "Metadata/slice_info.config": {
+          "bytes": 205,
+          "sha256": "13766246db5e3a24"
+        },
+        "Metadata/top_1.png": {
+          "bytes": 7372,
+          "sha256": "6fc10d9f4af5084a"
+        },
+        "Metadata/top_2.png": {
+          "bytes": 3135,
+          "sha256": "b7a7db16ec884ff0"
+        },
+        "[Content_Types].xml": {
+          "bytes": 432,
+          "sha256": "4acce1f577c7f0af"
+        },
+        "_rels/.rels": {
+          "bytes": 673,
+          "sha256": "eba9728f3f5482ec"
+        }
+      }
+    }
+  },
+  "hex/MAX/bold": {
+    "dimensions": {
+      "bowl": {
+        "note": "Locked to Cooper metal bowl size",
+        "opening": 133.0,
+        "rim_outer_diameter": 140.0,
+        "rim_recess": 1.8,
+        "seat_diameter": 142.0
+      },
+      "design": "Ogma Solid Honeycomb Bowl Stand",
+      "honeycomb": {
+        "apothem": 8.222557117861786,
+        "bottom_edge_chamfer": 0.35,
+        "bottom_edge_height": 1.2,
+        "construction": "solid continuous wall with recessed grooves",
+        "groove_chamfer": 1.3,
+        "groove_depth": 1.0,
+        "groove_gap": 2.7,
+        "name_keepout": "whole honeycomb cells; complete boundary edges",
+        "name_keepout_margin": 1.5,
+        "ncols": 36.0,
+        "pattern_border_depth": 0.45,
+        "pattern_border_width": 1.4,
+        "pattern_edge_band": 5.0,
+        "pitch_u": 14.241886696273728,
+        "pitch_z": 16.445114235723572,
+        "profile_validation": "all radial/Z cross-sections simple and positive-area",
+        "radius": 9.494591130849152,
+        "reference_r": 81.6,
+        "smooth_name_height": 34.44511423572357,
+        "smooth_name_width": 63.57205025675865,
+        "top_edge_bead": 0.45,
+        "top_edge_height": 1.2
+      },
+      "letters": {
+        "arc_centers": [
+          -14.459390845703629,
+          0.3537792070980984,
+          14.813170052801727
+        ],
+        "face_radius": 83.0,
+        "font_style": "bold",
+        "height": 15.0,
+        "letter_center_z": 37.0,
+        "name_rail_flat_deg": 16.324568379633547,
+        "name_rail_outer_deg": 17.824568379633547,
+        "pocket_depth": 0.85,
+        "proud_thickness": 1.4,
+        "text": "MAX"
+      },
+      "stand": {
+        "body_triangles": 504048,
+        "body_volume_mm3": 209261.1346484567,
+        "body_watertight": true,
+        "minimum_groove_web": 3.0,
+        "parts": "single-piece drum plus separate glue-in letters",
+        "support_overhang_deg": 39.01504768488457,
+        "support_start_z": 58.0,
+        "wall_thickness": 4.0
+      },
+      "style": "hex",
+      "units": "mm"
+    },
+    "job": {
+      "font_style": "bold",
+      "fuzzy_enabled": false,
+      "letter_filament_id": "matte-ivory-white",
+      "letter_hex": "#FFFFFF",
+      "name": "MAX",
+      "rail_outer_deg": 17.824568379633547,
+      "stand_filament_id": "matte-caramel",
+      "stand_hex": "#AE835B",
+      "style": "hex",
+      "threemf": "MAX_Honeycomb_P2S.3mf"
+    },
+    "meshes": {
+      "assembly_honeycomb_body.stl": {
+        "area_mm2": 90125.333055,
+        "bounds": [
+          [
+            -82.050003,
+            -82.050003,
+            0.0
+          ],
+          [
+            82.050003,
+            82.050003,
+            78.0
+          ]
+        ],
+        "triangles": 504048,
+        "vertices": 1512144,
+        "volume_mm3": 209261.134648,
+        "watertight": false
+      },
+      "assembly_letter_1_M.stl": {
+        "area_mm2": 625.703923,
+        "bounds": [
+          [
+            -21.826391,
+            -87.252266,
+            29.5
+          ],
+          [
+            -7.873689,
+            -81.504143,
+            44.499958
+          ]
+        ],
+        "triangles": 1108,
+        "vertices": 3324,
+        "volume_mm3": 445.592405,
+        "watertight": false
+      },
+      "assembly_letter_2_A.stl": {
+        "area_mm2": 461.506476,
+        "bounds": [
+          [
+            -6.662068,
+            -87.429131,
+            29.50004
+          ],
+          [
+            7.392429,
+            -83.919319,
+            44.499958
+          ]
+        ],
+        "triangles": 1356,
+        "vertices": 4068,
+        "volume_mm3": 324.22646,
+        "watertight": false
+      },
+      "assembly_letter_3_X.stl": {
+        "area_mm2": 479.244275,
+        "bounds": [
+          [
+            8.58532,
+            -87.151459,
+            29.50004
+          ],
+          [
+            21.833757,
+            -81.476837,
+            44.499958
+          ]
+        ],
+        "triangles": 2076,
+        "vertices": 6228,
+        "volume_mm3": 305.044395,
+        "watertight": false
+      },
+      "honeycomb_body.stl": {
+        "area_mm2": 90125.333055,
+        "bounds": [
+          [
+            -82.050003,
+            -82.050003,
+            0.0
+          ],
+          [
+            82.050003,
+            82.050003,
+            78.0
+          ]
+        ],
+        "triangles": 504048,
+        "vertices": 1512144,
+        "volume_mm3": 209261.134648,
+        "watertight": false
+      },
+      "letter_1_M.stl": {
+        "area_mm2": 625.703916,
+        "bounds": [
+          [
+            -6.77996,
+            -7.5,
+            0.0
+          ],
+          [
+            6.78,
+            7.499958,
+            3.450007
+          ]
+        ],
+        "triangles": 1108,
+        "vertices": 3324,
+        "volume_mm3": 445.592395,
+        "watertight": false
+      },
+      "letter_2_A.stl": {
+        "area_mm2": 461.506477,
+        "bounds": [
+          [
+            -7.01996,
+            -7.49996,
+            0.0
+          ],
+          [
+            7.019959,
+            7.499958,
+            3.450007
+          ]
+        ],
+        "triangles": 1356,
+        "vertices": 4068,
+        "volume_mm3": 324.226462,
+        "watertight": false
+      },
+      "letter_3_X.stl": {
+        "area_mm2": 479.244254,
+        "bounds": [
+          [
+            -6.41996,
+            -7.49996,
+            0.0
+          ],
+          [
+            6.41996,
+            7.499958,
+            3.450007
+          ]
+        ],
+        "triangles": 2076,
+        "vertices": 6228,
+        "volume_mm3": 305.044372,
+        "watertight": false
+      }
+    },
+    "threemf": {
+      "MAX_Honeycomb_P2S.3mf": {
+        "3D/3dmodel.model": {
+          "bytes": 2218,
+          "sha256": "d864b1f9f4f98176"
+        },
+        "3D/Objects/object_1.model": {
+          "bytes": 42114304,
+          "sha256": "a223b3505b372847"
+        },
+        "3D/Objects/object_2.model": {
+          "bytes": 82537,
+          "sha256": "edea6489cfd57ca3"
+        },
+        "3D/Objects/object_3.model": {
+          "bytes": 100937,
+          "sha256": "51b81d36137e252c"
+        },
+        "3D/Objects/object_4.model": {
+          "bytes": 154919,
+          "sha256": "6adb0cfaa5d6e5b4"
+        },
+        "3D/_rels/3dmodel.model.rels": {
+          "bytes": 669,
+          "sha256": "7db2e92d91393837"
+        },
+        "Metadata/filament_sequence.json": {
+          "bytes": 72,
+          "sha256": "b22b4b14fba30815"
+        },
+        "Metadata/model_settings.config": {
+          "bytes": 7197,
+          "sha256": "e30d716d4501e475"
+        },
+        "Metadata/pick_1.png": {
+          "bytes": 3429,
+          "sha256": "ad6061c6d0b31b02"
+        },
+        "Metadata/pick_2.png": {
+          "bytes": 2158,
+          "sha256": "146f8814d07eaac7"
+        },
+        "Metadata/plate_1.png": {
+          "bytes": 25317,
+          "sha256": "a4f9550900d905f9"
+        },
+        "Metadata/plate_2.png": {
+          "bytes": 11092,
+          "sha256": "b81c881832cb4d9d"
+        },
+        "Metadata/plate_no_light_1.png": {
+          "bytes": 4386,
+          "sha256": "c77c7aacaff19d61"
+        },
+        "Metadata/plate_no_light_2.png": {
+          "bytes": 4740,
+          "sha256": "28486df2061ef7df"
+        },
+        "Metadata/project_settings.config": {
+          "bytes": 56671,
+          "sha256": "906b915fddc1857b"
+        },
+        "Metadata/slice_info.config": {
+          "bytes": 205,
+          "sha256": "13766246db5e3a24"
+        },
+        "Metadata/top_1.png": {
+          "bytes": 7372,
+          "sha256": "6fc10d9f4af5084a"
+        },
+        "Metadata/top_2.png": {
+          "bytes": 3135,
+          "sha256": "b7a7db16ec884ff0"
+        },
+        "[Content_Types].xml": {
+          "bytes": 432,
+          "sha256": "4acce1f577c7f0af"
+        },
+        "_rels/.rels": {
+          "bytes": 673,
+          "sha256": "eba9728f3f5482ec"
+        }
+      }
+    }
+  },
+  "wave/LUNA/serif": {
+    "dimensions": {
+      "bowl": {
+        "note": "Locked to Cooper metal bowl size",
+        "opening": 133.0,
+        "rim_outer_diameter": 140.0,
+        "rim_recess": 1.8,
+        "seat_diameter": 142.0
+      },
+      "design": "Ogma Three-Piece Wave Bowl Stand",
+      "letters": {
+        "arc_centers": [
+          -22.256028479204907,
+          -8.732254459507065,
+          6.561413657610015,
+          21.22760671223719
+        ],
+        "back_surface": "concave cone matching Wave wall taper",
+        "face_radius": 80.36666666666667,
+        "font_style": "serif",
+        "height": 15.0,
+        "letter_azimuth_deg": 90.0,
+        "letter_center_z": 52.0,
+        "letter_face": "large low-seam lobe",
+        "mount": "direct glyph pockets in upper cone; no plaque",
+        "name_rail_outer_deg": 22.95202968535586,
+        "packing_outer_deg": 22.95202968535586,
+        "pocket_depth": 0.85,
+        "proud_thickness": 1.4,
+        "text": "LUNA"
+      },
+      "stand": {
+        "assembly": "sine seam collar sleeve 0.5 mm/side + CA glue channel; separate bowl-seat insert glued over upper-shell top rim",
+        "collar_wall_thickness": 2.4,
+        "lower_triangles": 16384,
+        "lower_volume_mm3": 156867.6721622361,
+        "lower_watertight": true,
+        "seat_insert_triangles": 3584,
+        "seat_insert_volume_mm3": 9250.848526700507,
+        "seat_insert_watertight": true,
+        "upper_triangles": 93156,
+        "upper_volume_mm3": 92015.1956842617,
+        "upper_watertight": true
+      },
+      "style": "wave",
+      "units": "mm",
+      "wave": {
+        "amp": 8.0,
+        "collar_clearance": 0.5,
+        "collar_outer_radius": 74.0,
+        "h": 78.0,
+        "minimum_upper_wall": 4.0,
+        "profile_validation": "all radial/Z cross-sections simple and positive-area",
+        "rb_in": 80.2,
+        "rb_out": 85.7,
+        "rc": 74.0,
+        "receiver_outer_radius_at_transition": 79.47166666666666,
+        "receiver_profile": "continuous taper; no horizontal shoulder",
+        "receiver_wall_at_transition": 4.971666666666664,
+        "rt_out": 75.6,
+        "s_max": 43.1,
+        "s_min": 27.1,
+        "seam_y": 35.1,
+        "seat_insert_clearance": 0.3,
+        "seat_insert_flange_outer_radius": 75.53307692307692,
+        "seat_insert_flange_overlap": 3.700000000000003,
+        "seat_insert_flange_thickness": 1.8,
+        "seat_insert_locator_outer_radius": 71.53307692307692,
+        "seat_z": 76.2,
+        "sleeve_inner_radius": 74.5,
+        "surface_construction": "continuous_wrapped_profile",
+        "surface_sections": 256,
+        "waves": 2,
+        "y2": 47.1
+      }
+    },
+    "job": {
+      "font_style": "serif",
+      "fuzzy_enabled": false,
+      "letter_filament_id": "matte-ivory-white",
+      "letter_hex": "#FFFFFF",
+      "name": "LUNA",
+      "rail_outer_deg": 22.95202968535586,
+      "stand_filament_id": "matte-caramel",
+      "stand_hex": "#AE835B",
+      "style": "wave",
+      "threemf": "LUNA_Wave_P2S.3mf"
+    },
+    "meshes": {
+      "assembly_letter_1_L.stl": {
+        "area_mm2": 257.98468,
+        "bounds": [
+          [
+            72.783234,
+            -27.600151,
+            44.427475
+          ],
+          [
+            79.647041,
+            -16.036148,
+            59.617645
+          ]
+        ],
+        "triangles": 816,
+        "vertices": 2448,
+        "volume_mm3": 118.452033,
+        "watertight": false
+      },
+      "assembly_letter_2_U.stl": {
+        "area_mm2": 351.123721,
+        "bounds": [
+          [
+            75.566788,
+            -15.901216,
+            44.449276
+          ],
+          [
+            81.028381,
+            -1.052891,
+            59.617645
+          ]
+        ],
+        "triangles": 1654,
+        "vertices": 4962,
+        "volume_mm3": 155.898485,
+        "watertight": false
+      },
+      "assembly_letter_3_N.stl": {
+        "area_mm2": 422.743137,
+        "bounds": [
+          [
+            75.94001,
+            -1.006656,
+            44.431484
+          ],
+          [
+            81.623337,
+            13.897354,
+            59.617645
+          ]
+        ],
+        "triangles": 2474,
+        "vertices": 7422,
+        "volume_mm3": 183.22389,
+        "watertight": false
+      },
+      "assembly_letter_4_A.stl": {
+        "area_mm2": 323.514579,
+        "bounds": [
+          [
+            74.185623,
+            14.112754,
+            44.416538
+          ],
+          [
+            80.236717,
+            27.659035,
+            59.617645
+          ]
+        ],
+        "triangles": 1952,
+        "vertices": 5856,
+        "volume_mm3": 134.488059,
+        "watertight": false
+      },
+      "assembly_wave_lower.stl": {
+        "area_mm2": 89653.293297,
+        "bounds": [
+          [
+            -85.699997,
+            -85.699997,
+            0.0
+          ],
+          [
+            85.699997,
+            85.699997,
+            47.099998
+          ]
+        ],
+        "triangles": 16384,
+        "vertices": 49152,
+        "volume_mm3": 156867.669838,
+        "watertight": false
+      },
+      "assembly_wave_seat_insert.stl": {
+        "area_mm2": 12545.397134,
+        "bounds": [
+          [
+            -75.533073,
+            -75.533073,
+            71.699997
+          ],
+          [
+            75.533073,
+            75.533073,
+            78.0
+          ]
+        ],
+        "triangles": 3584,
+        "vertices": 10752,
+        "volume_mm3": 9250.856395,
+        "watertight": false
+      },
+      "assembly_wave_upper.stl": {
+        "area_mm2": 44854.373294,
+        "bounds": [
+          [
+            -82.100258,
+            -80.028465,
+            27.1
+          ],
+          [
+            82.100258,
+            80.028465,
+            76.199997
+          ]
+        ],
+        "triangles": 93156,
+        "vertices": 279468,
+        "volume_mm3": 92015.195684,
+        "watertight": false
+      },
+      "letter_1_L.stl": {
+        "area_mm2": 257.98468,
+        "bounds": [
+          [
+            -5.579962,
+            -7.499962,
+            0.0
+          ],
+          [
+            5.579961,
+            7.499962,
+            2.452516
+          ]
+        ],
+        "triangles": 816,
+        "vertices": 2448,
+        "volume_mm3": 118.452031,
+        "watertight": false
+      },
+      "letter_2_U.stl": {
+        "area_mm2": 351.123711,
+        "bounds": [
+          [
+            -7.31996,
+            -7.500001,
+            0.0
+          ],
+          [
+            7.31996,
+            7.499962,
+            2.600811
+          ]
+        ],
+        "triangles": 1654,
+        "vertices": 4962,
+        "volume_mm3": 155.898483,
+        "watertight": false
+      },
+      "letter_3_N.stl": {
+        "area_mm2": 422.743139,
+        "bounds": [
+          [
+            -7.43996,
+            -7.49996,
+            0.0
+          ],
+          [
+            7.43996,
+            7.499962,
+            2.610994
+          ]
+        ],
+        "triangles": 2474,
+        "vertices": 7422,
+        "volume_mm3": 183.223887,
+        "watertight": false
+      },
+      "letter_4_A.stl": {
+        "area_mm2": 323.514589,
+        "bounds": [
+          [
+            -6.659961,
+            -7.499962,
+            0.0
+          ],
+          [
+            6.659961,
+            7.499962,
+            2.53418
+          ]
+        ],
+        "triangles": 1952,
+        "vertices": 5856,
+        "volume_mm3": 134.488063,
+        "watertight": false
+      },
+      "wave_lower.stl": {
+        "area_mm2": 89653.293297,
+        "bounds": [
+          [
+            -85.699997,
+            -85.699997,
+            0.0
+          ],
+          [
+            85.699997,
+            85.699997,
+            47.099998
+          ]
+        ],
+        "triangles": 16384,
+        "vertices": 49152,
+        "volume_mm3": 156867.669838,
+        "watertight": false
+      },
+      "wave_seat_insert.stl": {
+        "area_mm2": 12545.394461,
+        "bounds": [
+          [
+            -75.533073,
+            -75.533073,
+            0.0
+          ],
+          [
+            75.533073,
+            75.533073,
+            6.3
+          ]
+        ],
+        "triangles": 3584,
+        "vertices": 10752,
+        "volume_mm3": 9250.850219,
+        "watertight": false
+      },
+      "wave_upper.stl": {
+        "area_mm2": 44854.373489,
+        "bounds": [
+          [
+            -82.100258,
+            -80.028465,
+            0.0
+          ],
+          [
+            82.100258,
+            80.028465,
+            49.099998
+          ]
+        ],
+        "triangles": 93156,
+        "vertices": 279468,
+        "volume_mm3": 92015.196409,
+        "watertight": false
+      }
+    },
+    "threemf": {
+      "LUNA_Wave_P2S.3mf": {
+        "3D/3dmodel.model": {
+          "bytes": 3453,
+          "sha256": "c39608b07bdfd835"
+        },
+        "3D/Objects/object_1.model": {
+          "bytes": 1284730,
+          "sha256": "e968ee792de02dac"
+        },
+        "3D/Objects/object_2.model": {
+          "bytes": 7567848,
+          "sha256": "25c825cebddd2e7b"
+        },
+        "3D/Objects/object_3.model": {
+          "bytes": 274931,
+          "sha256": "084a2154825b494f"
+        },
+        "3D/Objects/object_4.model": {
+          "bytes": 60829,
+          "sha256": "eaac4c968c78841b"
+        },
+        "3D/Objects/object_5.model": {
+          "bytes": 123440,
+          "sha256": "0b8981729705ac61"
+        },
+        "3D/Objects/object_6.model": {
+          "bytes": 185737,
+          "sha256": "0488fb61c2115e33"
+        },
+        "3D/Objects/object_7.model": {
+          "bytes": 145360,
+          "sha256": "6464e04165d69ec8"
+        },
+        "3D/_rels/3dmodel.model.rels": {
+          "bytes": 1065,
+          "sha256": "494a3138ffc06306"
+        },
+        "Metadata/filament_sequence.json": {
+          "bytes": 72,
+          "sha256": "b22b4b14fba30815"
+        },
+        "Metadata/model_settings.config": {
+          "bytes": 13402,
+          "sha256": "134c2f421ec9dff3"
+        },
+        "Metadata/pick_1.png": {
+          "bytes": 3229,
+          "sha256": "b2f3b7f5fc867977"
+        },
+        "Metadata/pick_2.png": {
+          "bytes": 3429,
+          "sha256": "ad6061c6d0b31b02"
+        },
+        "Metadata/pick_3.png": {
+          "bytes": 3258,
+          "sha256": "017901d30ac70ed0"
+        },
+        "Metadata/pick_4.png": {
+          "bytes": 2158,
+          "sha256": "146f8814d07eaac7"
+        },
+        "Metadata/plate_1.png": {
+          "bytes": 6466,
+          "sha256": "f8a38297c4ed6b13"
+        },
+        "Metadata/plate_2.png": {
+          "bytes": 25317,
+          "sha256": "a4f9550900d905f9"
+        },
+        "Metadata/plate_3.png": {
+          "bytes": 4859,
+          "sha256": "6768b328f7fdb52d"
+        },
+        "Metadata/plate_4.png": {
+          "bytes": 11092,
+          "sha256": "b81c881832cb4d9d"
+        },
+        "Metadata/plate_no_light_1.png": {
+          "bytes": 2708,
+          "sha256": "36f11f8d111d5a81"
+        },
+        "Metadata/plate_no_light_2.png": {
+          "bytes": 4386,
+          "sha256": "c77c7aacaff19d61"
+        },
+        "Metadata/plate_no_light_3.png": {
+          "bytes": 2654,
+          "sha256": "42be9c2c8b7667df"
+        },
+        "Metadata/plate_no_light_4.png": {
+          "bytes": 4740,
+          "sha256": "28486df2061ef7df"
+        },
+        "Metadata/project_settings.config": {
+          "bytes": 56673,
+          "sha256": "f134fdd79c631bee"
+        },
+        "Metadata/slice_info.config": {
+          "bytes": 205,
+          "sha256": "13766246db5e3a24"
+        },
+        "Metadata/top_1.png": {
+          "bytes": 7059,
+          "sha256": "36a23c1b1a48b203"
+        },
+        "Metadata/top_2.png": {
+          "bytes": 7372,
+          "sha256": "6fc10d9f4af5084a"
+        },
+        "Metadata/top_3.png": {
+          "bytes": 6759,
+          "sha256": "4a21e91bf6d1e42b"
+        },
+        "Metadata/top_4.png": {
+          "bytes": 3135,
+          "sha256": "b7a7db16ec884ff0"
+        },
+        "[Content_Types].xml": {
+          "bytes": 432,
+          "sha256": "4acce1f577c7f0af"
+        },
+        "_rels/.rels": {
+          "bytes": 673,
+          "sha256": "eba9728f3f5482ec"
+        }
+      }
+    }
+  }
+}

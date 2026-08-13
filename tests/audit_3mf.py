@@ -69,6 +69,17 @@ class Audit:
 
 
 def audit(path: Path, stand_hex: str | None, letter_hex: str | None) -> int:
+    """Run the checks and print the table. Returns a process exit code."""
+    return run_audit(path, stand_hex, letter_hex).report()
+
+
+def run_audit(path: Path, stand_hex: str | None, letter_hex: str | None) -> Audit:
+    """The checks themselves, returning the collected results.
+
+    Split out from `audit()` so pytest can assert on individual checks rather
+    than on an exit code — a single number tells you something broke but not
+    which of the fourteen it was.
+    """
     a = Audit()
     z = zipfile.ZipFile(path)
 
@@ -166,7 +177,7 @@ def audit(path: Path, stand_hex: str | None, letter_hex: str | None) -> int:
         f"(limit {BUILD_VOLUME_MM[0]:.0f} x {BUILD_VOLUME_MM[1]:.0f} x {BUILD_VOLUME_MM[2]:.0f})",
     )
 
-    return a.report()
+    return a
 
 
 def generate_one() -> tuple[Path, str, str]:

@@ -44,16 +44,18 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      # Runs the golden harness for its side effect: all five cases must build
-      # a complete 3MF without raising.
-      #
-      # It does NOT diff against a committed baseline. trimesh shifts triangle
-      # counts by ~1% between versions while volumes hold to 7 decimal places,
-      # so a byte-level baseline would fail on an unrelated dependency bump and
-      # train everyone to ignore it. Comparing volumes across versions is worth
-      # doing; it needs a tolerance-aware comparison this does not have yet.
       - name: Build all five golden cases
         run: python tests/goldens.py /tmp/goldens.json /tmp/goldenjobs
+
+      # Compared against the committed baseline with measured tolerances rather
+      # than `==`. An exact diff would fail on any dependency bump: running the
+      # five cases on macOS/trimesh 4.12.2 against Linux/trimesh 5.0.0, four are
+      # byte-identical and `wave` drifts up to 2.6% on triangle counts and
+      # 1.2e-5 on volume. See tests/golden_compare.py for the numbers.
+      #
+      # The baseline is generated on Linux, which is what this job reproduces.
+      - name: Compare against the baseline
+        run: python tests/golden_compare.py tests/goldens-baseline.json /tmp/goldens.json
 
       - uses: actions/upload-artifact@v4
         if: always()

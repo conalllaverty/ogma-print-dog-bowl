@@ -141,8 +141,18 @@ Unchanged. Nothing in the software list moves any of these.
       `tests/audit_3mf.py` passes 14/14 against a P2S profile, which is not the
       same as the slicer accepting the file. Twenty minutes, and the largest
       unverified risk in the whole stack.
-- [x] ~~trimesh version drift~~ — measured, see §3. Worth re-checking across the
-      other four styles.
+- [x] ~~trimesh version drift~~ — **measured across all five cases.** macOS/
+      trimesh 4.12.2 against Linux/trimesh 5.0.0: `cooper`, `hex`, `fluted` and
+      the 8-letter worst case are identical in every byte. Only `wave` moves,
+      and only in its boolean-heavy path — worst 2.59e-02 on triangle counts,
+      1.21e-05 on volume, 4e-05 mm on bounds. Watertightness and the set of
+      parts never move. CI now enforces exactly these tolerances against a
+      committed baseline.
+      **Refinement:** "volume holds to 7 decimal places" is true of the wave
+      *upper*, where it was originally measured (~1.7e-12 relative), but does
+      not generalise — the cone-backed *letters* hold to about five significant
+      decimals. Physically irrelevant at 0.002 mm³ on a 183 mm³ letter, but a
+      comparison written to 7dp would have failed on it.
 - [x] ~~`_union`/`_difference` defined five times~~ — all ten definitions left
       with the moved products. The bowl uses `boolean_union` /
       `boolean_difference`, defined once.

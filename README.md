@@ -61,10 +61,36 @@ make dev            # API on :8000, configurator on :3000
 ## Before you change anything
 
 ```bash
+make pytest                                        # 46 unit tests, ~17 s
 .venv/bin/python tests/smoke_imports.py            # all generators still import
-.venv/bin/python tests/goldens.py after.json /tmp/j  # then diff against a baseline
+
+# geometry regression check, against the committed baseline
+.venv/bin/python tests/goldens.py /tmp/g.json /tmp/j
+.venv/bin/python tests/golden_compare.py tests/goldens-baseline.json /tmp/g.json
 ```
 
 `goldens.py` fingerprints mesh volume/area/triangles/bounds/watertight plus a
-sha256 of every member file inside each exported 3MF. Assert on **volume**, not
-triangle count — trimesh versions shift counts ~1% while volume holds to 7dp.
+sha256 of every member file inside each exported 3MF. `golden_compare.py` diffs
+two of those with tolerances, because the geometry kernels are not
+bit-reproducible across versions.
+
+The tolerances are measured. Running all five cases on macOS/trimesh 4.12.2
+against Linux/trimesh 5.0.0, **four of five are identical in every byte**; only
+`wave` moves, and only in its boolean-heavy path:
+
+| | worst drift |
+|---|---|
+| volume | 1.21e-05 relative |
+| area | 3.60e-05 relative |
+| triangles | 2.59e-02 relative |
+| bounds | 4.00e-05 mm |
+
+Watertightness and the set of parts never move, and are compared exactly.
+
+This refines the older note that "volume holds to 7 decimal places". That is
+true where it was originally measured — the wave *upper*, which agrees to about
+1.7e-12 relative — but it does not generalise. The cone-backed *letters* on the
+same style hold to roughly five significant decimals (183.226106 → 183.223887
+mm³). That is 0.002 mm³ on a letter, far below what a 0.1 mm layer can express,
+so it is a reporting correction rather than a defect — but a comparison written
+to 7dp would have failed on it.
