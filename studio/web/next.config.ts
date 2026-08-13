@@ -9,18 +9,11 @@ const nextConfig: NextConfig = {
     root: path.join(__dirname),
   },
 
-  async rewrites() {
-    // The browser only ever talks to the Next server; it proxies to the API.
-    // That keeps one origin, so no CORS in development and no API URL baked
-    // into the client bundle.
-    const api = process.env.PIPELINE_API_URL || "http://127.0.0.1:8000";
-    return [
-      {
-        source: "/api/v1/:path*",
-        destination: `${api}/api/v1/:path*`,
-      },
-    ];
-  },
+  // The /api/v1/* proxy used to live here as a rewrite. It moved to a route
+  // handler at src/app/api/v1/[...path]/route.ts, because `rewrites()` runs at
+  // build time: `next build` bakes the resolved destination into
+  // routes-manifest.json, so PIPELINE_API_URL in a deployed container was read
+  // from the build machine's environment and silently ignored at run time.
 };
 
 export default nextConfig;

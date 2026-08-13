@@ -1,0 +1,32 @@
+# The API image builds from the repo root, because it needs shared/ and
+# products/ as well as studio/. Without this file that context is ~1.3 GB and
+# the build looks like it has hung before it has done anything at all.
+#
+# Biggest offenders first.
+.git
+_other-products
+.venv
+**/node_modules
+**/.next
+out
+
+# Caches and editor droppings
+**/__pycache__
+**/*.pyc
+.DS_Store
+.cursor
+.env
+
+# Not needed to serve the API. The generator reads shared/ogma/fonts and
+# shared/ogma/bambu at runtime, and products/dog-bowl/assets for the style
+# thumbnails — those stay. Concept sheets and shipped print packages do not.
+products/*/design
+products/*/design-fonts
+
+# The web app has its own image and its own build context (studio/web).
+studio/web
+
+# Test harnesses and docs are for the repo, not the container.
+tests
+*.md
+!products/dog-bowl/AGENTS.md

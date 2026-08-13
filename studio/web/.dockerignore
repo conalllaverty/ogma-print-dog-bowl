@@ -1,0 +1,12 @@
+# The web image builds with studio/web as its context, so the repo-root
+# .dockerignore does not apply here — Docker only reads the one at the context
+# root. Without this, every build ships the local node_modules and .next into
+# the daemon before `npm ci` replaces them anyway.
+node_modules
+.next
+out
+.env*
+.DS_Store
+Dockerfile
+.dockerignore
+README.md

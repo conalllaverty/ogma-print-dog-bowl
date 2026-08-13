@@ -67,7 +67,17 @@ fi
 STAMP="$WEB/node_modules/.package-lock.json"
 if [ ! -e "$STAMP" ] || [ "$WEB/package.json" -nt "$STAMP" ] || [ "$WEB/package-lock.json" -nt "$STAMP" ]; then
   echo "Installing web deps…"
-  (cd "$WEB" && npm install)
+  # `npm ci`, not `npm install`.
+  #
+  # The lockfile is generated on Linux, because Linux is what the Docker image
+  # builds on and `npm ci` refuses a lockfile that doesn't match its platform's
+  # resolution — the committed one never did, so the web image could not build.
+  # Running `npm install` here rewrites it back into a macOS-shaped tree and
+  # breaks the image again, silently, on whoever next runs this script.
+  #
+  # `npm ci` installs exactly what is locked and never writes to it. Verified to
+  # produce a working tree on both macOS and Linux from the same file.
+  (cd "$WEB" && npm ci --no-audit --no-fund)
 fi
 
 # No phone-home from a local dev server.
