@@ -69,7 +69,11 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="Ogma Print Studio", version="2.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    # The parsed list, not the raw comma-joined string. Starlette tests
+    # `origin in self.allow_origins`, which on a str is a *substring* match:
+    # with the string form, Origin `http://localhost:300` was answered with
+    # Access-Control-Allow-Origin plus allow_credentials.
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

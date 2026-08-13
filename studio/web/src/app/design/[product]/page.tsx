@@ -280,7 +280,9 @@ export default function DesignerPage({ params }: { params: Promise<{ product: st
         </div>
 
         <Viewer
-          url={stale ? preview.url : preview.url}
+          // A stale model stays on screen deliberately — the note below says it
+          // is out of date. Clearing it would blank the stage on every keystroke.
+          url={preview.url}
           colours={roleColours}
           fuzzy={!!values.fuzzy_enabled}
           mode={mode}

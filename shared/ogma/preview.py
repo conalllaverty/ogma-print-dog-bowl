@@ -26,11 +26,14 @@ in a single colour. Underscores survive.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Sequence
 
 import trimesh
+
+log = logging.getLogger("ogma.preview")
 
 # A printed stand is ~150k triangles. Below roughly this the model still reads
 # as itself at screen size, and the GLB stays under ~2 MB — small enough that
@@ -94,6 +97,7 @@ def to_glb(
     targets = _budgeted_face_counts(parts, triangle_budget)
     scene = trimesh.Scene()
     before = after = 0
+    undecimated: list[str] = []
 
     for part in parts:
         mesh = part.mesh
@@ -102,11 +106,22 @@ def to_glb(
         if len(mesh.faces) > target:
             try:
                 mesh = mesh.simplify_quadric_decimation(face_count=target)
-            except Exception:
+            except Exception as exc:  # noqa: BLE001
                 # Decimation is a nicety. A part that refuses to simplify (open
                 # edges, degenerate faces) should still appear in the preview at
                 # full resolution rather than vanish from it.
-                pass
+                #
+                # But it must not fail *quietly*. `fast_simplification` was
+                # missing from requirements.txt, so this raised for every part of
+                # every preview and the budget above was never once applied — an
+                # 8.4 MB honeycomb went out looking exactly like a 2 MB one, and
+                # the only evidence was triangles_before == triangles in a stats
+                # dict nobody reads. Say so, and report it in the stats.
+                log.warning(
+                    "could not decimate %s (%d faces, target %d): %s",
+                    part.node_name, len(mesh.faces), target, exc,
+                )
+                undecimated.append(part.node_name)
         after += len(mesh.faces)
         scene.add_geometry(
             mesh, node_name=part.node_name, geom_name=part.node_name
@@ -122,6 +137,9 @@ def to_glb(
         "triangles": after,
         "bytes": out_path.stat().st_size,
         "roles": sorted({p.role for p in parts}),
+        # Empty is the healthy case. Non-empty means the asset is bigger than
+        # the budget promises and the reason is in the log.
+        "undecimated": undecimated,
     }
 
 
