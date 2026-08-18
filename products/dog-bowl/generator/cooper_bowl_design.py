@@ -58,6 +58,21 @@ STAND_HEIGHT = 78.0
 BASE_HEIGHT = 12.0
 LATTICE_BOTTOM = 10.0
 LATTICE_TOP = 72.0
+
+# The panel's lowest point in assembly coordinates — and **not** LATTICE_BOTTOM.
+#
+# The visible lattice starts at LATTICE_BOTTOM (10.0), but the locating tongue
+# that keys into the base groove hangs 1 mm below it, at BASE_HEIGHT - 3.0. The
+# panel is exported for printing translated by its own bounds
+# (`-panel.bounds[0, 2]`), so *this* is the constant that converts between
+# assembly and print frames.
+#
+# Using LATTICE_BOTTOM for that conversion is a 1 mm error, and it was being made
+# by the fuzzy-skin paint mask: every paw's no-fuzz exclusion sat 1 mm below the
+# pad it was meant to protect, which paints a fuzzed strip along one edge of each
+# paw and leaves a smooth strip along the other. That is visible in Bambu
+# Studio's painted triangles, and on the printed wall.
+PANEL_BOTTOM_Z = BASE_HEIGHT - 3.0
 TOP_BOTTOM = 72.0
 WALL_OUTER_R = 81.6
 WALL_INNER_R = 77.6
@@ -75,9 +90,15 @@ PAW_PAINT_R_MID = WALL_OUTER_R
 PAW_PAINT_SEAM_DEG = -90.0  # unwrap seam through the plaque arc (pad-free)
 # Name-rail plaque face. Letters seat in shallow glyph-shaped pockets — no pins.
 NAME_RAIL_OUTER_R = 86.0
-LETTER_POCKET_DEPTH = 0.85  # seats the thinner letter without a deep trench
+LETTER_POCKET_DEPTH = 1.2  # deep enough to swallow the whole letter — see LETTER_PROUD
 LETTER_POCKET_CLEARANCE = 0.10  # tighter outline so less grey halo shows
 LETTER_POCKET_FLOOR_GAP = 0.06  # tiny glue gap under the curved letter back
+# Bowl dimensions are read through `design.` on purpose, never imported by
+# value. They are now set per job from the customer's bowl diameter
+# (see cooper_bowl_design.configure_bowl), and `from ... import BOWL_SEAT_D`
+# binds whatever the value was at import — so this module would have gone on
+# building seats for a 140 mm bowl no matter what was chosen. The same shape
+# of bug already cost this codebase the stale LETTER_FACE_R default.
 BOWL_RIM_OD = 140.0
 BOWL_BODY_OD = 130.0
 BOWL_BASE_OD = 100.0
@@ -93,12 +114,28 @@ TOP_JOINT_HOLE_RADIUS = 1.75
 TOP_JOINT_RADIUS = 79.6
 TOP_JOINT_PIN_HEIGHT = 3.0
 LETTER_HEIGHT = 15.0  # slightly smaller → finer look at 0.4 mm nozzle
-LETTER_THICKNESS = 1.4  # proud height above the rail (less “sticker”)
+# How far a glued-in letter stands above the rail. Zero: the letters sit flush.
+#
+# It was 1.4 mm, which left a lip around every character — and a food bowl gets
+# washed. A raised glyph edge catches residue exactly where a brush skips, and
+# the join between letter and pocket is the hardest part of the whole product to
+# clean. Flush, the wall wipes in one pass and the name reads by colour instead
+# of relief.
+#
+# Every style derives its own LETTER_FACE_R as `<rail radius> + LETTER_PROUD`,
+# so this one number makes the paw lattice, honeycomb, fluted drum and split
+# wave flush together.
+#
+# Flush also means the pocket has to swallow the letter whole, so the letter's
+# real thickness is now LETTER_POCKET_DEPTH — 1.2 mm, up from 0.85. Deeper is
+# better here for a second reason: a letter captured on all four sides cannot be
+# lifted by a scrubbing brush the way a proud one can.
+LETTER_PROUD = 0.0  # flush with the rail
 # Vertically centred on the name-rail flat face (z 29–52 → mid 40.5).
 LETTER_CENTER_Z = 40.5
-# Outer letter face sits LETTER_THICKNESS outside the rail; curved back seats
+# Outer letter face sits LETTER_PROUD outside the rail; curved back seats
 # on the pocket floor at NAME_RAIL_OUTER_R - LETTER_POCKET_DEPTH.
-LETTER_FACE_R = NAME_RAIL_OUTER_R + LETTER_THICKNESS
+LETTER_FACE_R = NAME_RAIL_OUTER_R + LETTER_PROUD
 LETTER_GAP = 1.2  # clear tangential gap between adjacent letter bounds
 LETTER_END_MARGIN = 2.5  # clear space from first/last letter to rail bevel
 # Glyph raster → polygon: finer grid keeps C/O curves from looking hexagonal.
@@ -323,8 +360,152 @@ def beveled_name_rail(
     return mesh
 
 
-def configure_output(out_dir: Path, name: str, font_style: str = "bold") -> None:
-    """Point mesh/visual exports at a job directory and set the name/font."""
+# The paw lattice's own rail geometry, captured at import.
+#
+# These three are module globals that the honeycomb, fluted drum and wave each
+# overwrite with their own wall radius (see their `_configure_*_letters`). None
+# of them puts it back. In a one-shot CLI run that is harmless — the process
+# exits. The API server is long-lived and builds every style in one process, so
+# whichever style ran last left its rail radius behind for the next one.
+#
+# The paw lattice was the visible casualty because it is the only style that
+# never sets these at all: it relies on the module defaults, and by the time it
+# ran they were the honeycomb's. Its letters were built for an 81.6 mm wall and
+# placed on an 86 mm one — buried inside the drum, which read as "the letters
+# have disappeared".
+#
+# The golden harness could not have caught this: it runs each case in a fresh
+# subprocess, so every build starts from a clean module.
+_LETTER_GEOMETRY_DEFAULTS = {
+    "NAME_RAIL_OUTER_R": NAME_RAIL_OUTER_R,
+    "LETTER_FACE_R": LETTER_FACE_R,
+    "LETTER_CENTER_Z": LETTER_CENTER_Z,
+}
+
+
+# The bowl the stand is built around, in millimetres.
+#
+# 140 is the reference: a nominal 5.5" bowl measures 139.7 mm and the stand was
+# designed against it. Everything else about the bowl is derived from this by the
+# ratios the reference embodies, so one number moves the whole seat.
+#
+# Only two of these reach the printed part — BOWL_OPENING_D, which must clear the
+# bowl's body, and BOWL_SEAT_D, which must catch its rim. The rest describe
+# `visual_bowl()`, which is a reference render and never printed, so approximating
+# them by ratio is honest.
+DEFAULT_BOWL_RIM_OD = 140.0
+BOWL_BODY_RATIO = 130.0 / 140.0     # body just under the rim
+BOWL_BASE_RATIO = 100.0 / 140.0
+BOWL_DEPTH_RATIO = 35.0 / 140.0
+BOWL_SEAT_CLEARANCE = 2.0           # seat Ø over rim Ø — catches the rim
+BOWL_OPENING_CLEARANCE = 3.0        # opening Ø over body Ø — passes the body
+
+# What a 170 mm stand can actually hold. Below the minimum the opening closes up;
+# above the maximum the seat eats the wall and leaves no material for the top
+# ring. Measured, not guessed: at Ø158 the ring land is 1.6 mm.
+MIN_BOWL_RIM_OD = 127.0             # 5.0"
+MAX_BOWL_RIM_OD = 152.0             # 6.0"
+
+# How much of the rim must overhang the opening. This is the number that stops a
+# bowl dropping straight through, and it is not a matter of taste: print
+# tolerance on a ~135 mm hole runs ±0.2-0.4 mm and stainless bowls vary ±0.5 mm
+# between batches, so anything under ~1.5 mm can reach zero in the real world.
+# The Ø139 coupon that felt best by hand had 0.35 mm.
+MIN_SEAT_ENGAGEMENT = 2.0
+
+# One-piece construction.
+#
+# The three-part stand keys together with a tongue in a groove and eight pins,
+# each joint carrying 0.35 mm of clearance around a 170 mm circumference. That is
+# capillary width: water wicks in and cannot dry, on a thing that gets rinsed.
+# Printed as one body there is nothing to wick into.
+#
+# The obstacle was never the joints, it was the bowl seat: its underside is an
+# 11 mm horizontal ledge, which prints fine flat on a plate as its own part and
+# needs support the moment it is halfway up a tall one. Replacing that ledge with
+# a cone at this angle makes the whole stand self-supporting upright — measured
+# at 0 mm² needing support, against 24,475 mm² for a naive merge.
+ONE_PIECE_CONE_DEG = 45.0
+
+# Extra opening clearance the cone costs, over the flat ledge.
+#
+# The cone rises into the space the bowl's body passes through, so the opening
+# has to grow by this much to keep clear of it. Ø133 -> Ø134 for the reference
+# bowl, confirmed on a printed full-ring coupon; the sectors before it bracketed
+# 133/136/139 and skipped the answer.
+ONE_PIECE_OPENING_EXTRA = 1.0
+
+
+def configure_bowl(
+    rim_od_mm: float | None = None,
+    body_od_mm: float | None = None,
+) -> None:
+    """Resize the seat for a given bowl, in millimetres.
+
+    `body_od_mm` is the bowl's width just below the rim — the part that has to
+    pass through the opening, as opposed to the rim, which has to be caught by
+    the seat. They are separate measurements on a real bowl and the ratio
+    between them is not reliable across manufacturers, so it is a parameter
+    rather than a derivation; it merely *defaults* to the reference ratio.
+
+    Sets the module globals every style reads through `design.` — which is why
+    those styles must not import them by value; see the note by BOWL_RIM_OD.
+
+    Called from configure_output, so each job starts from the customer's choice
+    rather than inheriting the previous one. The API builds every style in one
+    long-lived process, and module state that is set but never reset is how the
+    paw lattice ended up with the honeycomb's rail radius.
+    """
+    global BOWL_RIM_OD, BOWL_BODY_OD, BOWL_BASE_OD, BOWL_DEPTH
+    global BOWL_OPENING_D, BOWL_SEAT_D
+    rim = float(DEFAULT_BOWL_RIM_OD if rim_od_mm is None else rim_od_mm)
+    if not (MIN_BOWL_RIM_OD <= rim <= MAX_BOWL_RIM_OD):
+        raise ValueError(
+            f"bowl diameter {rim:.1f} mm is outside the {MIN_BOWL_RIM_OD:.0f}"
+            f"-{MAX_BOWL_RIM_OD:.0f} mm this stand can seat"
+        )
+    body = float(rim * BOWL_BODY_RATIO if body_od_mm is None else body_od_mm)
+    engagement = (rim - (body + BOWL_OPENING_CLEARANCE)) / 2.0
+    if engagement < MIN_SEAT_ENGAGEMENT:
+        raise ValueError(
+            f"a {body:.1f} mm body in a {rim:.1f} mm rim leaves only "
+            f"{engagement:.2f} mm of seat to catch the rim; "
+            f"{MIN_SEAT_ENGAGEMENT:.1f} mm is the minimum before the bowl can "
+            f"drop through"
+        )
+    BOWL_RIM_OD = rim
+    BOWL_BODY_OD = body
+    BOWL_BASE_OD = rim * BOWL_BASE_RATIO
+    BOWL_DEPTH = rim * BOWL_DEPTH_RATIO
+    BOWL_SEAT_D = rim + BOWL_SEAT_CLEARANCE
+    BOWL_OPENING_D = body + BOWL_OPENING_CLEARANCE
+
+
+def reset_letter_geometry() -> None:
+    """Restore the paw lattice's rail geometry.
+
+    Called from `configure_output`, which every style invokes first, before
+    applying its own overrides. That makes each build start from a known state
+    instead of inheriting the previous one.
+    """
+    globals().update(_LETTER_GEOMETRY_DEFAULTS)
+
+
+def configure_output(
+    out_dir: Path,
+    name: str,
+    font_style: str = "bold",
+    bowl_rim_od_mm: float | None = None,
+    bowl_body_od_mm: float | None = None,
+) -> None:
+    """Point mesh/visual exports at a job directory and set the name/font.
+
+    Also resets the letter rail geometry — see `reset_letter_geometry`. This is
+    the one call every style makes before configuring anything of its own, so it
+    is where "start from a clean slate" belongs.
+    """
+    reset_letter_geometry()
+    configure_bowl(bowl_rim_od_mm, bowl_body_od_mm)
     global OUT, MESH, VIS, NAME, FONT_STYLE, FONT_PATH
     if font_style not in FONT_STYLES:
         raise ValueError(f"Unknown font style '{font_style}'. Choose from {sorted(FONT_STYLES)}")
@@ -462,8 +643,35 @@ def required_name_rail_angles(half_angles: list[float], arc_centers: list[float]
     return flat_deg, outer_deg
 
 
-def letter_print_to_assembly_matrix(arc_center: float, face_r: float = LETTER_FACE_R) -> np.ndarray:
-    """Map print-space letter (X tangent, Y vertical, Z into rail) to world."""
+def letter_print_to_assembly_matrix(
+    arc_center: float, face_r: float | None = None
+) -> np.ndarray:
+    """Map print-space letter (X tangent, Y vertical, Z into rail) to world.
+
+    `face_r` defaults to the *current* LETTER_FACE_R, resolved on each call.
+
+    It used to be written `face_r: float = LETTER_FACE_R`, which binds the value
+    once, when this module is imported. LETTER_FACE_R is a module global that
+    every style except the paw lattice reassigns at run time — the honeycomb,
+    fluted drum and wave all set their own rail radius — so every call that
+    omitted the argument silently used the paw lattice's 87.4 mm.
+
+    Cooper was the one style where the stale default was correct, which is
+    exactly why it was the one style that looked right. On the honeycomb the
+    letters were placed 87.4 mm out from a wall that ends at 81.6 mm: floating
+    in mid-air, which is what showed up in the viewer.
+
+    Worse, this is not only a placement bug. `curved_letter_mesh` applies this
+    same matrix to cut the letter's concave back against a cylinder at the rail
+    radius. Positioned 4.4 mm too far out, the letter sits entirely outside that
+    cylinder and the boolean removes nothing — so the *printed* letter kept a
+    flat back and could never have seated in its pocket.
+
+    Note the asymmetry that hid it: `theta` below reads the live global, so the
+    angular placement was always right. Only the radius was wrong.
+    """
+    if face_r is None:
+        face_r = LETTER_FACE_R
     theta = arc_center / LETTER_FACE_R
     tangent = np.array([math.cos(theta), math.sin(theta), 0.0])
     radial = np.array([math.sin(theta), -math.cos(theta), 0.0])
@@ -475,6 +683,30 @@ def letter_print_to_assembly_matrix(arc_center: float, face_r: float = LETTER_FA
     return transform
 
 
+def glyph_bulge(polygon, face_r: float | None = None) -> float:
+    """How far a glyph's corners stand proud of the rail, given a flat face.
+
+    The letter's outer face is flat because that is the side that prints against
+    the bed. A flat plane tangent to the rail cylinder is only level with it at
+    the tangent point; `w` millimetres to either side it stands proud by
+    hypot(R, w) - R. That is what stops LETTER_PROUD = 0 from actually being
+    flush.
+
+    Sinking the letter by this much puts its *widest* point level with the rail,
+    which is the edge that a cloth or a brush would otherwise catch. The middle
+    of the glyph then sits that far below flush — a shallow dish, which wipes
+    clean in a way a raised edge does not.
+
+    Per glyph, not one constant, because it goes with the square of the
+    half-width and the fonts differ enormously: measured across all seven faces
+    and A-Z, 0.257 mm for condensed 'W' up to 0.698 mm for slab 'W'. A single
+    offset large enough for the widest would leave 'I' in a 0.7 mm trench.
+    """
+    r = LETTER_FACE_R if face_r is None else face_r
+    half_width = max(abs(polygon.bounds[0]), abs(polygon.bounds[2]))
+    return math.hypot(r, half_width) - r
+
+
 def curved_letter_mesh(polygon, arc_center: float) -> trimesh.Trimesh:
     """Letter with flat printable face and concave cylindrical back.
 
@@ -483,8 +715,9 @@ def curved_letter_mesh(polygon, arc_center: float) -> trimesh.Trimesh:
     """
     r_back = NAME_RAIL_OUTER_R - LETTER_POCKET_DEPTH
     # Extra depth so the cylinder boolean cleanly forms the concave back.
-    extrude_h = LETTER_THICKNESS + LETTER_POCKET_DEPTH + 1.2
+    extrude_h = LETTER_PROUD + LETTER_POCKET_DEPTH + 1.2
     body = trimesh.creation.extrude_polygon(polygon, height=extrude_h, engine="earcut")
+
     body.apply_transform(letter_print_to_assembly_matrix(arc_center))
     core = trimesh.creation.cylinder(radius=r_back, height=120.0, sections=160)
     body = boolean_difference(body, [core])
@@ -502,7 +735,15 @@ def letter_pocket_cutter(polygon, arc_center: float) -> trimesh.Trimesh:
     if poly.geom_type == "MultiPolygon":
         poly = max(poly.geoms, key=lambda g: g.area)
     r_outer = NAME_RAIL_OUTER_R + 0.55
-    r_floor = NAME_RAIL_OUTER_R - LETTER_POCKET_DEPTH - LETTER_POCKET_FLOOR_GAP
+    # Dropped by the glyph's own bulge too — the letter is seated that much
+    # deeper (see glyph_bulge), so a floor at the nominal depth would hold it
+    # proud of the rail again.
+    r_floor = (
+        NAME_RAIL_OUTER_R
+        - glyph_bulge(polygon)
+        - LETTER_POCKET_DEPTH
+        - LETTER_POCKET_FLOOR_GAP
+    )
     extrude_h = (r_outer - r_floor) + 0.4
     body = trimesh.creation.extrude_polygon(poly, height=extrude_h, engine="earcut")
     body.apply_transform(letter_print_to_assembly_matrix(arc_center, face_r=r_outer))
@@ -708,7 +949,58 @@ def radial_cylinder(theta: float, x_offset: float, z: float, radius: float, leng
     return mesh
 
 
-def build_top_ring() -> trimesh.Trimesh:
+def _revolved_wedge(points) -> trimesh.Trimesh:
+    """A solid of revolution from an open (r, z) polyline.
+
+    Closes the profile and fixes the winding, because `revolve` does neither and
+    both failures surface identically — as "Not all meshes are volumes" from
+    whichever boolean runs next, which names none of its inputs. An open profile
+    revolves to a shell; a clockwise one to a solid of negative volume with its
+    normals inside out.
+    """
+    profile = np.asarray(points, dtype=float)
+    if not np.allclose(profile[0], profile[-1]):
+        profile = np.vstack([profile, profile[:1]])
+    wedge = trimesh.creation.revolve(profile, sections=256)
+    if wedge.volume < 0:
+        wedge.invert()
+    return wedge
+
+
+def _seat_cone_fillet() -> trimesh.Trimesh:
+    """The wedge that turns the bowl seat's ledge into a printable cone.
+
+    Additive rather than subtractive: the ledge is the *underside* of existing
+    material, so the fix is to fill the space beneath it, from the wall's inner
+    face up to the opening, at ONE_PIECE_CONE_DEG.
+    """
+    r_open = BOWL_OPENING_D / 2.0
+    rise = (WALL_INNER_R - r_open) * math.tan(math.radians(ONE_PIECE_CONE_DEG))
+    return _revolved_wedge([
+        [r_open, TOP_BOTTOM],
+        [WALL_INNER_R, TOP_BOTTOM - rise],
+        [WALL_INNER_R, TOP_BOTTOM],
+    ])
+
+
+def _top_flange_fillet() -> trimesh.Trimesh:
+    """The wedge under the top ring's outer edge.
+
+    The ring is wider than the wall it sits on, so merging leaves a 3.4 mm
+    downward-facing step right round the drum — 1,780 mm² of ceiling, and by far
+    the largest thing needing support in a naive merge. As three parts it never
+    mattered, because the ring printed flat on its own plate.
+    """
+    overhang = STAND_OD / 2.0 - WALL_OUTER_R
+    drop = overhang * math.tan(math.radians(ONE_PIECE_CONE_DEG))
+    return _revolved_wedge([
+        [STAND_OD / 2.0, TOP_BOTTOM],
+        [WALL_OUTER_R, TOP_BOTTOM - drop],
+        [WALL_OUTER_R, TOP_BOTTOM],
+    ])
+
+
+def build_top_ring(one_piece: bool = False) -> trimesh.Trimesh:
     top_outer = cylinder(STAND_OD / 2, STAND_HEIGHT - TOP_BOTTOM, TOP_BOTTOM)
     # Upright seat ring: conical self-centering seat, then a shallow rim pocket so
     # the metal bowl sits BOWL_RIM_RECESS below the outer top edge.
@@ -736,34 +1028,39 @@ def build_top_ring() -> trimesh.Trimesh:
             [TOP_JOINT_RADIUS * math.sin(theta), -TOP_JOINT_RADIUS * math.cos(theta), 0]
         )
         pin_holes.append(hole)
-    ring = boolean_difference(
-        top_outer, [opening_lower, opening_slope, opening_pocket, *pin_holes]
-    )
+    cutters = [opening_lower, opening_slope, opening_pocket]
+    if not one_piece:
+        cutters.extend(pin_holes)
+    ring = boolean_difference(top_outer, cutters)
     ring.metadata["name"] = "Cooper_Top_Seat_Ring"
     return ring
 
 
-def build_base() -> trimesh.Trimesh:
+def build_base(one_piece: bool = False) -> trimesh.Trimesh:
     base_outer = cylinder(STAND_OD / 2, BASE_HEIGHT, 0)
     base_inner = cylinder(68.0, BASE_HEIGHT + 2, -1)
     base = boolean_difference(base_outer, [base_inner])
 
-    # Open annular groove for the upper structure's locating tongue.
-    groove_outer = cylinder(WALL_OUTER_R + 0.35, 4.0, BASE_HEIGHT - 3.5)
-    groove_inner = cylinder(WALL_INNER_R - 0.35, 5.0, BASE_HEIGHT - 4.0)
-    groove = boolean_difference(groove_outer, [groove_inner])
-    base = boolean_difference(base, [groove])
+    # Open annular groove for the upper structure's locating tongue. There is no
+    # upper structure to locate when the stand is one body, and the groove is
+    # the larger half of the water trap that motivates one-piece at all.
+    if not one_piece:
+        groove_outer = cylinder(WALL_OUTER_R + 0.35, 4.0, BASE_HEIGHT - 3.5)
+        groove_inner = cylinder(WALL_INNER_R - 0.35, 5.0, BASE_HEIGHT - 4.0)
+        groove = boolean_difference(groove_outer, [groove_inner])
+        base = boolean_difference(base, [groove])
     base.metadata["name"] = "Cooper_Bowl_Base"
     return base
 
 
-def build_panel(letter_data) -> trimesh.Trimesh:
+def build_panel(letter_data, one_piece: bool = False) -> trimesh.Trimesh:
     shell_outer = cylinder(WALL_OUTER_R, LATTICE_TOP - LATTICE_BOTTOM, LATTICE_BOTTOM)
     shell_inner = cylinder(WALL_INNER_R, LATTICE_TOP - LATTICE_BOTTOM + 2, LATTICE_BOTTOM - 1)
     shell = boolean_difference(shell_outer, [shell_inner])
     shell = boolean_difference(shell, paw_cutters())
 
     # Tongue extends below the visible lattice and keys into the base groove.
+    # Both disappear in one-piece: the panel simply continues into the base.
     tongue_outer = cylinder(WALL_OUTER_R, 3.0, BASE_HEIGHT - 3.0)
     tongue_inner = cylinder(WALL_INNER_R, 4.0, BASE_HEIGHT - 3.5)
     tongue = boolean_difference(tongue_outer, [tongue_inner])
@@ -778,6 +1075,7 @@ def build_panel(letter_data) -> trimesh.Trimesh:
         angle_max=math.radians(NAME_RAIL_OUTER_DEG),
     )
     top_pins = []
+    _skip_pins = one_piece
     for i in range(TOP_JOINT_PIN_COUNT):
         theta = 2 * math.pi * i / TOP_JOINT_PIN_COUNT
         pin = cylinder(
@@ -790,7 +1088,8 @@ def build_panel(letter_data) -> trimesh.Trimesh:
             [TOP_JOINT_RADIUS * math.sin(theta), -TOP_JOINT_RADIUS * math.cos(theta), 0]
         )
         top_pins.append(pin)
-    lattice = boolean_union([shell, tongue, plaque, *top_pins])
+    parts = [shell, plaque] if one_piece else [shell, tongue, plaque, *top_pins]
+    lattice = boolean_union(parts)
 
     # Shallow glyph-shaped pockets — letters drop in flush; no pin sockets.
     pocket_cutters = [
@@ -804,9 +1103,18 @@ def build_panel(letter_data) -> trimesh.Trimesh:
 
 
 def assembly_letter(item) -> trimesh.Trimesh:
-    """Transform a print-oriented letter to its assembled tangent position."""
+    """Transform a print-oriented letter to its assembled tangent position.
+
+    Seated `glyph_bulge` below the nominal face radius so the glyph's widest
+    point finishes flush with the rail rather than standing proud of it. The
+    matching pocket floor drops by the same amount.
+    """
     mesh = item["mesh"].copy()
-    mesh.apply_transform(letter_print_to_assembly_matrix(item["arc_center"]))
+    polygon = item.get("polygon")
+    sink = glyph_bulge(polygon) if polygon is not None else 0.0
+    mesh.apply_transform(
+        letter_print_to_assembly_matrix(item["arc_center"], face_r=LETTER_FACE_R - sink)
+    )
     return mesh
 
 
@@ -943,24 +1251,48 @@ def write_dimension_svg(path: Path):
     path.write_text(svg)
 
 
-def main():
+def main(one_piece: bool = False):
     MESH.mkdir(parents=True, exist_ok=True)
     VIS.mkdir(parents=True, exist_ok=True)
 
+    if one_piece:
+        # The cone eats into the space the bowl's body passes through, so the
+        # opening opens up by exactly what the printed ring coupon confirmed.
+        global BOWL_OPENING_D
+        BOWL_OPENING_D = BOWL_OPENING_D + ONE_PIECE_OPENING_EXTRA
+
     letters = build_letters()
-    base = build_base()
-    panel = build_panel(letters)
-    top_ring = build_top_ring()
-    stand = trimesh.util.concatenate([base, panel, top_ring])
-    base.export(MESH / "cooper_base.stl")
-    panel_print = panel.copy()
-    panel_print.apply_translation([0, 0, -panel.bounds[0, 2]])
-    panel_print.export(MESH / "cooper_paw_panel.stl")
-    top_ring_print = top_ring.copy()
-    top_ring_print.apply_translation([0, 0, -top_ring.bounds[0, 2]])
-    top_ring_print.export(MESH / "cooper_top_seat_ring.stl")
-    panel.export(MESH / "assembly_paw_panel.stl")
-    top_ring.export(MESH / "assembly_top_seat_ring.stl")
+    base = build_base(one_piece)
+    panel = build_panel(letters, one_piece)
+    top_ring = build_top_ring(one_piece)
+
+    if one_piece:
+        stand = boolean_union(
+            [base, panel, top_ring, _seat_cone_fillet(), _top_flange_fillet()]
+        )
+        stand.metadata["name"] = "Cooper_One_Piece"
+        stand_print = stand.copy()
+        stand_print.apply_translation([0, 0, -stand.bounds[0, 2]])
+        # PLY, not STL, for the printable copy.
+        #
+        # STL is float32 triangle soup: exporting this union and reading it back
+        # loses watertightness, and bambu_project rejects a non-manifold
+        # printable mesh outright. PLY keeps the vertices as written, so it
+        # survives the round trip — which is why the drum styles already write
+        # their bodies as .ply and load them with process=False.
+        stand_print.export(MESH / "cooper_one_piece.ply")
+        stand.export(MESH / "assembly_one_piece.stl")
+    else:
+        stand = trimesh.util.concatenate([base, panel, top_ring])
+        base.export(MESH / "cooper_base.stl")
+        panel_print = panel.copy()
+        panel_print.apply_translation([0, 0, -panel.bounds[0, 2]])
+        panel_print.export(MESH / "cooper_paw_panel.stl")
+        top_ring_print = top_ring.copy()
+        top_ring_print.apply_translation([0, 0, -top_ring.bounds[0, 2]])
+        top_ring_print.export(MESH / "cooper_top_seat_ring.stl")
+        panel.export(MESH / "assembly_paw_panel.stl")
+        top_ring.export(MESH / "assembly_top_seat_ring.stl")
     fit_seat = annular_sector(
         BOWL_OPENING_D / 2,
         BOWL_SEAT_D / 2,
@@ -1057,7 +1389,7 @@ def main():
         "letters": {
             "text": NAME,
             "height": LETTER_HEIGHT,
-            "proud_thickness": LETTER_THICKNESS,
+            "proud_thickness": LETTER_PROUD,
             "pocket_depth": LETTER_POCKET_DEPTH,
             "pocket_outline_clearance": LETTER_POCKET_CLEARANCE,
             "pocket_floor_gap": LETTER_POCKET_FLOOR_GAP,

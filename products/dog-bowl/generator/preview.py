@@ -23,8 +23,16 @@ from ogma import preview as preview_lib
 LETTER_PART = "letter"
 REFERENCE_PREFIX = "REFERENCE_ONLY"
 
+# Parts of a two-tone body that take the *second* stand filament.
+#
+# The split wave's sine seam divides it into a lower and an upper shell. The
+# seat insert is grouped with the upper because that is where it sits — a small
+# ring at the very top (z 72-78, against an upper spanning 27-76), with its rim
+# visible around the bowl.
+UPPER_PARTS = ("wave_upper", "wave_seat_insert")
 
-def _role_for(mesh_name: str) -> str:
+
+def role_for(mesh_name: str) -> str:
     if REFERENCE_PREFIX in mesh_name:
         # The stainless bowl the stand holds. Not printed, not a filament — the
         # viewer gives it a metal material. Shown because a stand without its
@@ -32,6 +40,8 @@ def _role_for(mesh_name: str) -> str:
         return "bowl"
     if LETTER_PART in mesh_name:
         return "letters"
+    if any(part in mesh_name for part in UPPER_PARTS):
+        return "stand_upper"
     return "stand"
 
 
@@ -48,6 +58,9 @@ def build(
     style: str,
     font_style: str,
     out_path: Path,
+    bowl_diameter_mm: float | None = None,
+    bowl_body_mm: float | None = None,
+    one_piece: bool = False,
     *,
     triangle_budget: int = preview_lib.DEFAULT_TRIANGLE_BUDGET,
 ) -> dict:
@@ -60,13 +73,17 @@ def build(
 
     scratch = Path(tempfile.mkdtemp(prefix="ogma-preview-"))
     try:
-        rail_outer = bowl_style.generate_meshes(scratch, name, font_style)
+        rail_outer = bowl_style.generate_meshes(
+            scratch, name, font_style,
+            bowl_rim_od_mm=bowl_diameter_mm, bowl_body_od_mm=bowl_body_mm,
+            one_piece=one_piece and bowl_style.supports_one_piece,
+        )
         mesh_dir = scratch / "meshes"
 
         parts = []
         have_bowl = False
         for path in preview_lib.assembled_meshes(mesh_dir):
-            role = _role_for(path.name)
+            role = role_for(path.name)
             have_bowl = have_bowl or role == "bowl"
             parts.append(
                 preview_lib.Part(

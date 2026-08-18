@@ -24,15 +24,28 @@ import numpy as np
 from shapely.geometry import Point
 from shapely.strtree import STRtree
 
+import cooper_bowl_design as design
 from cooper_bowl_design import (
-    LATTICE_BOTTOM,
     NAME_RAIL_FLAT_Z0,
     NAME_RAIL_FLAT_Z1,
-    NAME_RAIL_OUTER_DEG,
+    PANEL_BOTTOM_Z,
     WALL_OUTER_R,
     paw_paint_silhouettes,
     unwrap_cylinder_u,
 )
+
+# NAME_RAIL_OUTER_DEG is deliberately NOT imported by value.
+#
+# build_letters() computes it from the name being built and writes it back to
+# the module, so a by-value import freezes it at the 32° placeholder set at
+# import time. The rail angle decides which paw pads are skipped, so a stale one
+# means pads that exist in the mesh have no exclusion polygon and get fuzzed
+# through. On a two-letter name the live value is 12.3° against that frozen 32°,
+# and every pad between them came out painted.
+#
+# Masked in the normal pipeline because dimensions_and_validation.json is
+# written before painting and takes precedence — this only bites a caller that
+# paints without building the full job, which is exactly what a coupon is.
 from ogma.paint import (
     PAINT_ATTR,
     allow_paint_on_object,
@@ -75,17 +88,19 @@ def rail_outer_deg(root: Path) -> float:
         if dims.is_file():
             data = json.loads(dims.read_text())
             return float(data["letters"]["name_rail_outer_deg"])
-    return float(NAME_RAIL_OUTER_DEG)
+    return float(design.NAME_RAIL_OUTER_DEG)
 
 
-def on_name_rail_plaque(centroids: np.ndarray, rail_deg: float) -> np.ndarray:
+def on_name_rail_plaque(
+    centroids: np.ndarray, rail_deg: float, z_offset: float = PANEL_BOTTOM_Z
+) -> np.ndarray:
     """True for facets on the proud name-rail face (keep smooth for letter pockets)."""
     x, y, z = centroids[:, 0], centroids[:, 1], centroids[:, 2]
     cr = np.hypot(x, y)
     # Design front is -Y; plaque angles match build_panel / beveled_name_rail.
     theta_deg = np.degrees(np.arctan2(x, -y))
-    z_lo = NAME_RAIL_FLAT_Z0 - LATTICE_BOTTOM - 2.0
-    z_hi = NAME_RAIL_FLAT_Z1 - LATTICE_BOTTOM + 2.0
+    z_lo = NAME_RAIL_FLAT_Z0 - z_offset - 2.0
+    z_hi = NAME_RAIL_FLAT_Z1 - z_offset + 2.0
     return (
         (cr >= WALL_OUTER_R + 0.35)
         & (np.abs(theta_deg) <= rail_deg + 1.0)
@@ -94,10 +109,36 @@ def on_name_rail_plaque(centroids: np.ndarray, rail_deg: float) -> np.ndarray:
     )
 
 
-def paint_mask_for_mesh(vertices: np.ndarray, faces: np.ndarray, root: Path) -> np.ndarray:
+def paint_mask_for_mesh(
+    vertices: np.ndarray,
+    faces: np.ndarray,
+    root: Path,
+    z_offset: float | None = None,
+) -> np.ndarray:
+    """Which outer-wall facets get fuzzy skin: everything but the pads and plaque.
+
+    The pad specs are in *assembly* coordinates and this is normally handed the
+    *print*-orientation panel, so the two frames have to be reconciled. That is
+    what `z_offset` is, and it is measured from the mesh rather than assumed:
+    `PANEL_BOTTOM_Z` is where the panel's bottom sits in assembly space, so the
+    difference against the mesh's own lowest point is the shift, whichever frame
+    the caller passed. Handed the assembly mesh it comes out zero, which is also
+    correct — and that self-consistency is the point.
+
+    It used to be the constant `LATTICE_BOTTOM`, which is 1 mm above the panel's
+    real bottom (the locating tongue hangs below the lattice). Every pad's
+    exclusion was therefore 1 mm low: a fuzzed strip along one edge of each paw,
+    a smooth strip along the other, visible in Studio and on the print.
+
+    `z_offset` can be given explicitly for a mesh whose lowest point is *not* the
+    panel's bottom — a cropped coupon, say, where deriving it would silently
+    reintroduce exactly the misalignment described above.
+    """
     rail_deg = rail_outer_deg(root)
+    if z_offset is None:
+        z_offset = PANEL_BOTTOM_Z - float(np.asarray(vertices)[:, 2].min())
     polys = paw_paint_silhouettes(
-        z_offset=LATTICE_BOTTOM,
+        z_offset=z_offset,
         rail_outer_deg=rail_deg,
     )
     tree = STRtree(polys)
@@ -111,7 +152,7 @@ def paint_mask_for_mesh(vertices: np.ndarray, faces: np.ndarray, root: Path) -> 
             for u, z in zip(cu, cz)
         ]
     )
-    on_plaque = on_name_rail_plaque(centroids, rail_deg)
+    on_plaque = on_name_rail_plaque(centroids, rail_deg, z_offset=z_offset)
     return (cr >= R_PAINT_MIN) & ~in_pad & ~on_plaque
 
 

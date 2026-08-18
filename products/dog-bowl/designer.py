@@ -7,6 +7,7 @@ draw is the `bowl-fit` custom panel, and it degrades cleanly if it doesn't.
 
 from __future__ import annotations
 
+import hashlib
 import sys
 from pathlib import Path
 from typing import Any
@@ -24,6 +25,7 @@ from cooper_bowl_design import MAX_NAME_LEN, NameFitError  # noqa: E402
 from preview import build as build_preview  # noqa: E402
 from ogma.designer import (  # noqa: E402
     BooleanParam,
+    IntegerParam,
     ChoiceParam,
     FieldError,
     FilamentParam,
@@ -31,9 +33,14 @@ from ogma.designer import (  # noqa: E402
     ProductSpec,
     TextParam,
     ValidationError,
+    WhenEquals,
     WhenFlag,
 )
-from ogma.filaments import DEFAULT_LETTERS, DEFAULT_STAND  # noqa: E402
+from ogma.filaments import (  # noqa: E402
+    DEFAULT_LETTERS,
+    DEFAULT_STAND,
+    DEFAULT_STAND_UPPER,
+)
 from pipeline import FONT_STYLES, generate  # noqa: E402
 
 FONT_LABELS = {
@@ -68,6 +75,49 @@ def _font_meta(style: str) -> dict:
     }
 
 
+def _geometry_fingerprint() -> str:
+    """Digest of every generator source file, for ProductSpec.geometry_version.
+
+    Hashed rather than hand-versioned because a hand-maintained number is only
+    correct until the first person who forgets to bump it — and the failure is
+    invisible: the configurator keeps serving a cached preview of the previous
+    shape, which looks like the change simply not working.
+
+    Cheap: seven files, read once at import.
+    """
+    digest = hashlib.sha256()
+    for path in sorted((PRODUCT_DIR / "generator").rglob("*.py")):
+        digest.update(path.read_bytes())
+    return digest.hexdigest()[:12]
+
+
+def _thumb_ref(style_id: str) -> str:
+    """Relative path to a style icon, fingerprinted with its own contents.
+
+    The asset route serves these `public, max-age=86400` — right for a file that
+    almost never changes, wrong for one that just did. Regenerating the icons
+    left every browser showing the previous set for a day, and a hard refresh
+    does not fix it: the client requests them *after* hydration, so a reload's
+    cache bypass never covers them.
+
+    Hashing the bytes into the URL is what makes a long cache both safe and
+    correct — the URL changes exactly when the picture does, and old entries are
+    simply never asked for again. The route reads the path parameter only, so
+    the query string costs nothing.
+
+    Computed at import, which means regenerating icons needs an API restart to
+    take effect. That is the right trade for a committed build-time asset, and
+    it is the same bargain ogma.preview.PREVIEW_FORMAT_VERSION makes.
+    """
+    relative = f"styles/{style_id}.png"
+    try:
+        digest = hashlib.sha256((PRODUCT_DIR / "assets" / relative).read_bytes())
+    except OSError:
+        # A missing icon is the asset route's 404 to report, not ours to hide.
+        return relative
+    return f"{relative}?v={digest.hexdigest()[:10]}"
+
+
 def _style_options() -> tuple[Option, ...]:
     """Derived from the style registry, so a new styles/<id>.py appears here."""
     return tuple(
@@ -76,13 +126,21 @@ def _style_options() -> tuple[Option, ...]:
             name=s.name,
             description=s.description,
             available=s.available,
-            # This flag is what drives the fuzzy toggle's visibility. The UI
-            # never tests a style id.
-            flags=("supports_fuzzy",) if s.supports_fuzzy else (),
+            # These flags are what drive conditional controls. The UI never
+            # tests a style id — see WhenFlag in ogma.designer.
+            flags=tuple(
+                name
+                for name, on in (
+                    ("supports_fuzzy", s.supports_fuzzy),
+                    ("two_tone_body", s.two_tone_body),
+                    ("supports_one_piece", s.supports_one_piece),
+                )
+                if on
+            ),
             # Rendered from the real meshes by tools/render_style_thumbs.py, so
             # the icon cannot drift from the geometry. Path is relative to the
             # product's asset root.
-            meta={"thumb": f"styles/{s.id}.png"},
+            meta={"thumb": _thumb_ref(s.id)},
         )
         for s in styles.all_styles()
     )
@@ -110,6 +168,34 @@ PARAMS = (
         default=styles.DEFAULT_STYLE,
         display="cards",
     ),
+    IntegerParam(
+        id="bowl_diameter_mm",
+        label="Bowl diameter",
+        help=(
+            "Across the rim of your stainless bowl, in millimetres. A nominal "
+            "5.5\" bowl measures 140 mm. Measure the widest point of the lip — "
+            "the seat is cut to catch it."
+        ),
+        group="Design",
+        default=int(design.DEFAULT_BOWL_RIM_OD),
+        minimum=int(design.MIN_BOWL_RIM_OD),
+        maximum=int(design.MAX_BOWL_RIM_OD),
+        step=1,
+    ),
+    IntegerParam(
+        id="bowl_body_mm",
+        label="Bowl body diameter",
+        help=(
+            "Across the bowl just below the rim — the part that drops through "
+            "the hole. Usually ~10 mm less than the rim. This one sets the "
+            "opening; the rim measurement sets the seat that catches it."
+        ),
+        group="Design",
+        default=int(design.DEFAULT_BOWL_RIM_OD * design.BOWL_BODY_RATIO),
+        minimum=100,
+        maximum=150,
+        step=1,
+    ),
     ChoiceParam(
         id="font_style",
         label="Lettering",
@@ -135,11 +221,51 @@ PARAMS = (
         role="stand",
     ),
     FilamentParam(
+        id="upper_filament_id",
+        label="Upper colour",
+        help=(
+            "The split wave prints as two bodies that meet at the sine seam. "
+            "This is the upper one, which also carries the name."
+        ),
+        group="Colour",
+        default=DEFAULT_STAND_UPPER,
+        role="stand_upper",
+        # Only a style whose body is actually two printed parts can offer this.
+        visible_when=WhenFlag("style", "two_tone_body"),
+    ),
+    BooleanParam(
+        id="one_piece",
+        label="Print as one piece",
+        help=(
+            "Off, the stand prints as three parts that key together. On, it is "
+            "a single body — no joints to trap water, and nothing to assemble. "
+            "One longer print instead of three shorter ones."
+        ),
+        group="Design",
+        default=False,
+        # Only a style that is actually multi-part can offer this.
+        visible_when=WhenFlag("style", "supports_one_piece"),
+    ),
+    BooleanParam(
+        id="letters_enabled",
+        label="Glue-in letters",
+        help=(
+            "On, the name prints as separate letters in a second colour that "
+            "glue into the pockets. Off, the pockets stay empty — the name is "
+            "debossed into the stand and the whole thing prints in one colour."
+        ),
+        group="Colour",
+        default=True,
+    ),
+    FilamentParam(
         id="letter_filament_id",
         label="Letter colour",
         group="Colour",
         default=DEFAULT_LETTERS,
         role="letters",
+        # No letters, no second colour to pick. A boolean's value reaches the UI
+        # as a string, which is why this is "true" rather than True.
+        visible_when=WhenEquals("letters_enabled", ("true",)),
     ),
     BooleanParam(
         id="fuzzy_enabled",
@@ -161,6 +287,28 @@ class DogBowlGenerator:
         ProductSpec.check_declared() before this runs, so there is no second
         copy of those rules here.
         """
+        # The bowl pair is a geometry gate the spec cannot declare: it is a
+        # relationship between two fields, not a range on either. Checked here
+        # so it lands under the control that caused it instead of surfacing as a
+        # 500 from deep in the mesh build.
+        try:
+            design.configure_bowl(
+                values.get("bowl_diameter_mm"), values.get("bowl_body_mm")
+            )
+        except ValueError as exc:
+            raise ValidationError(
+                [
+                    FieldError(
+                        "bowl_body_mm",
+                        str(exc),
+                        hint=(
+                            "Measure the bowl just under the rim — it should be "
+                            "several millimetres narrower than the rim itself."
+                        ),
+                    )
+                ]
+            ) from exc
+
         name = str(values.get("name", ""))
         font_style = str(values.get("font_style", ""))
 
@@ -198,8 +346,13 @@ class DogBowlGenerator:
                 style=values["style"],
                 font_style=values["font_style"],
                 stand_filament_id=values["stand_filament_id"],
+                upper_filament_id=values.get("upper_filament_id"),
                 letter_filament_id=values["letter_filament_id"],
                 fuzzy_enabled=bool(values.get("fuzzy_enabled", False)),
+                letters_enabled=bool(values.get("letters_enabled", True)),
+                bowl_diameter_mm=values.get("bowl_diameter_mm"),
+                bowl_body_mm=values.get("bowl_body_mm"),
+                one_piece=bool(values.get("one_piece", False)),
             )
         except NameFitError as exc:
             # validate() should have caught this via name_fit, which measures
@@ -219,6 +372,11 @@ class DogBowlGenerator:
             "output": result.threemf_path.name,
             "style": result.style,
             "rail_outer_deg": result.rail_outer_deg,
+            # Everything here except `output` becomes job.meta, which is what
+            # the download route reads to decide what goes in the customer's
+            # bundle. Renders that are not named here exist on disk and ship to
+            # nobody.
+            "renders": result.renders,
         }
 
     def warm(self) -> None:
@@ -249,6 +407,9 @@ class DogBowlGenerator:
             values["style"],
             values["font_style"],
             Path(out_path),
+            bowl_diameter_mm=values.get("bowl_diameter_mm"),
+            bowl_body_mm=values.get("bowl_body_mm"),
+            one_piece=bool(values.get("one_piece", False)),
         )
 
 
@@ -263,9 +424,17 @@ SPEC = ProductSpec(
     params=PARAMS,
     available=True,
     custom_panels=("bowl-fit",),
-    print_note="~7.5 h print · 210–280 g · 2–4 plates",
+    # Deliberately vague on plates now that the paw lattice can be one piece
+    # (2 plates) or three (4), and the drums are 2. A single number here was
+    # only ever true for one configuration.
+    print_note="~7.5 h print · 210–280 g · prints in 1–4 plates",
     # Only these three change the geometry. Colour and fuzzy are applied by the
     # viewer, so the whole palette shares one cached model.
-    preview_keys=("name", "style", "font_style"),
+    # Bowl diameter cuts the seat, so it is geometry, not colour.
+    preview_keys=(
+        "name", "style", "font_style", "bowl_diameter_mm", "bowl_body_mm",
+        "one_piece",
+    ),
+    geometry_version=_geometry_fingerprint(),
     generator=DogBowlGenerator(),
 )

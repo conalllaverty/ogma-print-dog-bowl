@@ -18,9 +18,6 @@ from shapely.geometry import Polygon
 
 import cooper_bowl_design as design
 from geometry_config import (
-    BOWL_OPENING_D,
-    BOWL_RIM_RECESS,
-    BOWL_SEAT_D,
     HEX,
 )
 
@@ -42,7 +39,7 @@ def _wall_radius(z: float, p=HEX) -> float:
 def _configure_hex_letters() -> None:
     design.LETTER_CENTER_Z = HEX.letter_center_z
     design.NAME_RAIL_OUTER_R = _wall_radius(HEX.letter_center_z)
-    design.LETTER_FACE_R = design.NAME_RAIL_OUTER_R + design.LETTER_THICKNESS
+    design.LETTER_FACE_R = design.NAME_RAIL_OUTER_R + design.LETTER_PROUD
 
 
 def _smoothstep(value: float) -> float:
@@ -182,9 +179,9 @@ def build_honeycomb_body(letter_data, p=HEX) -> tuple[trimesh.Trimesh, dict]:
             )
             cross_section.append((radius, z))
 
-        seat_r = BOWL_SEAT_D * 0.5
-        bore_r = BOWL_OPENING_D * 0.5
-        seat_z = p.h - BOWL_RIM_RECESS
+        seat_r = design.BOWL_SEAT_D * 0.5
+        bore_r = design.BOWL_OPENING_D * 0.5
+        seat_z = p.h - design.BOWL_RIM_RECESS
         inner_profile = (
             (seat_r, p.h),
             (seat_r, seat_z),
@@ -266,13 +263,15 @@ def build_honeycomb_body(letter_data, p=HEX) -> tuple[trimesh.Trimesh, dict]:
     }
 
 
-def generate_hex_meshes(out_dir: Path, name: str, font_style: str = "bold") -> dict:
+def generate_hex_meshes(out_dir: Path, name: str, font_style: str = "bold", bowl_rim_od_mm: float | None = None, bowl_body_od_mm: float | None = None) -> dict:
     """Build the solid honeycomb body, letters, and validation report."""
     out_dir = Path(out_dir)
     mesh_dir = out_dir / "meshes"
     mesh_dir.mkdir(parents=True, exist_ok=True)
 
-    design.configure_output(out_dir, name=name, font_style=font_style)
+    design.configure_output(out_dir, name=name, font_style=font_style,
+                            bowl_rim_od_mm=bowl_rim_od_mm,
+                            bowl_body_od_mm=bowl_body_od_mm)
     _configure_hex_letters()
     letters = design.build_letters()
     body, honeycomb = build_honeycomb_body(letters)
@@ -295,9 +294,9 @@ def generate_hex_meshes(out_dir: Path, name: str, font_style: str = "bold") -> d
         "units": "mm",
         "bowl": {
             "rim_outer_diameter": design.BOWL_RIM_OD,
-            "opening": BOWL_OPENING_D,
-            "seat_diameter": BOWL_SEAT_D,
-            "rim_recess": BOWL_RIM_RECESS,
+            "opening": design.BOWL_OPENING_D,
+            "seat_diameter": design.BOWL_SEAT_D,
+            "rim_recess": design.BOWL_RIM_RECESS,
             "note": "Locked to Cooper metal bowl size",
         },
         "honeycomb": {
@@ -328,11 +327,11 @@ def generate_hex_meshes(out_dir: Path, name: str, font_style: str = "bold") -> d
             "support_start_z": HEX.support_start_z,
             "support_overhang_deg": math.degrees(
                 math.atan2(
-                    HEX.wall_inner_r - BOWL_OPENING_D * 0.5,
+                    HEX.wall_inner_r - design.BOWL_OPENING_D * 0.5,
                     (
                         HEX.h
-                        - BOWL_RIM_RECESS
-                        - (BOWL_SEAT_D - BOWL_OPENING_D) * 0.5
+                        - design.BOWL_RIM_RECESS
+                        - (design.BOWL_SEAT_D - design.BOWL_OPENING_D) * 0.5
                     )
                     - HEX.support_start_z,
                 )
@@ -343,7 +342,7 @@ def generate_hex_meshes(out_dir: Path, name: str, font_style: str = "bold") -> d
             "text": design.NAME,
             "font_style": design.FONT_STYLE,
             "height": design.LETTER_HEIGHT,
-            "proud_thickness": design.LETTER_THICKNESS,
+            "proud_thickness": design.LETTER_PROUD,
             "pocket_depth": design.LETTER_POCKET_DEPTH,
             "name_rail_outer_deg": design.NAME_RAIL_OUTER_DEG,
             "name_rail_flat_deg": design.NAME_RAIL_FLAT_DEG,

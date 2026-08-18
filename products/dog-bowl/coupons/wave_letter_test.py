@@ -150,7 +150,7 @@ def generate_wave_letter_test(
         "coupon": crop_report,
         "letters": {
             "height": design.LETTER_HEIGHT,
-            "proud_thickness": design.LETTER_THICKNESS,
+            "proud_thickness": design.LETTER_PROUD,
             "pocket_depth": design.LETTER_POCKET_DEPTH,
             "pocket_outline_clearance": design.LETTER_POCKET_CLEARANCE,
             "pocket_floor_gap": design.LETTER_POCKET_FLOOR_GAP,

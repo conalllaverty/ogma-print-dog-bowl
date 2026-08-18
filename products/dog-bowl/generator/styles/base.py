@@ -23,7 +23,12 @@ from typing import Callable, Protocol
 
 
 class StyleImpl(Protocol):
-    def generate_meshes(self, job_dir: Path, name: str, font_style: str) -> float:
+    def generate_meshes(
+        self, job_dir: Path, name: str, font_style: str,
+        bowl_rim_od_mm: float | None = None,
+        bowl_body_od_mm: float | None = None,
+        one_piece: bool = False,
+    ) -> float:
         """Write meshes into job_dir/meshes. Return the name-rail outer angle."""
         ...
 
@@ -51,6 +56,16 @@ class BowlStyle:
     # Set False for a style whose geometry is not wired up yet, so it can appear
     # in the catalogue as "coming soon" without the pipeline accepting a job.
     generator_available: bool = True
+    # True when the body prints as two separately-coloured parts. Only the split
+    # wave does: the sine seam divides it into a lower and an upper shell that
+    # are different objects on different plates, so they can take different
+    # filament. The UI shows a second colour control when this is set rather
+    # than testing `style === "wave"` — same inversion as supports_fuzzy.
+    two_tone_body: bool = False
+    # True when this style can be printed as a single body instead of
+    # keyed parts. Drives the designer's construction toggle, so the UI
+    # never tests a style id — same inversion as supports_fuzzy.
+    supports_one_piece: bool = False
 
     def meta(self) -> dict:
         return {
@@ -67,4 +82,6 @@ class BowlStyle:
             "description": self.description,
             "available": self.available,
             "supports_fuzzy": self.supports_fuzzy,
+            "two_tone_body": self.two_tone_body,
+            "supports_one_piece": self.supports_one_piece,
         }

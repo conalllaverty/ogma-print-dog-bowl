@@ -39,9 +39,6 @@ for _p in (GENERATOR_DIR, _REPO / "shared"):
 
 import cooper_bowl_design as design  # noqa: E402
 from geometry_config import (  # noqa: E402
-    BOWL_OPENING_D,
-    BOWL_RIM_RECESS,
-    BOWL_SEAT_D,
     FLUTED,
 )
 from hex_bowl_design import (  # noqa: E402
@@ -54,7 +51,7 @@ from hex_bowl_design import (  # noqa: E402
 def _configure_fluted_letters(p=FLUTED) -> None:
     design.LETTER_CENTER_Z = p.letter_center_z
     design.NAME_RAIL_OUTER_R = _wall_radius(p.letter_center_z, p)
-    design.LETTER_FACE_R = design.NAME_RAIL_OUTER_R + design.LETTER_THICKNESS
+    design.LETTER_FACE_R = design.NAME_RAIL_OUTER_R + design.LETTER_PROUD
 
 
 def flute_offset(
@@ -139,9 +136,9 @@ def build_fluted_body(letter_data, p=FLUTED) -> tuple[trimesh.Trimesh, dict]:
             column.append([radius * math.sin(theta), -radius * math.cos(theta), z])
             cross_section.append((radius, z))
 
-        seat_r = BOWL_SEAT_D * 0.5
-        bore_r = BOWL_OPENING_D * 0.5
-        seat_z = p.h - BOWL_RIM_RECESS
+        seat_r = design.BOWL_SEAT_D * 0.5
+        bore_r = design.BOWL_OPENING_D * 0.5
+        seat_z = p.h - design.BOWL_RIM_RECESS
         inner_profile = (
             (seat_r, p.h),
             (seat_r, seat_z),
@@ -222,13 +219,15 @@ def build_fluted_body(letter_data, p=FLUTED) -> tuple[trimesh.Trimesh, dict]:
     }
 
 
-def generate_fluted_meshes(out_dir: Path, name: str, font_style: str = "bold") -> dict:
+def generate_fluted_meshes(out_dir: Path, name: str, font_style: str = "bold", bowl_rim_od_mm: float | None = None, bowl_body_od_mm: float | None = None) -> dict:
     """Build the fluted drum, letters, and validation report."""
     out_dir = Path(out_dir)
     mesh_dir = out_dir / "meshes"
     mesh_dir.mkdir(parents=True, exist_ok=True)
 
-    design.configure_output(out_dir, name=name, font_style=font_style)
+    design.configure_output(out_dir, name=name, font_style=font_style,
+                            bowl_rim_od_mm=bowl_rim_od_mm,
+                            bowl_body_od_mm=bowl_body_od_mm)
     _configure_fluted_letters()
     letters = design.build_letters()
     body, flute = build_fluted_body(letters)
@@ -251,9 +250,9 @@ def generate_fluted_meshes(out_dir: Path, name: str, font_style: str = "bold") -
         "units": "mm",
         "bowl": {
             "rim_outer_diameter": design.BOWL_RIM_OD,
-            "opening": BOWL_OPENING_D,
-            "seat_diameter": BOWL_SEAT_D,
-            "rim_recess": BOWL_RIM_RECESS,
+            "opening": design.BOWL_OPENING_D,
+            "seat_diameter": design.BOWL_SEAT_D,
+            "rim_recess": design.BOWL_RIM_RECESS,
             "note": "Locked to Cooper metal bowl size",
         },
         "fluted": {
@@ -274,11 +273,11 @@ def generate_fluted_meshes(out_dir: Path, name: str, font_style: str = "bold") -
             "support_start_z": FLUTED.support_start_z,
             "support_overhang_deg": math.degrees(
                 math.atan2(
-                    FLUTED.wall_inner_r - BOWL_OPENING_D * 0.5,
+                    FLUTED.wall_inner_r - design.BOWL_OPENING_D * 0.5,
                     (
                         FLUTED.h
-                        - BOWL_RIM_RECESS
-                        - (BOWL_SEAT_D - BOWL_OPENING_D) * 0.5
+                        - design.BOWL_RIM_RECESS
+                        - (design.BOWL_SEAT_D - design.BOWL_OPENING_D) * 0.5
                     )
                     - FLUTED.support_start_z,
                 )
@@ -289,7 +288,7 @@ def generate_fluted_meshes(out_dir: Path, name: str, font_style: str = "bold") -
             "text": design.NAME,
             "font_style": design.FONT_STYLE,
             "height": design.LETTER_HEIGHT,
-            "proud_thickness": design.LETTER_THICKNESS,
+            "proud_thickness": design.LETTER_PROUD,
             "pocket_depth": design.LETTER_POCKET_DEPTH,
             "name_rail_outer_deg": design.NAME_RAIL_OUTER_DEG,
             "name_rail_flat_deg": design.NAME_RAIL_FLAT_DEG,

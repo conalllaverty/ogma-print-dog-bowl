@@ -14,8 +14,17 @@ from ogma import bambu_project as bambu
 from .base import BowlStyle
 
 
-def generate_meshes(job_dir: Path, name: str, font_style: str) -> float:
-    report = fluted_design.generate_fluted_meshes(job_dir, name=name, font_style=font_style)
+def generate_meshes(
+    job_dir: Path, name: str, font_style: str,
+    bowl_rim_od_mm: float | None = None,
+    bowl_body_od_mm: float | None = None,
+    # Accepted and ignored: only the paw lattice is multi-part, but the
+    # StyleImpl protocol is one signature for every style.
+    one_piece: bool = False,
+) -> float:
+    report = fluted_design.generate_fluted_meshes(job_dir, name=name, font_style=font_style,
+                                                  bowl_rim_od_mm=bowl_rim_od_mm,
+                            bowl_body_od_mm=bowl_body_od_mm)
     return float(report["letters"]["name_rail_outer_deg"])
 
 

@@ -18,9 +18,6 @@ from shapely.geometry import Polygon
 
 import cooper_bowl_design as design
 from geometry_config import (
-    BOWL_OPENING_D,
-    BOWL_RIM_RECESS,
-    BOWL_SEAT_D,
     WAVE,
     wave_derived,
 )
@@ -49,7 +46,11 @@ def _ri(y: float, p=WAVE, d=None) -> float:
 
 def _seam_z(theta: float, p=WAVE, d=None) -> float:
     d = d or wave_derived(p)
-    return d["seam_y"] - p.amp * math.cos(p.waves * (theta - math.pi / 2.0))
+    # Phase comes from `letter_azimuth`, not a second hard-coded π/2.
+    # The seam and the name have to stay locked together — the letters sit on
+    # a *low* lobe because that is where the upper shell is tallest — and two
+    # independent copies of the same angle is how that silently comes apart.
+    return d["seam_y"] - p.amp * math.cos(p.waves * (theta - p.letter_azimuth))
 
 
 def _wave_letter_center_z(p=WAVE) -> float:
@@ -70,7 +71,7 @@ def _configure_wave_letters() -> None:
     design.NAME_RAIL_FLAT_Z1 = center_z + half_h + 2.0
     wall_r = _ro(center_z)
     design.NAME_RAIL_OUTER_R = wall_r
-    design.LETTER_FACE_R = wall_r + design.LETTER_THICKNESS
+    design.LETTER_FACE_R = wall_r + design.LETTER_PROUD
 
 
 def _wave_cone_core(radial_offset: float, p=WAVE) -> trimesh.Trimesh:
@@ -120,7 +121,7 @@ def _wave_letter_transform(
 def _wave_letter_mesh(polygon, arc_center: float, p=WAVE) -> trimesh.Trimesh:
     """Flat-printing letter with a back scooped to the Wave cone."""
     extrude_h = (
-        design.LETTER_THICKNESS
+        design.LETTER_PROUD
         + design.LETTER_POCKET_DEPTH
         + 1.2
     )
@@ -129,7 +130,7 @@ def _wave_letter_mesh(polygon, arc_center: float, p=WAVE) -> trimesh.Trimesh:
     )
     transform = _wave_letter_transform(
         arc_center,
-        design.LETTER_THICKNESS,
+        design.LETTER_PROUD,
         p,
     )
     body.apply_transform(transform)
@@ -158,8 +159,12 @@ def _wave_letter_pocket_cutter(polygon, arc_center: float, p=WAVE) -> trimesh.Tr
         poly = max(poly.geoms, key=lambda geometry: geometry.area)
 
     outer_offset = 0.55
+    # Includes the glyph's bulge: the letter is seated that much deeper (see
+    # _wave_assembly_letter), so a floor at the nominal depth would hold it
+    # proud of the wall again.
     floor_normal_offset = (
-        -design.LETTER_POCKET_DEPTH
+        -design.glyph_bulge(polygon, face_r=_ro(design.LETTER_CENTER_Z, p))
+        - design.LETTER_POCKET_DEPTH
         - design.LETTER_POCKET_FLOOR_GAP
     )
     cone_scale = math.sqrt(
@@ -178,12 +183,24 @@ def _wave_letter_pocket_cutter(polygon, arc_center: float, p=WAVE) -> trimesh.Tr
 
 
 def _wave_assembly_letter(item, p=WAVE) -> trimesh.Trimesh:
-    """Place a print-ready Wave letter back on its tangent cone plane."""
+    """Place a print-ready Wave letter back on its tangent cone plane.
+
+    Sunk by `design.glyph_bulge` so the glyph's widest point finishes flush with
+    the wall. Only the *tangential* direction needs this: a cone is developable,
+    so the flat face already follows the surface exactly along the slant, and
+    the letter stood proud by 0.20-0.25 mm across its width alone.
+    """
     assembled = item["mesh"].copy()
+    polygon = item.get("polygon")
+    sink = (
+        design.glyph_bulge(polygon, face_r=_ro(design.LETTER_CENTER_Z, p))
+        if polygon is not None
+        else 0.0
+    )
     assembled.apply_transform(
         _wave_letter_transform(
             item["arc_center"],
-            design.LETTER_THICKNESS,
+            design.LETTER_PROUD - sink,
             p,
         )
     )
@@ -302,8 +319,8 @@ def _wave_upper_dimensions(p=WAVE) -> dict[str, float]:
     """Shared shell/seat-insert interface dimensions."""
     d = wave_derived(p)
     seat_z = d["seat_z"]
-    seat_r = BOWL_SEAT_D / 2.0
-    bore_r = BOWL_OPENING_D / 2.0
+    seat_r = design.BOWL_SEAT_D / 2.0
+    bore_r = design.BOWL_OPENING_D / 2.0
     support_z = seat_z - (seat_r - bore_r)
     shell_top_z = seat_z
     shell_top_outer_r = _ro(shell_top_z, p)
@@ -418,13 +435,15 @@ def _export_print_ready(mesh: trimesh.Trimesh, path: Path, *, invert_y180: bool 
     out.export(path.with_suffix(".stl"))
 
 
-def generate_wave_meshes(out_dir: Path, name: str, font_style: str = "bold") -> dict:
+def generate_wave_meshes(out_dir: Path, name: str, font_style: str = "bold", bowl_rim_od_mm: float | None = None, bowl_body_od_mm: float | None = None) -> dict:
     """Build wave STLs + dimension report into out_dir."""
     out_dir = Path(out_dir)
     mesh_dir = out_dir / "meshes"
     mesh_dir.mkdir(parents=True, exist_ok=True)
 
-    design.configure_output(out_dir, name=name, font_style=font_style)
+    design.configure_output(out_dir, name=name, font_style=font_style,
+                            bowl_rim_od_mm=bowl_rim_od_mm,
+                            bowl_body_od_mm=bowl_body_od_mm)
     _configure_wave_letters()
     letters = design.build_letters()
     for item in letters:
@@ -468,9 +487,9 @@ def generate_wave_meshes(out_dir: Path, name: str, font_style: str = "bold") -> 
         "units": "mm",
         "bowl": {
             "rim_outer_diameter": design.BOWL_RIM_OD,
-            "opening": BOWL_OPENING_D,
-            "seat_diameter": BOWL_SEAT_D,
-            "rim_recess": BOWL_RIM_RECESS,
+            "opening": design.BOWL_OPENING_D,
+            "seat_diameter": design.BOWL_SEAT_D,
+            "rim_recess": design.BOWL_RIM_RECESS,
             "note": "Locked to Cooper metal bowl size",
         },
         "wave": {
@@ -501,7 +520,7 @@ def generate_wave_meshes(out_dir: Path, name: str, font_style: str = "bold") -> 
             "seat_insert_flange_overlap": (
                 u["insert_flange_outer_r"] - u["shell_top_inner_r"]
             ),
-            "seat_insert_flange_thickness": BOWL_RIM_RECESS,
+            "seat_insert_flange_thickness": design.BOWL_RIM_RECESS,
         },
         "stand": {
             "lower_watertight": bool(lower.is_watertight),
@@ -523,7 +542,7 @@ def generate_wave_meshes(out_dir: Path, name: str, font_style: str = "bold") -> 
             "text": design.NAME,
             "font_style": design.FONT_STYLE,
             "height": design.LETTER_HEIGHT,
-            "proud_thickness": design.LETTER_THICKNESS,
+            "proud_thickness": design.LETTER_PROUD,
             "pocket_depth": design.LETTER_POCKET_DEPTH,
             "mount": "direct glyph pockets in upper cone; no plaque",
             "back_surface": "concave cone matching Wave wall taper",

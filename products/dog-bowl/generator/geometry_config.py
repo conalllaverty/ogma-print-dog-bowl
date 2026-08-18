@@ -59,9 +59,17 @@ class WaveParams:
     shadow_chamfer: float = 0.6
     seam_gap: float = 0.7  # lower stops this far below the sine
     sectors: int = 64
-    # Letters sit on a large (low-seam) lobe. azimuth = π/2 maps packing
-    # center arc=0 onto +X, where the sine seam is at its lowest.
-    letter_azimuth: float = 1.5707963267948966  # π/2 — large +X lobe
+    # Where the name goes, and — since the seam phase is derived from this — the
+    # azimuth of a low-seam lobe. The letters have to sit on a low lobe because
+    # that is where the upper shell is tallest; on a high lobe there is no room.
+    #
+    # 0 = the -Y design front, so the name faces the same way as every other
+    # style's. It was π/2, which put the name on the +X lobe: the front
+    # elevation in the viewer and the `front` render then showed a blank wall
+    # while the name sat round the side. With `waves = 2` there is a low lobe
+    # every 180°, so the front is a valid choice and this is a pure 90° rotation
+    # of the body — same shape, same fit, same printability.
+    letter_azimuth: float = 0.0  # -Y front, on a low-seam lobe
     # Vertically centred on that large upper face (seam_low+gap → shell top).
     letter_center_z: float = 52.0
     rail_z0: float = 42.5

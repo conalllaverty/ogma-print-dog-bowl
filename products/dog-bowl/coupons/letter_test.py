@@ -295,7 +295,7 @@ def generate_letter_test(
         "coupon_bounds": coupon.bounds.round(3).tolist(),
         "letters": {
             "height": design.LETTER_HEIGHT,
-            "proud_thickness": design.LETTER_THICKNESS,
+            "proud_thickness": design.LETTER_PROUD,
             "pocket_outline_clearance": design.LETTER_POCKET_CLEARANCE,
             "name_rail_outer_deg": design.NAME_RAIL_OUTER_DEG,
         },
@@ -327,12 +327,17 @@ def generate_letter_test(
     return GenerateResult(
         name=cleaned,
         font_style=font_style,
+        style="cooper",
         stand=stand,
         letters=letters_fil,
+        # A coupon is one colour and has no pictures: it exists to be measured
+        # against a real letter, not looked at.
+        upper=stand,
         job_dir=job_dir,
         threemf_path=output,
         dimensions_path=dims_path,
         rail_outer_deg=float(design.NAME_RAIL_OUTER_DEG),
+        renders=[],
     )
 
 

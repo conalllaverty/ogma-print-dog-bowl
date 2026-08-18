@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
 import sys
 import zipfile
@@ -50,6 +51,39 @@ def threemf_fingerprint(path: Path) -> dict:
     return out
 
 
+# --------------------------------------------------------------------------
+# Volatile fields.
+#
+# The export filename carries a creation timestamp and job.json records the same
+# instant, so two runs of identical code produce different bytes in those two
+# places and nowhere else. A fingerprint that included them would report a
+# difference on every single run, which is the fastest way to teach everyone to
+# ignore this harness.
+#
+# Normalised rather than dropped: the *shape* of the name still gets compared,
+# so losing the suffix or the style token is still caught. Only the instant is
+# blanked.
+# --------------------------------------------------------------------------
+
+TIMESTAMP_IN_NAME = re.compile(r"_\d{8}-\d{6}(?=\.3mf$)")
+# `renders` is environment-dependent, not behavioural: CI has no GL stack, so
+# renders.build returns an empty list there while a dev machine returns four
+# filenames. Fingerprinting it would make the comparison fail on the machine
+# rather than on the code, which is the opposite of what this harness is for.
+VOLATILE_JOB_KEYS = ("created_at", "renders")
+
+
+def stable_name(filename: str) -> str:
+    return TIMESTAMP_IN_NAME.sub("_<timestamp>", filename)
+
+
+def stable(job: dict) -> dict:
+    out = {k: v for k, v in job.items() if k not in VOLATILE_JOB_KEYS}
+    if isinstance(out.get("threemf"), str):
+        out["threemf"] = stable_name(out["threemf"])
+    return out
+
+
 def run_case(style: str, name: str, font: str, outroot: Path) -> dict:
     job = outroot / f"{style}-{name}-{font}"
     proc = subprocess.run(
@@ -66,13 +100,13 @@ def run_case(style: str, name: str, font: str, outroot: Path) -> dict:
         rec["dimensions"] = json.loads(dims.read_text())
     jj = job / "job.json"
     if jj.exists():
-        rec["job"] = json.loads(jj.read_text())
+        rec["job"] = stable(json.loads(jj.read_text()))
 
     rec["meshes"] = {
         p.name: mesh_fingerprint(p) for p in sorted((job / "meshes").glob("*.stl"))
     }
     threemf = sorted(job.glob("*.3mf"))
-    rec["threemf"] = {p.name: threemf_fingerprint(p) for p in threemf}
+    rec["threemf"] = {stable_name(p.name): threemf_fingerprint(p) for p in threemf}
     return rec
 
 

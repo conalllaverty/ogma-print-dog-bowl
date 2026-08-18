@@ -294,6 +294,19 @@ class ProductSpec:
     # parameter that does change geometry shows a stale model. Including a
     # colour merely wastes a rebuild.
     preview_keys: tuple[str, ...] = ()
+    # Fingerprint of the code that builds the meshes, folded into preview_key.
+    #
+    # preview_keys covers what the *customer* changed. This covers what *we*
+    # changed. Without it a geometry edit invalidates nothing: the cached GLB
+    # for (ROCCO, cooper, bold) keeps its key, and since previews are served
+    # `immutable, max-age=31536000` the old shape survives on disk and in every
+    # browser that has seen it. That is not hypothetical — making the letters
+    # flush left the preview showing them still standing 1.6 mm proud.
+    #
+    # PREVIEW_FORMAT_VERSION does the same job for ogma.preview itself, but it
+    # cannot see a product's generator. A product supplies this; empty means the
+    # product has opted out and accepts stale previews.
+    geometry_version: str = ""
     generator: Generator | None = None
 
     @property
@@ -301,12 +314,25 @@ class ProductSpec:
         return bool(self.preview_keys) and hasattr(self.generator, "preview")
 
     def preview_key(self, values: dict[str, Any]) -> str:
-        """Stable id for the preview these values produce."""
+        """Stable id for the preview these values produce.
+
+        Includes the preview format version, not just the geometry parameters.
+        The GLB is served `immutable` for a year, so a key that ignores how the
+        file was built pins every returning browser to whatever the pipeline
+        produced the first time — see ogma.preview.PREVIEW_FORMAT_VERSION.
+        """
         import hashlib
         import json as _json
 
+        from ogma.preview import PREVIEW_FORMAT_VERSION
+
         payload = _json.dumps(
-            {"product": self.id, **{k: values.get(k) for k in self.preview_keys}},
+            {
+                "product": self.id,
+                "v": PREVIEW_FORMAT_VERSION,
+                "geometry": self.geometry_version,
+                **{k: values.get(k) for k in self.preview_keys},
+            },
             sort_keys=True,
         )
         return hashlib.sha256(payload.encode()).hexdigest()[:16]

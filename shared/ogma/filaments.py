@@ -16,8 +16,39 @@ from ogma import assets
 
 PALETTE_PATH = assets.PALETTE
 
-DEFAULT_STAND = "matte-caramel"
+# Nardo Gray, chosen on measured luminance rather than taste.
+#
+# The default's job is to show the wall pattern — paw lattice, honeycomb,
+# flutes — as clearly as possible, because that is what a customer is choosing
+# between. Surface relief reads as a shading gradient, so it needs a mid-tone:
+# light colours (Ivory White at 1.00 relative luminance, Desert Tan at 0.71)
+# blow out under the key and flatten the grooves, and dark ones (Charcoal 0.00,
+# Plum 0.07) crush the shadow side until the pattern disappears.
+#
+# Of the mid band, Nardo Gray sits at 0.178 with **zero** saturation. Neutral
+# matters as much as the value: with no hue of its own there is no chroma
+# competing with the shading, which is why it is the reference grey for
+# evaluating form. Caramel (0.260, 0.48 saturation) is the better-looking
+# default and a worse informative one — its hue shifts under a warm key.
+DEFAULT_STAND = "matte-nardo-gray"
+
+# Ivory White against a mid grey is the strongest value contrast the palette
+# offers, and the letters are the personalised part — they should read first.
 DEFAULT_LETTERS = "matte-ivory-white"
+
+# The second body colour, for styles whose body prints as two parts — currently
+# only the split wave, whose sine seam divides it into a lower and an upper.
+#
+# Deliberately *different* from DEFAULT_STAND. A two-tone product that defaults
+# to one colour hides the only thing that makes it two-tone, and the customer
+# never learns the second control exists. Caramel against Nardo Gray is a warm/
+# cool split at similar value, so the seam reads as a deliberate join rather
+# than as one part looking wrong.
+#
+# It also has to sit under the letters: the wave's name rail is on the upper
+# shell (letters at z 44-60, upper spanning 27-76), so this is the colour Ivory
+# White letters are read against, and caramel gives them ample contrast.
+DEFAULT_STAND_UPPER = "matte-caramel"
 
 
 @dataclass(frozen=True)
