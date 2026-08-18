@@ -10,7 +10,9 @@ dev:
 	bash studio/dev.sh
 
 api:
-	cd studio && PYTHONPATH=$$PWD ../.venv/bin/python -m uvicorn api.main:app --reload --host 0.0.0.0 --port $${PORT:-8000}
+	cd studio && PYTHONPATH=$$PWD ../.venv/bin/python -m uvicorn api.main:app --reload \
+	  --reload-dir . --reload-dir ../products --reload-dir ../shared \
+	  --host 0.0.0.0 --port $${PORT:-8000}
 
 web:
 	cd studio/web && PIPELINE_API_URL=$${PIPELINE_API_URL:-http://127.0.0.1:8000} npm run dev

@@ -18,18 +18,27 @@
 FROM python:3.12-slim
 
 # libgl1 + libglib2.0-0: trimesh's optional native paths link against them.
+#
+# libegl1 + libgles2 are for the assembled-product renders. shared/ogma/render.py
+# selects EGL on Linux — there is no display in a container and no OSMesa here —
+# and without these pyrender raises "Unable to load EGL library" on the first
+# job. That failure is *quiet*: renders.build treats a dead renderer as a missing
+# nicety and returns an empty list, so every download would ship with the 3MF and
+# no photographs, and nothing in the logs would look broken.
+#
 # The old image also installed fonts-liberation and copied it over Arial —
 # dropped, because the generator now rasterises the bundled faces in
 # shared/ogma/fonts and never asks the system for a font.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      libgl1 libglib2.0-0 \
+      libgl1 libglib2.0-0 libegl1 libgles2 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # Dependencies first, so a code change doesn't reinstall manifold3d and scipy.
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt requirements-render.txt ./
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir --no-deps -r requirements-render.txt
 
 # Mirror the repo layout. assets.REPO_ROOT resolves to /app, so studio.py finds
 # /app/products and the generator finds /app/shared/ogma/{fonts,bambu,palette.json}.

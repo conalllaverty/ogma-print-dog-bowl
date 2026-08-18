@@ -1,0 +1,11 @@
+# Installed with --no-deps, deliberately.
+#
+# pyrender pins PyOpenGL==3.1.0, which cannot run its shadow pass under NumPy 2.
+# Installing it normally either drags in the broken PyOpenGL or makes the whole
+# resolve impossible. Its real dependencies are declared in requirements.txt.
+#
+#   pip install --no-cache-dir --no-deps -r requirements-render.txt
+#
+# Pinned exactly because this is the last release (2019) and the two shims in
+# shared/ogma/render.py (np.infty, the GL backend choice) are written against it.
+pyrender==0.1.45

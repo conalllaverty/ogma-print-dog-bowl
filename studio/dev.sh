@@ -56,11 +56,16 @@ if [ ! -x "$PY" ]; then
 fi
 
 needs_pip=0
-"$PY" -c "import fastapi, uvicorn, trimesh, shapely, manifold3d" 2>/dev/null || needs_pip=1
+"$PY" -c "import fastapi, uvicorn, trimesh, shapely, manifold3d, pyrender" 2>/dev/null || needs_pip=1
 if [ "$REPO/requirements.txt" -nt "$REPO/.venv/pyvenv.cfg" ]; then needs_pip=1; fi
 if [ "$needs_pip" = 1 ]; then
   echo "Installing Python deps…"
   "$REPO/.venv/bin/pip" install -q -r requirements.txt
+  # pyrender separately and without its dependencies: it pins PyOpenGL==3.1.0,
+  # which cannot run its shadow pass under NumPy 2, and asking pip to satisfy
+  # both that pin and the >=3.1.7 we need is an impossible resolve. Its real
+  # dependencies are in requirements.txt. See requirements-render.txt.
+  "$REPO/.venv/bin/pip" install -q --no-deps -r requirements-render.txt
   touch "$REPO/.venv/pyvenv.cfg"
 fi
 
@@ -87,7 +92,21 @@ cleanup() { echo; echo "Stopping…"; kill 0 2>/dev/null || true; }
 trap cleanup EXIT INT TERM
 
 echo "API  → http://127.0.0.1:$API_PORT/docs"
-( cd "$REPO/studio" && PYTHONPATH="$REPO/studio" "$PY" -m uvicorn api.main:app --reload --port "$API_PORT" ) &
+# --reload-dir for all three source roots, not just studio/.
+#
+# Bare `--reload` watches only the working directory, which is studio/ — so the
+# API happily served an hour-old spec while products/ and shared/ had moved on.
+# The symptom is baffling from the browser: the code is right on disk, the page
+# reloads, and the old thing is still there. Watching every root the API imports
+# from is what makes "edit and refresh" true.
+#
+# Safe to watch: nothing writes into these at run time. Job output goes to out/.
+( cd "$REPO/studio" && PYTHONPATH="$REPO/studio" "$PY" -m uvicorn api.main:app \
+    --reload \
+    --reload-dir "$REPO/studio" \
+    --reload-dir "$REPO/products" \
+    --reload-dir "$REPO/shared" \
+    --port "$API_PORT" ) &
 
 # Wait for the API before starting the web app, so the first page load isn't a
 # blank picker with a fetch error.

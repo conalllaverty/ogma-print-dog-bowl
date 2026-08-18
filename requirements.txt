@@ -13,6 +13,28 @@ shapely>=2.0.0
 manifold3d>=3.0.0
 mapbox-earcut>=1.0.0
 Pillow>=10.0.0
+# --- offscreen renderer for the assembled-product stills -------------------
+# (shared/ogma/render.py)
+#
+# pyrender itself is NOT installed from here. It hard-pins `PyOpenGL==3.1.0`,
+# and 3.1.0 cannot run its own shadow pass under NumPy 2 — it dies inside a
+# ctypes array handler the moment SHADOWS_DIRECTIONAL is used. We need >=3.1.7,
+# which makes the two mutually unsatisfiable in one resolve:
+#
+#   ERROR: Cannot install PyOpenGL>=3.1.7 and pyrender==0.1.45 because these
+#          package versions have conflicting dependencies.
+#
+# So pyrender is installed separately with `--no-deps` (see
+# requirements-render.txt) and its runtime dependencies are declared here
+# instead. pip has no way to express "ignore this one pin" inside a
+# requirements file, which is why this is split rather than pinned around.
+PyOpenGL>=3.1.7
+# pyrender's remaining runtime deps, since --no-deps skips them. The rest of its
+# list — numpy, Pillow, scipy, networkx, trimesh — is already above.
+freetype-py>=2.4.0
+imageio>=2.30.0
+pyglet>=1.4.10
+six>=1.16.0
 scipy>=1.14.0
 networkx>=3.0
 rtree>=1.0.0
