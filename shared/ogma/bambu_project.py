@@ -74,10 +74,39 @@ def _letter_objects(name: str) -> list[tuple[str, Path, int]]:
     return objects
 
 
+# Bambu lays plates out on a 312 mm grid, two to a row: plate 1 at (128, 128),
+# plate 2 to its right, plate 3 below plate 1, and so on.
+PLATE_PITCH = 312.0
+PLATE_ONE = (128.0, 128.0)
+
+
+def _plate_origin(plate_number: int) -> tuple[float, float]:
+    """Where the Nth plate sits in the project's coordinate grid."""
+    index = plate_number - 1
+    return (
+        PLATE_ONE[0] + (index % 2) * PLATE_PITCH,
+        PLATE_ONE[1] - (index // 2) * PLATE_PITCH,
+    )
+
+
 def _letter_positions(
-    count: int, x0: float, y0: float, cols: int = 4
+    count: int,
+    plate_number: int,
+    offset: tuple[float, float],
+    cols: int = 4,
 ) -> list[tuple[float, float, float]]:
-    """Lay `count` letters out on their own plate of the 312 mm grid."""
+    """Lay `count` letters out on the letters plate, wherever that plate is.
+
+    The plate is derived rather than hard-coded, because which plate the letters
+    land on depends on how many bodies came before them. A one-piece paw lattice
+    has one body, so its letters belong on plate 2 — with the old fixed
+    coordinates they were written to plate 4's square of the grid, which for a
+    two-plate job is empty space. Studio drew the plate, labelled it "letters",
+    and left it bare, with the letters floating off the build area entirely.
+    """
+    x0, y0 = _plate_origin(plate_number)
+    x0 += offset[0]
+    y0 += offset[1]
     return [
         (x0 + (i % cols) * 24.0, y0 + (i // cols) * 32.0, 0.0) for i in range(count)
     ]
@@ -169,7 +198,7 @@ def configure_objects(
     BODY_COUNT = len(objects)
     if include_letters:
         objects += _letter_objects(name)
-        positions += _letter_positions(len(name), 405.0, -196.0)
+        positions += _letter_positions(len(name), BODY_COUNT + 1, (-35.0, -12.0))
     OBJECTS = objects
     BUILD_POSITIONS = positions
 
@@ -198,7 +227,7 @@ def configure_wave_objects(
     if include_letters:
         objects += _letter_objects(name)
         # Letters occupy plate 4 on the second row of the 312 mm grid.
-        positions += _letter_positions(len(name), 392.0, -220.0)
+        positions += _letter_positions(len(name), BODY_COUNT + 1, (-48.0, -36.0))
     OBJECTS = objects
     BUILD_POSITIONS = positions
 
@@ -228,7 +257,7 @@ def configure_hex_objects(
     BODY_COUNT = len(objects)
     if include_letters:
         objects += _letter_objects(name)
-        positions += _letter_positions(len(name), 392.0, 96.0)
+        positions += _letter_positions(len(name), BODY_COUNT + 1, (-48.0, -32.0))
     OBJECTS = objects
     BUILD_POSITIONS = positions
 
