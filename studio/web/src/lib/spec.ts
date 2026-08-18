@@ -140,6 +140,27 @@ export function filamentRoles(
 }
 
 /**
+ * Filament roles the current design leaves out — `["letters"]` with the glue-in
+ * letters switched off.
+ *
+ * Derived from visibility rather than declared separately: a filament slot whose
+ * control the spec has hidden is, by definition, a part this configuration does
+ * not include. Nothing here knows *why* it is hidden, so a product that adds an
+ * optional part gets the viewer behaviour for free.
+ */
+export function hiddenFilamentRoles(
+  spec: ProductSpec | null,
+  values: Values,
+): string[] {
+  if (!spec?.params) return [];
+  const out: string[] = [];
+  for (const p of spec.params) {
+    if (p.kind === "filament" && !isVisible(p, spec, values)) out.push(p.role);
+  }
+  return out;
+}
+
+/**
  * `@font-face` rules for every option that declares a typeface.
  *
  * The alternative is bundling the fonts into the web app, which would mean two

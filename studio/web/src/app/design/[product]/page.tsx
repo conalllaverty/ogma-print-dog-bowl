@@ -8,6 +8,7 @@ import {
   defaults,
   displayValue,
   filamentRoles,
+  hiddenFilamentRoles,
   previewSignature,
   visibleValues,
   type FieldError,
@@ -99,6 +100,12 @@ export default function DesignerPage({ params }: { params: Promise<{ product: st
   const roleColours = useMemo(
     () => (spec ? filamentRoles(spec, visibleValues(spec, values), filaments) : {}),
     [spec, values, filaments],
+  );
+
+  /** Parts this configuration omits. Also no fetch — see Viewer's `hiddenRoles`. */
+  const hiddenRoles = useMemo(
+    () => hiddenFilamentRoles(spec, values),
+    [spec, values],
   );
 
   const pollPreview = useCallback(async (key: string) => {
@@ -241,8 +248,14 @@ export default function DesignerPage({ params }: { params: Promise<{ product: st
           {downloadUrl ? (
             <p className="dl">
               <a className="cta ghost-cta" href={downloadUrl}>
-                Download .3mf
+                Download
               </a>
+              {/* Says what is in the zip, because a customer who expected a
+                  .3mf needs to know the print file is still in there. */}
+              <span className="fhelp">
+                The Bambu project plus photos of the assembled stand.{" "}
+                <a href={`${downloadUrl}.3mf`}>Just the .3mf</a>
+              </span>
             </p>
           ) : null}
         </section>
@@ -285,6 +298,11 @@ export default function DesignerPage({ params }: { params: Promise<{ product: st
           url={preview.url}
           colours={roleColours}
           fuzzy={!!values.fuzzy_enabled}
+          // The generic rule, not a dog-bowl special case: a filament role whose
+          // control the spec has hidden is a part this design does not include,
+          // so it should not be in the picture either. A product that adds an
+          // optional part gets this behaviour without touching the viewer.
+          hiddenRoles={hiddenRoles}
           mode={mode}
           status={preview.status}
         />

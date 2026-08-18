@@ -21,27 +21,64 @@ import sys
 import tempfile
 from pathlib import Path
 
-os.environ.setdefault("PYOPENGL_PLATFORM", "egl")
 
 REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "products" / "dog-bowl" / "generator"))
 sys.path.insert(0, str(REPO / "shared"))
 
 import numpy as np  # noqa: E402
+
+# Imported before pyrender, deliberately: ogma.render picks the offscreen GL
+# backend by platform (EGL on Linux, pyglet's CGL on macOS) and applies the
+# np.infty shim, both of which must happen before PyOpenGL is imported. This
+# file used to force `PYOPENGL_PLATFORM=egl` unconditionally, which fails on a
+# developer's Mac with "Unable to load EGL library".
+from ogma import render as render_lib  # noqa: E402
+
 import pyrender  # noqa: E402
 import trimesh  # noqa: E402
 from PIL import Image  # noqa: E402
 
 import styles  # noqa: E402
 from ogma import preview as preview_lib  # noqa: E402
+from preview import role_for  # noqa: E402
 
 OUT = REPO / "products" / "dog-bowl" / "assets" / "styles"
 W, H = 640, 480
 
-# One neutral colour for every style: the icon answers "what does the wall look
-# like", and showing it in the customer's current filament would be a second
-# variable in a 90px picture.
-BODY = [0.78, 0.70, 0.62, 1.0]
+# One colour per style, so the four cards are tellable apart at a glance.
+#
+# This reverses an earlier decision to render every style in the same neutral.
+# The reasoning then was that colour is a second variable in a 90px picture; in
+# practice the four cards sat next to each other in identical cream and the eye
+# had to read the captions to tell a honeycomb from a fluted drum. Distinct hues
+# do the separating, and the wall pattern still does the describing.
+#
+# Real Bambu Matte palette entries, not arbitrary swatches — and a label, not a
+# claim: every style can be printed in every filament, the colour control is
+# elsewhere in the form.
+#
+# Chosen on the same basis as DEFAULT_STAND: mid-luminance, because surface
+# relief reads as a shading gradient and needs mid-tones. All four sit between
+# 0.54 and 0.67, and their hues are far enough apart to survive a thumbnail.
+STYLE_COLOURS = {
+    "cooper": "#AE835B",   # Caramel      — warm brown
+    "wave":   "#56B7E6",   # Sky Blue     — cyan
+    "hex":    "#61C680",   # Grass Green  — green
+    "fluted": "#AE96D4",   # Lilac Purple — violet
+}
+FALLBACK_COLOUR = "#9B9EA0"  # Ash Gray, for a style added without an entry
+
+# Second colour for a two-tone body, keyed by the same style id.
+#
+# The split wave prints as two bodies meeting at the sine seam, and they can be
+# different filament — that *is* the style, so an icon showing it in one colour
+# describes the wrong product. Deeper blue rather than a contrasting hue: the
+# card still has to read as "the blue one" against three siblings, so the seam
+# is shown by a step in value, not by a second identity.
+STYLE_UPPER_COLOURS = {
+    "wave": "#0078BF",     # Marine Blue — lower body, under a Sky Blue upper
+}
 
 # Two letters, because the name is not what the icon is about but the geometry
 # needs one. Kept short so the plaque doesn't dominate the crop.
@@ -69,7 +106,7 @@ def render(style_id: str) -> Image.Image:
         with contextlib.redirect_stdout(io.StringIO()):
             styles.get(style_id).generate_meshes(Path(td), SAMPLE_NAME, "bold")
         meshes = [
-            trimesh.load_mesh(p)
+            (trimesh.load_mesh(p), p.name)
             for p in preview_lib.assembled_meshes(Path(td) / "meshes")
             # The stainless bowl is the same in every style, so it carries no
             # information here and only steals the top third of the frame.
@@ -77,11 +114,36 @@ def render(style_id: str) -> Image.Image:
         ]
 
     scene = pyrender.Scene(bg_color=[0, 0, 0, 0], ambient_light=[0.32] * 3)
-    mat = pyrender.MetallicRoughnessMaterial(
-        baseColorFactor=BODY, metallicFactor=0.0, roughnessFactor=0.72
-    )
-    combined = trimesh.util.concatenate(meshes)
-    scene.add(pyrender.Mesh.from_trimesh(combined, material=mat, smooth=False))
+    def material(hex_colour: str) -> pyrender.MetallicRoughnessMaterial:
+        return pyrender.MetallicRoughnessMaterial(
+            baseColorFactor=[*render_lib._srgb_to_linear(hex_colour), 1.0],
+            metallicFactor=0.0,
+            roughnessFactor=0.72,
+        )
+
+    # Grouped by the same role mapping the preview and the renderer use, so an
+    # icon cannot disagree with the 3D view about which part is which colour.
+    body = STYLE_COLOURS.get(style_id, FALLBACK_COLOUR)
+    upper = STYLE_UPPER_COLOURS.get(style_id)
+    groups: dict[str, list] = {}
+    for mesh, name in meshes:
+        groups.setdefault(role_for(name), []).append(mesh)
+
+    for role, group in groups.items():
+        # `stand_upper` only exists on a two-tone style; everything else is body.
+        hex_colour = body if (role != "stand" or upper is None) else upper
+        combined = trimesh.util.concatenate(group)
+        # Crease-aware normals rather than flat shading: the pattern is the whole
+        # point of the icon, and flat shading facets the drum it sits on. Same
+        # 12° threshold the viewer and the offline renderer use.
+        scene.add(
+            pyrender.Mesh.from_trimesh(
+                render_lib.creased_normals(combined),
+                material=material(hex_colour),
+                smooth=True,
+            )
+        )
+    combined = trimesh.util.concatenate([m for g in groups.values() for m in g])
 
     centre = combined.bounds.mean(axis=0)
     extent = float(np.max(combined.bounds[1] - combined.bounds[0]))
