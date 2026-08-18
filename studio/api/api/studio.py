@@ -9,6 +9,7 @@ already points at them breaks.
 from __future__ import annotations
 
 import json
+import zipfile
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
@@ -198,8 +199,55 @@ def job(job_id: str):
     return j.to_json()
 
 
+def _bundle(job) -> Path:
+    """The customer's download: the project file plus the assembled renders.
+
+    Built once, on first request, and kept beside the job — so a customer who
+    reloads the download page is not re-zipping, and the retention reaper still
+    removes it with everything else in the job directory.
+
+    Assembled here rather than in the generator because "what the customer
+    receives" is a delivery question, not a geometry one: the pipeline's job is
+    to produce the artefacts, and this decides which of them ship together.
+    """
+    threemf = job.dir / job.output
+    if not threemf.is_file():
+        raise HTTPException(status_code=404, detail="Output missing on disk")
+
+    bundle = job.dir / f"{threemf.stem}.zip"
+    if bundle.is_file():
+        return bundle
+
+    renders = [
+        job.dir / "renders" / name for name in (job.meta.get("renders") or [])
+    ]
+    # Written to a temporary name and moved into place, so a request that dies
+    # mid-zip cannot leave a truncated archive to be served as complete by the
+    # next one.
+    staging = bundle.with_suffix(".zip.part")
+    with zipfile.ZipFile(staging, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+        # No compression on the .3mf: it is already a deflated zip, so a second
+        # pass costs CPU on every download and saves nothing.
+        z.write(threemf, arcname=threemf.name, compress_type=zipfile.ZIP_STORED)
+        for image in renders:
+            if image.is_file():
+                z.write(image, arcname=f"renders/{image.name}")
+    staging.replace(bundle)
+    return bundle
+
+
 @router.get("/jobs/{job_id}/download")
 def download(job_id: str):
+    j = get_job(job_id)
+    if not j or j.status.value != "succeeded" or not j.output:
+        raise HTTPException(status_code=404, detail="No output for this job")
+    bundle = _bundle(j)
+    return FileResponse(bundle, media_type="application/zip", filename=bundle.name)
+
+
+@router.get("/jobs/{job_id}/download.3mf")
+def download_3mf(job_id: str):
+    """The project file on its own, for anyone who only wants the print."""
     j = get_job(job_id)
     if not j or j.status.value != "succeeded" or not j.output:
         raise HTTPException(status_code=404, detail="No output for this job")
@@ -237,4 +285,7 @@ def bowl_job(job_id: str):
 
 @router.get("/bowl/jobs/{job_id}/download.3mf", deprecated=True)
 def bowl_download(job_id: str):
-    return download(job_id)
+    # Delegates to the .3mf route, not the bundle: this alias names the format
+    # it returns, and an older client that asked for a .3mf and got a zip would
+    # hand a broken file straight to Bambu Studio.
+    return download_3mf(job_id)
