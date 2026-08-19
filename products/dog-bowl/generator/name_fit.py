@@ -89,8 +89,16 @@ def widest_fitting_font(name: str) -> str | None:
 
 
 def warm_cache(font_style: str = "bold", letters: str = "") -> int:
-    """Pre-measure glyphs so the first customer doesn't pay for them."""
-    for ch in letters or "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+    """Pre-measure glyphs so the first customer doesn't pay for them.
+
+    Both cases. The cache is keyed on the character, and names are no longer
+    upper-cased on the way in, so a lowercase 'e' is a different entry from 'E'
+    and warming only the capitals leaves half the alphabet cold — which the
+    customer feels as the fit hint arriving late for exactly the names people
+    actually type.
+    """
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    for ch in letters or (alphabet + alphabet.lower()):
         _letter_half_angle(ch, font_style)
     return _letter_half_angle.cache_info().currsize
 

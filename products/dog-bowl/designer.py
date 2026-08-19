@@ -150,14 +150,20 @@ PARAMS = (
     TextParam(
         id="name",
         label="Pet name",
-        help=f"2–{MAX_NAME_LEN} letters, A–Z. Longer names need a condensed font.",
+        help=(
+            f"2–{MAX_NAME_LEN} letters. Capitals and lower case both print — "
+            "the name is set the way you type it. Longer names need a "
+            "condensed font."
+        ),
         group="Design",
-        default="MAX",
+        default="Max",
         min_length=2,
         max_length=MAX_NAME_LEN,
         pattern="^[A-Za-z]+$",
-        transform="upper",
-        placeholder="MAX",
+        # No transform. It was "upper", which meant the field rewrote the
+        # customer's name as they typed it and every stand shipped shouting.
+        transform="none",
+        placeholder="Max",
     ),
     ChoiceParam(
         id="style",
@@ -388,7 +394,9 @@ class DogBowlGenerator:
         that fits, which means measuring the name in all of them — with only the
         default warm, a rejected name still took ~2.6 s to explain itself.
 
-        ~55 s of background CPU at boot, on a daemon thread that holds no lock.
+        ~110 s of background CPU at boot, on a daemon thread that holds no lock.
+        Double what it was: names keep their case now, so each face has 52
+        glyphs to measure rather than 26.
         """
         # By id, not by position: PARAMS is reordered whenever the form is.
         default = SPEC.param("font_style").default

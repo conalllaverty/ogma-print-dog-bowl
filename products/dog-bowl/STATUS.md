@@ -8,7 +8,7 @@
 
 A configurator for elevated dog-bowl stands (Bambu Lab P2S) that all seat the **same Cooper metal bowl** (Ø140 rim family):
 
-1. User enters a dog name (2–8 letters A–Z)
+1. User enters a dog name (2–8 letters, upper or lower case)
 2. Picks **stand style** (paw lattice · wave · honeycomb) + letter style + Matte colours
 3. Generates a print-ready `.3mf`
 4. Downloads and prints / assembles

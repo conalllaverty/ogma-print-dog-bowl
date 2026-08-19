@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import math
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -182,12 +183,35 @@ GLYPH_PIXEL_MM = 0.12
 GLYPH_FONT_PX = 520
 GLYPH_SMOOTH_MM = 0.035  # light open/close; avoid heavy round-off
 GLYPH_SIMPLIFY_MM = 0.02
+# Ignore raster crumbs, keep the dot on an 'i'.
+#
+# A glyph normally rasterizes to one connected polygon, and the two places that
+# consume it — the letter body and its pocket — used to take the largest ring
+# and drop the rest, on the assumption that anything else was a speck thrown off
+# by the raster. That assumption held for exactly as long as names were forced
+# to capitals: A-Z has no disconnected glyph, but i, j and every accented letter
+# does, and dropping the tittle leaves a floating dot with no pocket to sit in.
+#
+# Area separates the two cases with room to spare. A tittle at cap height 15 mm
+# is 1.0-1.6 mm2; a raster speck is one 0.12 mm cell, 0.014 mm2.
+GLYPH_PART_MIN_AREA = 0.2  # mm2
 # Filled by build_letters() after measuring glyph widths.
 NAME_RAIL_FLAT_DEG = 30.5
 NAME_RAIL_OUTER_DEG = 32.0
-# Name-rail flat Z span (must match beveled_name_rail defaults).
+# Name-rail flat Z span. The floor, not the answer: build_letters() lowers Z0 and
+# raises Z1 when the word needs more than this, and never narrows the band, so a
+# style that sets its own (the wave) keeps it. See LETTER_PLAQUE_MARGIN.
 NAME_RAIL_FLAT_Z0 = 29.0
 NAME_RAIL_FLAT_Z1 = 52.0
+# Flat plaque left clear beyond the ink, above and below.
+#
+# Only descenders ever ask for it. Caps sit 33.0-48.0 inside a 29.0-52.0 flat,
+# so a capitalised name is 4 mm clear at both ends and the band does not move.
+# The deepest descender in the seven faces is Lora's, 5.79 mm below the baseline
+# at cap height 15 — which reaches 27.2 and would otherwise cut its pocket into
+# the blend below the plaque, where the surface has already fallen away towards
+# the wall and the pocket floor would break through it.
+LETTER_PLAQUE_MARGIN = 1.5
 
 
 def cylinder(radius: float, height: float, z0: float, sections: int = 192) -> trimesh.Trimesh:
@@ -313,8 +337,13 @@ def beveled_name_rail(
     r_outer: float = NAME_RAIL_OUTER_R,
     r_wall: float = WALL_OUTER_R,
     z_bottom: float = 19.0,
-    z_flat_bottom: float = NAME_RAIL_FLAT_Z0,
-    z_flat_top: float = NAME_RAIL_FLAT_Z1,
+    # None, not the module value: a default expression is evaluated once, at
+    # import, and build_letters() lowers these per name. Written the obvious way
+    # this function would have kept building a 29-52 plaque for a word whose
+    # descenders reach 27.2 — the same stale-default bug that once put Cooper's
+    # letters on the honeycomb's rail radius.
+    z_flat_bottom: float | None = None,
+    z_flat_top: float | None = None,
     z_top: float = 60.0,
     angle_min: float = math.radians(-32),
     angle_flat_min: float = math.radians(-30.5),
@@ -329,6 +358,13 @@ def beveled_name_rail(
     a bright ring around the whole cylinder. Longer ease-in/out blends spread
     that change over many layers.
     """
+    z_flat_bottom = NAME_RAIL_FLAT_Z0 if z_flat_bottom is None else z_flat_bottom
+    z_flat_top = NAME_RAIL_FLAT_Z1 if z_flat_top is None else z_flat_top
+    # Keep a blend to blend over. The seven shipping faces put the deepest
+    # descender at 25.7, well above 19, but a flat that reached the ease-in
+    # would divide by zero here rather than fail visibly.
+    z_bottom = min(z_bottom, z_flat_bottom - 4.0)
+    z_top = max(z_top, z_flat_top + 4.0)
     angles = np.linspace(angle_min, angle_max, segments + 1)
     z_levels = np.linspace(z_bottom, z_top, z_slices)
 
@@ -419,6 +455,11 @@ _LETTER_GEOMETRY_DEFAULTS = {
     "NAME_RAIL_OUTER_R": NAME_RAIL_OUTER_R,
     "LETTER_FACE_R": LETTER_FACE_R,
     "LETTER_CENTER_Z": LETTER_CENTER_Z,
+    # build_letters() widens these for a name with descenders, and the widening
+    # belongs to that name only. Without them here, "Poppy" would leave its
+    # lowered plaque behind for whatever the server built next.
+    "NAME_RAIL_FLAT_Z0": NAME_RAIL_FLAT_Z0,
+    "NAME_RAIL_FLAT_Z1": NAME_RAIL_FLAT_Z1,
 }
 
 
@@ -562,14 +603,45 @@ def configure_output(
 
 
 def normalize_name(name: str) -> str:
-    cleaned = "".join(ch for ch in name.upper() if ch.isalpha())
+    """Strip everything that isn't a letter, and keep the case that was typed.
+
+    It used to upper-case as well, so every bowl read CHLOE however the customer
+    wrote it. Case is the single biggest thing separating one lettering style
+    from another — the picker draws its sample as "Bella" and the stand came
+    back as five capitals — and it is also the customer's name, not ours.
+    """
+    cleaned = "".join(ch for ch in name if ch.isalpha())
     if not cleaned:
-        raise ValueError("Name must contain at least one letter A–Z")
+        raise ValueError("Name must contain at least one letter")
     if len(cleaned) > MAX_NAME_LEN:
         raise ValueError(f"Name must be {MAX_NAME_LEN} characters or fewer (got {len(cleaned)})")
     if len(cleaned) < 2:
         raise ValueError("Name must be at least 2 letters")
     return cleaned
+
+
+def _glyph_font(font_path: str, font_style: str | None) -> ImageFont.FreeTypeFont:
+    font = ImageFont.truetype(font_path, GLYPH_FONT_PX)
+    variation = FONT_VARIATIONS.get(font_style)
+    if variation is not None:
+        font.set_variation_by_name(variation.encode())
+    return font
+
+
+@lru_cache(maxsize=None)
+def _font_ruler(font_path: str, font_style: str | None) -> tuple[float, float]:
+    """(cap height, baseline depth) for one face, in font pixels.
+
+    Measured off 'H' rather than read from the OS/2 table: Pillow does not expose
+    sCapHeight, and three of these seven files are variable fonts whose cap
+    height moves with the instance anyway. Both numbers are relative to the
+    ascender line Pillow draws from, so the baseline sits `ascent` below it and
+    the cap top `ascent - cap` — which is what turns a glyph's ink box into a
+    height above the baseline.
+    """
+    font = _glyph_font(font_path, font_style)
+    ascent, _descent = font.getmetrics()
+    return float(ascent - font.getbbox("H")[1]), float(ascent)
 
 
 def glyph_polygon(
@@ -580,14 +652,29 @@ def glyph_polygon(
 ):
     """Rasterize a glyph at high resolution for smooth printable outlines.
 
+    `target_height` is the *cap* height: 'H' comes out exactly that tall and
+    every other glyph is drawn at the same scale, so a word keeps the
+    proportions its designer drew. It used to be the height of whatever glyph
+    was asked for — each one stretched to fill it — which is invisible in
+    capitals, where every letter is the same height anyway, and nonsense the
+    moment a name has a lowercase 'e' in it.
+
+    y = 0 is the middle of the cap band rather than the middle of this glyph's
+    own ink, which is what puts every letter of a word on one baseline. A
+    capital therefore still spans ±target_height/2 and lands exactly where it
+    always did; an ascender reaches ~1.2 mm higher, a descender 4.5-5.8 mm
+    lower, and both are measured, not assumed — see LETTER_PLAQUE_MARGIN.
+
     `font_path`/`font_style` default to the globals set by configure_output().
     They can be passed explicitly so a caller that only wants to measure a
     glyph (the fit pre-check) doesn't have to mutate job state to do it.
     """
-    font = ImageFont.truetype(font_path or FONT_PATH, GLYPH_FONT_PX)
-    variation = FONT_VARIATIONS.get(font_style or FONT_STYLE)
-    if variation is not None:
-        font.set_variation_by_name(variation.encode())
+    path = str(font_path or FONT_PATH)
+    style = font_style or FONT_STYLE
+    font = _glyph_font(path, style)
+    cap_px, baseline_px = _font_ruler(path, style)
+    mm_per_px = target_height / cap_px
+
     bbox = font.getbbox(letter, stroke_width=0)
     width = bbox[2] - bbox[0] + 16
     height = bbox[3] - bbox[1] + 16
@@ -596,19 +683,26 @@ def glyph_polygon(
     draw.text((8 - bbox[0], 8 - bbox[1]), letter, font=font, fill=255)
     occupied = np.asarray(image) > 96
     ys, xs = np.nonzero(occupied)
+    # How far the ink reaches above the baseline, in font pixels. The glyph was
+    # drawn with its ascender line on row `8 - bbox[1]`, so that is the row the
+    # baseline is `baseline_px` below. Taken from the thresholded raster and not
+    # from bbox alone, so it agrees with the pixels that actually survive.
+    ink_top_px = baseline_px - (float(ys.min()) - 8 + bbox[1])
     occupied = occupied[ys.min() : ys.max() + 1, xs.min() : xs.max() + 1]
 
     pixel = GLYPH_PIXEL_MM
-    target_rows = max(1, round(target_height / pixel))
-    target_cols = max(1, round(occupied.shape[1] * target_rows / occupied.shape[0]))
+    target_rows = max(1, round(occupied.shape[0] * mm_per_px / pixel))
+    target_cols = max(1, round(occupied.shape[1] * mm_per_px / pixel))
     resized = Image.fromarray((occupied * 255).astype(np.uint8)).resize(
         (target_cols, target_rows), Image.Resampling.LANCZOS
     )
     mask = np.asarray(resized) > 128
+    top = ink_top_px * mm_per_px - target_height / 2.0
+    bottom = top - target_rows * pixel
     cells = []
     for row, col in zip(*np.nonzero(mask)):
         x0 = (col - target_cols / 2) * pixel
-        y0 = (target_rows - row - 1 - target_rows / 2) * pixel
+        y0 = bottom + (target_rows - row - 1) * pixel
         cells.append(box(x0, y0, x0 + pixel, y0 + pixel))
     # Mild morphological smooth only — heavy buffer/simplify made letters chunky.
     polygon = (
@@ -620,29 +714,29 @@ def glyph_polygon(
     return polygon, mask, pixel
 
 
-def choose_pin_points(mask: np.ndarray, pixel: float) -> list[tuple[float, float]]:
-    """Choose two well-separated pin locations supported by solid glyph strokes."""
-    rows, cols = mask.shape
-    candidates = []
-    for row, col in zip(*np.nonzero(mask)):
-        if row < 2 or col < 2 or row >= rows - 2 or col >= cols - 2:
-            continue
-        local = mask[row - 2 : row + 3, col - 2 : col + 3]
-        if local.mean() > 0.65:
-            x = (col + 0.5 - cols / 2) * pixel
-            y = (rows - row - 0.5 - rows / 2) * pixel
-            candidates.append((x, y))
-    if not candidates:
-        candidates = [
-            ((col + 0.5 - cols / 2) * pixel, (rows - row - 0.5 - rows / 2) * pixel)
-            for row, col in zip(*np.nonzero(mask))
-        ]
-    candidates = np.asarray(candidates)
-    upper = candidates[candidates[:, 1] >= np.median(candidates[:, 1])]
-    lower = candidates[candidates[:, 1] < np.median(candidates[:, 1])]
-    p1 = upper[np.argmin(np.abs(upper[:, 0]) + 0.15 * np.abs(upper[:, 1] - 4.5))]
-    p2 = lower[np.argmin(np.abs(lower[:, 0]) + 0.15 * np.abs(lower[:, 1] + 4.5))]
-    return [tuple(p1), tuple(p2)]
+def glyph_parts(polygon) -> list:
+    """The pieces of a glyph worth building, largest first.
+
+    A glyph is usually one ring and this returns it unchanged. When it isn't —
+    the tittle on an i or a j, an accent — every piece above GLYPH_PART_MIN_AREA
+    comes back, because the letter and its pocket both have to be built from all
+    of them. Below that threshold is raster noise, and the largest piece is kept
+    as a floor so a genuinely tiny glyph can never return nothing at all.
+    """
+    geoms = list(getattr(polygon, "geoms", [polygon]))
+    parts = [g for g in geoms if g.area >= GLYPH_PART_MIN_AREA]
+    if not parts:
+        parts = [max(geoms, key=lambda g: g.area)]
+    return sorted(parts, key=lambda g: g.area, reverse=True)
+
+
+def extrude_glyph(polygon, height: float) -> trimesh.Trimesh:
+    """Extrude every piece of a glyph into one mesh."""
+    parts = [
+        trimesh.creation.extrude_polygon(part, height=height, engine="earcut")
+        for part in glyph_parts(polygon)
+    ]
+    return parts[0] if len(parts) == 1 else trimesh.util.concatenate(parts)
 
 
 def letter_angular_half_extent(mesh: trimesh.Trimesh) -> float:
@@ -755,7 +849,7 @@ def curved_letter_mesh(polygon, arc_center: float) -> trimesh.Trimesh:
     r_back = NAME_RAIL_OUTER_R - LETTER_POCKET_DEPTH
     # Extra depth so the cylinder boolean cleanly forms the concave back.
     extrude_h = LETTER_PROUD + LETTER_POCKET_DEPTH + 1.2
-    body = trimesh.creation.extrude_polygon(polygon, height=extrude_h, engine="earcut")
+    body = extrude_glyph(polygon, extrude_h)
 
     body.apply_transform(letter_print_to_assembly_matrix(arc_center))
     core = trimesh.creation.cylinder(radius=r_back, height=120.0, sections=160)
@@ -771,8 +865,6 @@ def letter_pocket_cutter(polygon, arc_center: float) -> trimesh.Trimesh:
     poly = polygon.buffer(LETTER_POCKET_CLEARANCE)
     if poly.is_empty:
         raise ValueError("letter pocket polygon vanished after clearance buffer")
-    if poly.geom_type == "MultiPolygon":
-        poly = max(poly.geoms, key=lambda g: g.area)
     r_outer = NAME_RAIL_OUTER_R + 0.55
     # Dropped by the glyph's own bulge too — the letter is seated that much
     # deeper (see glyph_bulge), so a floor at the nominal depth would hold it
@@ -784,7 +876,7 @@ def letter_pocket_cutter(polygon, arc_center: float) -> trimesh.Trimesh:
         - LETTER_POCKET_FLOOR_GAP
     )
     extrude_h = (r_outer - r_floor) + 0.4
-    body = trimesh.creation.extrude_polygon(poly, height=extrude_h, engine="earcut")
+    body = extrude_glyph(poly, extrude_h)
     body.apply_transform(letter_print_to_assembly_matrix(arc_center, face_r=r_outer))
     core = trimesh.creation.cylinder(radius=r_floor, height=120.0, sections=160)
     return boolean_difference(body, [core])
@@ -792,6 +884,7 @@ def letter_pocket_cutter(polygon, arc_center: float) -> trimesh.Trimesh:
 
 def build_letters(name: str | None = None):
     global NAME_RAIL_FLAT_DEG, NAME_RAIL_OUTER_DEG, NAME
+    global NAME_RAIL_FLAT_Z0, NAME_RAIL_FLAT_Z1
     if name is not None:
         NAME = normalize_name(name)
     letter_data = []
@@ -810,6 +903,20 @@ def build_letters(name: str | None = None):
         xmin, xmax = float(provisional.bounds[0][0]), float(provisional.bounds[1][0])
         widths.append(xmax - xmin)
         half_angles.append(letter_angular_half_extent(provisional))
+
+    # The plaque follows the ink vertically, the same way its width follows the
+    # packed letters. Only lowercase ever moves it: capitals sit 4 mm inside the
+    # default band at both ends, so `min`/`max` leave it exactly where it was and
+    # a capitalised name builds the geometry it always did. A descender pushes
+    # the flat down rather than hanging off the bottom edge of it.
+    ink_bottom = min(float(p.bounds[1]) for p in polygons)
+    ink_top = max(float(p.bounds[3]) for p in polygons)
+    NAME_RAIL_FLAT_Z0 = min(
+        NAME_RAIL_FLAT_Z0, LETTER_CENTER_Z + ink_bottom - LETTER_PLAQUE_MARGIN
+    )
+    NAME_RAIL_FLAT_Z1 = max(
+        NAME_RAIL_FLAT_Z1, LETTER_CENTER_Z + ink_top + LETTER_PLAQUE_MARGIN
+    )
 
     arc_centers = pack_letter_arc_centers(half_angles)
     NAME_RAIL_FLAT_DEG, NAME_RAIL_OUTER_DEG = required_name_rail_angles(half_angles, arc_centers)

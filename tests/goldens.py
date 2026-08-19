@@ -25,6 +25,11 @@ CASES = [
     ("wave", "LUNA", "serif"),
     ("hex", "MAX", "bold"),
     ("fluted", "MAX", "bold"),
+    # Mixed case, in the face with the deepest descender. Carries the three
+    # things capitals never exercise: a plaque lowered to cover the 'y', a
+    # second body for the tittle on the 'i', and glyphs of three different
+    # heights sharing one baseline.
+    ("cooper", "Bailey", "serif"),
 ]
 
 

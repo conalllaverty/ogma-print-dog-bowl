@@ -26,8 +26,6 @@ from shapely.strtree import STRtree
 
 import cooper_bowl_design as design
 from cooper_bowl_design import (
-    NAME_RAIL_FLAT_Z0,
-    NAME_RAIL_FLAT_Z1,
     PANEL_BOTTOM_Z,
     PAW_RECESS_DEPTH,
     WALL_OUTER_R,
@@ -35,7 +33,7 @@ from cooper_bowl_design import (
     unwrap_cylinder_u,
 )
 
-# NAME_RAIL_OUTER_DEG is deliberately NOT imported by value.
+# Neither NAME_RAIL_OUTER_DEG nor the plaque's Z span is imported by value.
 #
 # build_letters() computes it from the name being built and writes it back to
 # the module, so a by-value import freezes it at the 32° placeholder set at
@@ -47,6 +45,11 @@ from cooper_bowl_design import (
 # Masked in the normal pipeline because dimensions_and_validation.json is
 # written before painting and takes precedence — this only bites a caller that
 # paints without building the full job, which is exactly what a coupon is.
+#
+# NAME_RAIL_FLAT_Z0/Z1 are the same story in the vertical: build_letters() drops
+# the flat to cover a descender, and a frozen 29.0 would leave the part of the
+# plaque below it outside the exclusion, fuzzing the wall a letter pocket is
+# about to be cut into.
 from ogma.paint import (
     PAINT_ATTR,
     allow_paint_on_object,
@@ -101,8 +104,8 @@ def on_name_rail_plaque(
     cr = np.hypot(x, y)
     # Design front is -Y; plaque angles match build_panel / beveled_name_rail.
     theta_deg = np.degrees(np.arctan2(x, -y))
-    z_lo = NAME_RAIL_FLAT_Z0 - z_offset - 2.0
-    z_hi = NAME_RAIL_FLAT_Z1 - z_offset + 2.0
+    z_lo = design.NAME_RAIL_FLAT_Z0 - z_offset - 2.0
+    z_hi = design.NAME_RAIL_FLAT_Z1 - z_offset + 2.0
     return (
         (cr >= WALL_OUTER_R + 0.35)
         & (np.abs(theta_deg) <= rail_deg + 1.0)

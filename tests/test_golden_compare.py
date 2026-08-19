@@ -6,7 +6,7 @@ a test that always passes — which is worse than no test, because it looks like
 cover.
 
 These run in milliseconds against synthetic fingerprints. The expensive part —
-actually building the five cases — happens in CI, which then calls
+actually building the cases — happens in CI, which then calls
 `golden_compare.py` against the committed baseline.
 """
 
@@ -21,6 +21,7 @@ if str(REPO / "tests") not in sys.path:
     sys.path.insert(0, str(REPO / "tests"))
 
 from golden_compare import compare  # noqa: E402
+from goldens import CASES  # noqa: E402
 
 
 def _mesh(volume=100.0, area=50.0, triangles=1000, vertices=3000, watertight=True):
@@ -147,7 +148,12 @@ def test_the_committed_baseline_matches_itself():
 
     path = REPO / "tests" / "goldens-baseline.json"
     data = json.loads(path.read_text())
-    assert len(data) == 5, f"expected 5 golden cases, found {len(data)}"
+    # Against the case list itself, not a number written here as well. A count
+    # in two files is a count that goes stale the first time a case is added,
+    # and it fails as "the baseline is corrupt" — which is the opposite of what
+    # happened.
+    expected = {f"{style}/{name}/{font}" for style, name, font in CASES}
+    assert set(data) == expected, f"baseline cases {set(data) ^ expected} differ from goldens.CASES"
     assert compare(data, copy.deepcopy(data)) == []
     for case, rec in data.items():
         assert "ERROR" not in rec, f"baseline case {case} was captured from a failed build"

@@ -125,9 +125,7 @@ def _wave_letter_mesh(polygon, arc_center: float, p=WAVE) -> trimesh.Trimesh:
         + design.LETTER_POCKET_DEPTH
         + 1.2
     )
-    body = trimesh.creation.extrude_polygon(
-        polygon, height=extrude_h, engine="earcut"
-    )
+    body = design.extrude_glyph(polygon, extrude_h)
     transform = _wave_letter_transform(
         arc_center,
         design.LETTER_PROUD,
@@ -155,9 +153,6 @@ def _wave_letter_pocket_cutter(polygon, arc_center: float, p=WAVE) -> trimesh.Tr
     poly = polygon.buffer(design.LETTER_POCKET_CLEARANCE)
     if poly.is_empty:
         raise ValueError("Wave letter pocket vanished after clearance buffer")
-    if poly.geom_type == "MultiPolygon":
-        poly = max(poly.geoms, key=lambda geometry: geometry.area)
-
     outer_offset = 0.55
     # Includes the glyph's bulge: the letter is seated that much deeper (see
     # _wave_assembly_letter), so a floor at the nominal depth would hold it
@@ -170,11 +165,7 @@ def _wave_letter_pocket_cutter(polygon, arc_center: float, p=WAVE) -> trimesh.Tr
     cone_scale = math.sqrt(
         1.0 + ((p.rt_out - p.rb_out) / p.h) ** 2
     )
-    body = trimesh.creation.extrude_polygon(
-        poly,
-        height=outer_offset - floor_normal_offset + 0.4,
-        engine="earcut",
-    )
+    body = design.extrude_glyph(poly, outer_offset - floor_normal_offset + 0.4)
     body.apply_transform(_wave_letter_transform(arc_center, outer_offset, p))
     return design.boolean_difference(
         body,

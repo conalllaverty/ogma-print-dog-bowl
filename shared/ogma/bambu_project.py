@@ -749,7 +749,7 @@ def build_project(
     TEMPLATE = template_path
 
     configure_objects(
-        mesh_dir, name.upper(), include_letters=include_letters, one_piece=one_piece
+        mesh_dir, name, include_letters=include_letters, one_piece=one_piece
     )
     # The paw wall is its own object when the stand is three parts, and the
     # whole stand when it is one. Fuzzy skin is painted on whichever it is.
@@ -941,7 +941,7 @@ def build_wave_project(
     WORK = work_dir
     TEMPLATE = template_path
 
-    configure_wave_objects(mesh_dir, name.upper(), include_letters=include_letters)
+    configure_wave_objects(mesh_dir, name, include_letters=include_letters)
 
     meshes = []
     for _, path, _ in OBJECTS:
@@ -1052,7 +1052,7 @@ def build_hex_project(
 
     configure_hex_objects(
         mesh_dir,
-        name.upper(),
+        name,
         body_mesh=body_mesh,
         body_label=body_label,
         include_letters=include_letters,
