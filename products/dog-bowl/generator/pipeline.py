@@ -39,7 +39,6 @@ FONT_STYLES = (
     "slab",
     "rounded",
     "playful",
-    "condensed",
 )
 DEFAULT_STYLE = styles.DEFAULT_STYLE
 

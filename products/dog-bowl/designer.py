@@ -50,7 +50,6 @@ FONT_LABELS = {
     "slab": ("Robust Slab", "Roboto Slab Bold — print-safe serif"),
     "rounded": ("Soft Rounded", "Fredoka SemiBold"),
     "playful": ("Playful", "Baloo 2 SemiBold"),
-    "condensed": ("Condensed", "Barlow Condensed SemiBold — best for long names"),
 }
 
 # CSS weight to request from each face in the browser.
@@ -152,8 +151,8 @@ PARAMS = (
         label="Pet name",
         help=(
             f"2–{MAX_NAME_LEN} letters. Capitals and lower case both print — "
-            "the name is set the way you type it. Longer names need a "
-            "condensed font."
+            "the name is set the way you type it. A long name may not fit "
+            "every lettering style."
         ),
         group="Design",
         default="Max",
@@ -322,9 +321,9 @@ class DogBowlGenerator:
         if fits:
             return
 
-        # Name a style that actually works rather than guessing "try condensed"
-        # — for some names nothing does, and saying so is more useful than
-        # sending someone round a loop.
+        # Name a style that actually works rather than guessing at one — for
+        # some names nothing does, and saying so is more useful than sending
+        # someone round a loop.
         alternative = name_fit.widest_fitting_font(name)
         if alternative is None:
             hint = f"No lettering style fits {len(name)} letters this wide — try a shorter name."
@@ -370,7 +369,7 @@ class DogBowlGenerator:
                     FieldError(
                         "name",
                         str(exc),
-                        hint="Try the Condensed lettering, or a shorter name.",
+                        hint="Try a narrower lettering style, or a shorter name.",
                     )
                 ]
             ) from exc
@@ -390,13 +389,13 @@ class DogBowlGenerator:
 
         Ordered, and the order matters. The default font first, because that
         makes the *verdict* fast within a few seconds and the verdict is what
-        gates the button. The other six after, because the *hint* names a style
+        gates the button. The other five after, because the *hint* names a style
         that fits, which means measuring the name in all of them — with only the
         default warm, a rejected name still took ~2.6 s to explain itself.
 
-        ~110 s of background CPU at boot, on a daemon thread that holds no lock.
-        Double what it was: names keep their case now, so each face has 52
-        glyphs to measure rather than 26.
+        ~95 s of background CPU at boot, on a daemon thread that holds no lock.
+        Names keep their case now, so each face has 52 glyphs to measure rather
+        than 26; there is one fewer face to measure them in.
         """
         # By id, not by position: PARAMS is reordered whenever the form is.
         default = SPEC.param("font_style").default

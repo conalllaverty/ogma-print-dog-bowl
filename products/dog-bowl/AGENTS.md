@@ -48,7 +48,7 @@ cd web && npm install && cd ..
 
 
 - Name: 2–8 letters, either case, set as typed; packing must stay within `MAX_RAIL_OUTER_DEG` (45°)
-- Letter styles: `bold` (Overpass) | `clean` (Source Sans) | `serif` (Lora) | `slab` (Roboto Slab) | `rounded` (Fredoka) | `playful` (Baloo 2) | `condensed` (Barlow Condensed)
+- Letter styles: `bold` (Overpass) | `clean` (Source Sans) | `serif` (Lora) | `slab` (Roboto Slab) | `rounded` (Fredoka) | `playful` (Baloo 2)
 - Filaments: IDs from `filament_palette.json` (Matte)
 - Panel fuzzy paint: outer wall fuzzy; **exclude** paw silhouettes and name-rail plaque
 - Letters: pocket fit + curved backs — no pin/socket regression

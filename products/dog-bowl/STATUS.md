@@ -46,7 +46,7 @@ Related product: [`ogma-print-core`](https://github.com/conalllaverty/ogma-print
 | ------------------- | ------------------------------------------------------------------------------------------------- |
 | Max name            | **8** characters + packing fit gate                                                               |
 | Colours             | **Bambu PLA Matte only** (`backend/data/filament_palette.json`)                                   |
-| Letter styles       | `bold` = **Overpass Bold** (default), `clean`, `serif`, `slab`, `rounded`, `playful`, `condensed` |
+| Letter styles       | `bold` = **Overpass Bold** (default), `clean`, `serif`, `slab`, `rounded`, `playful` |
 | Letter size         | Height **15 mm**, proud **1.4 mm**, pocket clearance **0.10 mm**                                  |
 | Letter print        | **0.10 mm** layers, slower outer walls                                                            |
 | Letter mount        | Shallow **glyph pockets**, no pins; Wave mounts directly to its cone with matching conical backs  |
@@ -83,8 +83,8 @@ clearance. Five-millimetre edge bands terminate in a 0.45 mm top bead and a
 
 The production font set now uses physically tested Overpass Bold as the default,
 with Source Sans (`clean`), Lora italic (`serif`), Roboto Slab Bold (`slab`),
-Fredoka SemiBold (`rounded`), Baloo 2 SemiBold (`playful`), and Barlow Condensed
-SemiBold (`condensed`). All seven pass the eight-letter curved packing gate.
+Fredoka SemiBold (`rounded`) and Baloo 2 SemiBold (`playful`). All six pass the
+eight-letter curved packing gate.
 
 Cursive analysis selects Pacifico: at 15 mm it retains a 1.34 mm P20 stroke,
 98.2% average connected-word area, and a 59.6 mm `Williams` width. It is not
@@ -148,7 +148,7 @@ orientations. The LUNA pocket, seating, proudness, and removal checks passed.
    builds — see `DEPLOY.md`
 4. ~~**No automated tests**~~ — 30 pytest cases plus the goldens, smoke-import
    and 3MF-audit harnesses, wired into CI
-5. Condensed style helps long names; packing still rejects if rail > ±45°
+5. Narrower styles help long names; packing still rejects if rail > ±45°
 6. Original design assets / print notes also live under `Ogma Print Files/cooper_dog_bowl/`
 7. **Bambu Studio has never opened a generated 3MF.** `tests/audit_3mf.py`
    passes 14/14 against a P2S profile; that is not the same as the slicer

@@ -21,7 +21,7 @@ PY = sys.executable
 
 CASES = [
     ("cooper", "MAX", "bold"),
-    ("cooper", "WILLIAMS", "condensed"),   # 8-letter worst case for the packing gate
+    ("cooper", "WILLIAMS", "slab"),   # 8-letter worst case for the packing gate
     ("wave", "LUNA", "serif"),
     ("hex", "MAX", "bold"),
     ("fluted", "MAX", "bold"),

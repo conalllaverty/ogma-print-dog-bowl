@@ -25,15 +25,15 @@ import cooper_bowl_design as C  # noqa: E402
 import name_fit  # noqa: E402
 from pipeline import FONT_STYLES  # noqa: E402
 
-# Ordinary names, the 8-letter worst case, and a name wide enough to be
-# rejected in six of the seven styles.
+# Ordinary names, the 8-letter worst case in the widest face, and a name wide
+# enough to be rejected in every style there is.
 CASES = [
     ("MAX", "bold"),
     ("WILLIAMS", "bold"),
-    ("WILLIAMS", "condensed"),
+    ("WILLIAMS", "slab"),
     ("LUNA", "serif"),
     ("WWWWWWWW", "bold"),
-    ("WWWWWWWW", "condensed"),
+    ("WWWWWWWW", "slab"),
     ("IIII", "slab"),
     ("BELLA", "playful"),
     ("MOLLY", "rounded"),

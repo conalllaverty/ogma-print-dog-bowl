@@ -10,7 +10,7 @@ The tolerances below are measured, not guessed. Running all five cases on
 macOS/Python 3.14/trimesh 4.12.2 and on Linux/Python 3.12/trimesh 5.0.0:
 
     cooper/MAX/bold             identical, every byte
-    cooper/WILLIAMS/condensed   identical
+    cooper/WILLIAMS/slab        identical
     hex/MAX/bold                identical
     fluted/MAX/bold             identical
     wave/LUNA/serif             DIFFERS

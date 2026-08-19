@@ -39,7 +39,6 @@ FONT_STYLES = {
     "slab": _FONTS / "RobotoSlab-Variable.ttf",
     "rounded": _FONTS / "Fredoka-Variable.ttf",
     "playful": _FONTS / "Baloo2-SemiBold.ttf",
-    "condensed": _FONTS / "BarlowCondensed-SemiBold.ttf",
 }
 FONT_VARIATIONS = {
     "bold": "Bold",
@@ -224,8 +223,62 @@ def boolean_union(meshes: list[trimesh.Trimesh]) -> trimesh.Trimesh:
     return trimesh.boolean.union(meshes, engine="manifold")
 
 
+#: Below this, a leftover boolean component is debris rather than a part.
+#:
+#: Seven orders of magnitude below anything the generator builds on purpose —
+#: the smallest real body here is a letter at ~80 mm3 — and the debris measures
+#: exactly 0.0, so the threshold is not a judgement call about where a part
+#: stops being a part. See drop_boolean_debris.
+DEBRIS_VOLUME_MM3 = 1e-6
+
+
+def drop_boolean_debris(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+    """Discard zero-volume shards the boolean leaves behind.
+
+    manifold occasionally emits a coplanar fragment alongside the real solid: a
+    two-triangle sheet with no thickness and no volume. It is invisible, it
+    weighs nothing, and it makes the exported STL non-manifold — which the 3MF
+    packaging check rejects, so a perfectly good panel never reaches the plate.
+
+    'WILLIAMS' in Robust Slab is the case that found this. It packs to ±41.3°,
+    the widest plaque any name asks for, and left two 1.7 x 2.6 mm sheets at
+    z 31.3 beside the first letter's pocket. The panel itself was watertight,
+    131,710 triangles, exactly right.
+
+    Volume is the test, not triangle count: a real part has some, a sheet has
+    none. Anything with volume is kept however small and however odd, because a
+    stray *solid* is a geometry bug worth failing on — this only removes the
+    ones that cannot be printed because they are not there.
+
+    The welded copy is the whole trick. manifold hands back the shard sharing
+    coordinates with the solid but not vertex indices, so as returned it is one
+    connected body and `is_watertight` says True. It only falls off — and the
+    mesh only becomes non-manifold — when something merges vertices by position,
+    which is exactly what `trimesh.load_mesh(..., process=True)` does to an STL
+    on the way into the 3MF. Checking the mesh as returned finds nothing wrong,
+    every time, right up until packaging fails.
+
+    Returns the mesh unchanged when there is nothing to drop, rather than the
+    welded copy, so the overwhelmingly common case exports the same bytes it
+    always did.
+    """
+    welded = mesh.copy()
+    welded.merge_vertices()
+    parts = welded.split(only_watertight=False)
+    if len(parts) < 2:
+        return mesh
+    solid = [p for p in parts if abs(float(p.volume)) > DEBRIS_VOLUME_MM3]
+    if len(solid) == len(parts):
+        return mesh
+    if not solid:
+        raise ValueError("boolean left nothing with volume")
+    return solid[0] if len(solid) == 1 else trimesh.util.concatenate(solid)
+
+
 def boolean_difference(mesh: trimesh.Trimesh, cutters: list[trimesh.Trimesh]) -> trimesh.Trimesh:
-    return trimesh.boolean.difference([mesh, *cutters], engine="manifold")
+    return drop_boolean_debris(
+        trimesh.boolean.difference([mesh, *cutters], engine="manifold")
+    )
 
 
 def annular_sector(
@@ -924,7 +977,7 @@ def build_letters(name: str | None = None):
         raise NameFitError(
             f"'{NAME}' is too wide for the rail "
             f"(needs ±{NAME_RAIL_OUTER_DEG:.1f}°, max ±{MAX_RAIL_OUTER_DEG:.0f}°). "
-            "Try fewer letters or the condensed letter style."
+            "Try fewer letters, or one of the narrower letter styles."
         )
 
     print(

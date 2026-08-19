@@ -15,8 +15,6 @@ The complete terms are included as `OFL-1.1.txt` and `Apache-2.0.txt`.
   https://github.com/hafontia-zz/Fredoka-One
 - **Baloo 2** — SIL Open Font License 1.1  
   https://github.com/EkType/Baloo2
-- **Barlow Condensed** — SIL Open Font License 1.1  
-  https://github.com/jpt/barlow
 
 The font binaries remain subject to their upstream copyright notices and
 license terms. Font names and files must not be relicensed as project code.

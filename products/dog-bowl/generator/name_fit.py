@@ -22,7 +22,7 @@ Two properties make it cheap:
 
 Cold, a novel 8-letter name costs ~2-3 s. Warm — which is every keystroke after
 the first, every colour change, and every repeat of a common name — it is
-instant. 26 letters x 7 fonts is 182 entries, so the cache converges.
+instant. 52 letters x 6 fonts is 312 entries, so the cache converges.
 """
 
 from __future__ import annotations
@@ -74,8 +74,8 @@ def check(name: str, font_style: str) -> tuple[bool, float]:
 def widest_fitting_font(name: str) -> str | None:
     """The style that fits with most room to spare, or None if nothing fits.
 
-    Lets the hint name a font that actually works instead of guessing
-    "try condensed" and being wrong.
+    Lets the hint name a font that actually works instead of guessing at one
+    and being wrong.
     """
     best: tuple[float, str] | None = None
     for style in FONT_STYLES:

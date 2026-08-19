@@ -224,7 +224,7 @@ class FieldError:
     param: str
     message: str
     # Advice the user can act on, when the failure has an obvious remedy
-    # ("try a condensed font", "shorten the name").
+    # ("try a narrower lettering style", "shorten the name").
     hint: str = ""
 
     def to_json(self) -> dict:
