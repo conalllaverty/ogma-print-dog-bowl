@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="880" viewBox="0 0 1180 880">
+<rect width="1180" height="880" fill="#faf7f2"/>
+<style>
+.ti{font:600 22px Helvetica;fill:#1c1a17} .st{font:13px Helvetica;fill:#6f675e}
+.h{font:600 15px Helvetica;fill:#1c1a17} .s{font:11.5px Helvetica;fill:#6f675e}
+.d{font:11px Helvetica;fill:#6f675e} .dm{stroke:#6f675e;stroke-width:.8}
+.t{font:11px Helvetica;fill:#123} .tw{font:9px Helvetica;fill:#1a1a1a}
+.n{font:12px Helvetica;fill:#2f6b4f} .bad{font:600 12px Helvetica;fill:#b3261e}
+</style>
+<text x="44" y="44" class="ti">What a “loop” is, and why the paws show lines</text>
+<text x="44" y="66" class="st">A loop is one lap the nozzle makes around the outline of a layer before filling the middle. Bambu calls them walls. Sections through the drum wall, seen from above.</text>
+<rect x="44" y="96" width="26" height="14" fill="#c2410c"/><text x="76" y="107" class="d">outer loop (0.42 mm)</text>
+<rect x="234" y="96" width="26" height="14" fill="#d9a441"/><text x="266" y="107" class="d">inner loops (0.45 mm)</text>
+<rect x="444" y="96" width="26" height="14" fill="#7ba3b8"/><text x="476" y="107" class="d">sparse infill</text>
+<rect x="604" y="96" width="26" height="14" fill="#b3261e" opacity="0.75"/><text x="636" y="107" class="d">no room — gap infill and squashed walls</text>
+<text x="150" y="180" class="h">A · open wall, away from a paw</text>
+<text x="150" y="197" class="s">4 loops each side, as configured today</text>
+<rect x="150" y="210" width="368.0" height="76" fill="#ffffff" stroke="#1c1a17" stroke-width="1.6"/>
+<rect x="150.0" y="210" width="38.6" height="76" fill="#c2410c" stroke="#00000022"/>
+<text x="169.3" y="251.5" class="tw" text-anchor="middle">0.42</text>
+<rect x="188.6" y="210" width="41.4" height="76" fill="#d9a441" stroke="#00000022"/>
+<text x="209.3" y="251.5" class="tw" text-anchor="middle">0.45</text>
+<rect x="230.0" y="210" width="41.4" height="76" fill="#d9a441" stroke="#00000022"/>
+<text x="250.7" y="251.5" class="tw" text-anchor="middle">0.45</text>
+<rect x="271.4" y="210" width="41.4" height="76" fill="#d9a441" stroke="#00000022"/>
+<text x="292.1" y="251.5" class="tw" text-anchor="middle">0.45</text>
+<rect x="479.4" y="210" width="38.6" height="76" fill="#c2410c" stroke="#00000022"/>
+<text x="498.7" y="251.5" class="tw" text-anchor="middle">0.42</text>
+<rect x="438.0" y="210" width="41.4" height="76" fill="#d9a441" stroke="#00000022"/>
+<text x="458.7" y="251.5" class="tw" text-anchor="middle">0.45</text>
+<rect x="396.6" y="210" width="41.4" height="76" fill="#d9a441" stroke="#00000022"/>
+<text x="417.3" y="251.5" class="tw" text-anchor="middle">0.45</text>
+<rect x="355.2" y="210" width="41.4" height="76" fill="#d9a441" stroke="#00000022"/>
+<text x="375.9" y="251.5" class="tw" text-anchor="middle">0.45</text>
+<rect x="312.8" y="210" width="42.3" height="76" fill="#7ba3b8" stroke="#00000022"/>
+<text x="334.0" y="251.5" class="t" text-anchor="middle">infill</text>
+<line x1="150" y1="298" x2="518.0" y2="298" class="dm"/>
+<line x1="150" y1="293" x2="150" y2="303" class="dm"/>
+<line x1="518.0" y1="293" x2="518.0" y2="303" class="dm"/>
+<text x="334.0" y="295" class="d" text-anchor="middle">4.00 mm of wall</text>
+<text x="136" y="252.0" class="d" text-anchor="end">outside</text>
+<text x="532.0" y="252.0" class="d">inside</text>
+<text x="334.0" y="316" class="n" text-anchor="middle">4 loops each side = 3.54 mm, leaving 0.46 mm — fits</text>
+<text x="150" y="390" class="h">B · at a paw pad — the problem</text>
+<text x="150" y="407" class="s">the 0.7 mm recess takes the wall down to 3.30 mm</text>
+<rect x="150" y="420" width="303.6" height="76" fill="#ffffff" stroke="#1c1a17" stroke-width="1.6"/>
+<rect x="150.0" y="420" width="38.6" height="76" fill="#c2410c" stroke="#00000022"/>
+<text x="169.3" y="461.5" class="tw" text-anchor="middle">0.42</text>
+<rect x="188.6" y="420" width="41.4" height="76" fill="#d9a441" stroke="#00000022"/>
+<text x="209.3" y="461.5" class="tw" text-anchor="middle">0.45</text>
+<rect x="230.0" y="420" width="41.4" height="76" fill="#d9a441" stroke="#00000022"/>
+<text x="250.7" y="461.5" class="tw" text-anchor="middle">0.45</text>
+<rect x="271.4" y="420" width="41.4" height="76" fill="#d9a441" stroke="#00000022"/>
+<text x="292.1" y="461.5" class="tw" text-anchor="middle">0.45</text>
+<rect x="415.0" y="420" width="38.6" height="76" fill="#c2410c" stroke="#00000022"/>
+<text x="434.3" y="461.5" class="tw" text-anchor="middle">0.42</text>
+<rect x="373.6" y="420" width="41.4" height="76" fill="#d9a441" stroke="#00000022"/>
+<text x="394.3" y="461.5" class="tw" text-anchor="middle">0.45</text>
+<rect x="332.2" y="420" width="41.4" height="76" fill="#d9a441" stroke="#00000022"/>
+<text x="352.9" y="461.5" class="tw" text-anchor="middle">0.45</text>
+<rect x="290.8" y="420" width="41.4" height="76" fill="#d9a441" stroke="#00000022"/>
+<text x="311.5" y="461.5" class="tw" text-anchor="middle">0.45</text>
+<rect x="290.8" y="420" width="22.1" height="76" fill="#b3261e" opacity="0.75"/>
+<text x="301.8" y="526" class="bad" text-anchor="middle">overlap 0.24 mm — perimeters do not fit</text>
+<line x1="150" y1="508" x2="453.6" y2="508" class="dm"/>
+<line x1="150" y1="503" x2="150" y2="513" class="dm"/>
+<line x1="453.6" y1="503" x2="453.6" y2="513" class="dm"/>
+<text x="301.8" y="505" class="d" text-anchor="middle">3.30 mm of wall</text>
+<text x="136" y="462.0" class="d" text-anchor="end">outside</text>
+<text x="467.6" y="462.0" class="d">inside</text>
+<text x="150" y="610" class="h">C · proposed fix — 3 loops on the panel</text>
+<text x="150" y="627" class="s">same geometry, one fewer lap each side</text>
+<rect x="150" y="640" width="303.6" height="76" fill="#ffffff" stroke="#1c1a17" stroke-width="1.6"/>
+<rect x="150.0" y="640" width="38.6" height="76" fill="#c2410c" stroke="#00000022"/>
+<text x="169.3" y="681.5" class="tw" text-anchor="middle">0.42</text>
+<rect x="188.6" y="640" width="41.4" height="76" fill="#d9a441" stroke="#00000022"/>
+<text x="209.3" y="681.5" class="tw" text-anchor="middle">0.45</text>
+<rect x="230.0" y="640" width="41.4" height="76" fill="#d9a441" stroke="#00000022"/>
+<text x="250.7" y="681.5" class="tw" text-anchor="middle">0.45</text>
+<rect x="415.0" y="640" width="38.6" height="76" fill="#c2410c" stroke="#00000022"/>
+<text x="434.3" y="681.5" class="tw" text-anchor="middle">0.42</text>
+<rect x="373.6" y="640" width="41.4" height="76" fill="#d9a441" stroke="#00000022"/>
+<text x="394.3" y="681.5" class="tw" text-anchor="middle">0.45</text>
+<rect x="332.2" y="640" width="41.4" height="76" fill="#d9a441" stroke="#00000022"/>
+<text x="352.9" y="681.5" class="tw" text-anchor="middle">0.45</text>
+<rect x="271.4" y="640" width="60.7" height="76" fill="#7ba3b8" stroke="#00000022"/>
+<text x="301.8" y="681.5" class="t" text-anchor="middle">infill</text>
+<line x1="150" y1="728" x2="453.6" y2="728" class="dm"/>
+<line x1="150" y1="723" x2="150" y2="733" class="dm"/>
+<line x1="453.6" y1="723" x2="453.6" y2="733" class="dm"/>
+<text x="301.8" y="725" class="d" text-anchor="middle">3.30 mm of wall</text>
+<text x="136" y="682.0" class="d" text-anchor="end">outside</text>
+<text x="467.6" y="682.0" class="d">inside</text>
+<text x="301.8" y="746" class="n" text-anchor="middle">3 loops each side = 2.64 mm, leaving 0.66 mm — fits</text>
+</svg>

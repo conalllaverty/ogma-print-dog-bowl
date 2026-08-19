@@ -23,8 +23,19 @@ PAINT_ATTR = ' paint_fuzzy_skin="4"'
 class FuzzyPainter(Protocol):
     """What a product must provide to have facets painted."""
 
-    def mask(self, vertices: np.ndarray, faces: np.ndarray, root: Path) -> np.ndarray:
-        """Boolean array, one entry per face, True = paint fuzzy skin here."""
+    def mask(
+        self,
+        vertices: np.ndarray,
+        faces: np.ndarray,
+        root: Path,
+        z_offset: float | None = None,
+    ) -> np.ndarray:
+        """Boolean array, one entry per face, True = paint fuzzy skin here.
+
+        `z_offset` reconciles the mesh's frame with the product's own
+        coordinates. None means "work it out", which is only safe when the
+        caller knows the mesh is the part the painter expects.
+        """
         ...
 
     def verify(

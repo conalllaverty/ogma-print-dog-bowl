@@ -85,12 +85,51 @@ WALL_INNER_R = 77.6
 PAW_RECESS_DEPTH = 0.7  # sharp pads; panel fuzzy paint skips pad silhouettes
 # Grow pad ellipses slightly when building the fuzzy-paint exclusion mask so
 # recess rims stay smooth (matches ~70/30 outer fuzzy/smooth area split).
-PAW_PAINT_EXCLUDE_GROW = 1.15
+# Where the fuzzy-skin exclusion sits relative to the pad opening it protects.
+#
+# Measured against the opening the cutter actually leaves in the wall, not the
+# ellipsoid's full semi-axes — see _pad_opening_scale. This used to be 1.15 of
+# the semi-axes, which is 1.25x the opening: a 0.67 mm skirt of wall left smooth
+# around every pad, 4,194 mm2 of it. That skirt is what the wall slivers carried
+# 22 mm down the drum as the streaks running off the outer toes.
+#
+# Just inside the rim rather than just outside it. Outside, the boundary falls on
+# open wall, which is triangulated in slivers 2.7 mm wide and the full height of
+# the drum — that is what turns a skirt into a streak, and it is also why the
+# outline comes out spiky. Three percent in, it falls on the dish flank instead,
+# which the boolean tessellates finely, so the outline is clean and no sliver can
+# carry it anywhere. It costs nothing at the rim: 0.97, 1.00 and 1.03 all fuzz
+# exactly the same 944 rim-crossing triangles.
+#
+# Sizing this correctly is the whole fix. Dividing the wall into 1.5 mm rings so
+# the mask had finer triangles to work with was tried first: it does bound the
+# damage from a mis-sized exclusion (76 streaks of 3.5 mm rather than 2,484 of
+# 22.4 mm) but with this value it fixes nothing, costs 8,098 triangles a panel,
+# and leaves *more* wall smooth (17 mm2 against 8) because the paint boundary
+# then has to staircase along the rings.
+PAW_PAINT_EXCLUDE_GROW = 0.97
+
+#: How far outside the wall the pad cutters are centred, so the boolean is clean
+#: at the surface. Shared with the paint silhouettes, which need it to work out
+#: how wide the resulting opening actually is.
+PAW_CUTTER_OVERCUT = 0.45
 PAW_PAINT_R_MID = WALL_OUTER_R
 PAW_PAINT_SEAM_DEG = -90.0  # unwrap seam through the plaque arc (pad-free)
 # Name-rail plaque face. Letters seat in shallow glyph-shaped pockets — no pins.
 NAME_RAIL_OUTER_R = 86.0
-LETTER_POCKET_DEPTH = 1.2  # deep enough to swallow the whole letter — see LETTER_PROUD
+# How deep the glyph pockets are cut. Also the letter's real thickness, since
+# LETTER_PROUD is zero and the pocket has to swallow the letter whole.
+#
+# 2.2 mm, up from 1.2. Shared by all four styles, so they stay consistent.
+#
+# The trade is insertion, not strength: the pocket is a straight glyph prism
+# between two cylinders with no draft, so a letter slides in on
+# LETTER_POCKET_CLEARANCE alone — 0.10 mm a side, now over 2.2 mm of travel
+# rather than 1.2. Nothing about the seating changes (the back is cylindrical
+# and the glue gap is still LETTER_POCKET_FLOOR_GAP), but a snug fit gets snugger
+# with depth, and this has not been print-tested at either depth yet. The
+# letter_test coupon exists for exactly this.
+LETTER_POCKET_DEPTH = 2.2
 LETTER_POCKET_CLEARANCE = 0.10  # tighter outline so less grey halo shows
 LETTER_POCKET_FLOOR_GAP = 0.06  # tiny glue gap under the curved letter back
 # Bowl dimensions are read through `design.` on purpose, never imported by
@@ -127,9 +166,9 @@ LETTER_HEIGHT = 15.0  # slightly smaller → finer look at 0.4 mm nozzle
 # wave flush together.
 #
 # Flush also means the pocket has to swallow the letter whole, so the letter's
-# real thickness is now LETTER_POCKET_DEPTH — 1.2 mm, up from 0.85. Deeper is
-# better here for a second reason: a letter captured on all four sides cannot be
-# lifted by a scrubbing brush the way a proud one can.
+# real thickness is LETTER_POCKET_DEPTH. Deeper is better here for a second
+# reason: a letter captured on all four sides cannot be lifted by a scrubbing
+# brush the way a proud one can.
 LETTER_PROUD = 0.0  # flush with the rail
 # Vertically centred on the name-rail flat face (z 29–52 → mid 40.5).
 LETTER_CENTER_Z = 40.5
@@ -848,8 +887,8 @@ def ellipsoid_cutter(
     major = tangent * math.cos(tilt) + vertical * math.sin(tilt)
     minor = -tangent * math.sin(tilt) + vertical * math.cos(tilt)
     # Overcut slightly outside so the boolean is clean at the outer surface.
-    radial_half = recess_depth + 0.45
-    center_r = WALL_OUTER_R + 0.45
+    radial_half = recess_depth + PAW_CUTTER_OVERCUT
+    center_r = WALL_OUTER_R + PAW_CUTTER_OVERCUT
     linear = np.column_stack((major * tangent_r, radial * radial_half, minor * vertical_r))
     transform = np.eye(4)
     transform[:3, :3] = linear
@@ -901,6 +940,21 @@ def unwrap_cylinder_u(x, y, r_mid: float = PAW_PAINT_R_MID, seam_deg: float = PA
     return _unwrap_cylinder_u(x, y, r_mid=r_mid, seam_deg=seam_deg)
 
 
+def _pad_opening_scale(recess_depth: float = PAW_RECESS_DEPTH) -> float:
+    """How much of a pad cutter's cross-section actually reaches the wall.
+
+    The cutter is an ellipsoid centred PAW_CUTTER_OVERCUT proud of the wall, so
+    the wall cuts it off-centre and the opening it leaves is narrower than the
+    ellipsoid's full semi-axes — by this factor, 0.920 at the shipping numbers.
+
+    Worth its own function because the paint silhouettes have to match the
+    opening, not the ellipsoid. Sizing them off the full semi-axes made every
+    exclusion 9% wider than the pad it was covering before any margin was added.
+    """
+    half = recess_depth + PAW_CUTTER_OVERCUT
+    return math.sqrt(max(0.0, 1.0 - (PAW_CUTTER_OVERCUT / half) ** 2))
+
+
 def paw_paint_silhouettes(
     z_offset: float = LATTICE_BOTTOM,
     grow: float = PAW_PAINT_EXCLUDE_GROW,
@@ -917,11 +971,12 @@ def paw_paint_silhouettes(
         cu = float(unwrap_cylinder_u(np.array([x]), np.array([y]))[0])
         cz = z - z_offset
         tilt = math.radians(tilt_deg)
+        opening = grow * _pad_opening_scale()
         pts = []
         for k in range(samples):
             ang = 2 * math.pi * k / samples
-            maj = grow * tangent_r * math.cos(ang)
-            mnr = grow * vertical_r * math.sin(ang)
+            maj = opening * tangent_r * math.cos(ang)
+            mnr = opening * vertical_r * math.sin(ang)
             pts.append(
                 (
                     cu + maj * math.cos(tilt) - mnr * math.sin(tilt),

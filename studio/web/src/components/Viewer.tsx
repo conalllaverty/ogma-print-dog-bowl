@@ -127,6 +127,33 @@ const FUZZ = {
   layerHeightMm: 0.2,
   octaves: 4,
   persistence: 0.5,
+  /**
+   * Span of `fbm` below, measured over 20k samples: 0.132 to 0.874, not 0 to 1.
+   *
+   * Four octaves at persistence 0.5 average out the extremes, so the field
+   * never reaches either end. Feeding it in raw made the height field 0.223 mm
+   * peak-to-peak where the slicer is set to 0.3, so the picture understated the
+   * print. Dividing by the measured span restores the configured amplitude.
+   */
+  fieldSpan: 0.742,
+  /**
+   * Finite-difference step for the gradient, in mm. Comfortably inside the
+   * 0.8 mm point distance so it samples the slope of a bump rather than across
+   * several of them.
+   */
+  gradientStepMm: 0.15,
+  /**
+   * |normal.z| either side of which a surface stops counting as wall.
+   *
+   * Fuzzy skin perturbs the outer *wall* perimeter. Top and bottom surfaces are
+   * solid infill, not perimeters, so the slicer never textures them — the
+   * underside the stand rests on and the rim the bowl drops into print smooth.
+   * The slicer draws that line per region rather than per facet, so this is an
+   * approximation: full texture up to 56 degrees off vertical, none past 37
+   * degrees off horizontal, and a fade between so a fillet does not band.
+   */
+  wallCosFrom: 0.55,
+  wallCosTo: 0.8,
 };
 
 /** Labels drawn under each quadrant. Order matches the viewport table below. */
@@ -597,17 +624,33 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
       shader.uniforms.uFuzz = m.userData.fuzz;
       shader.uniforms.uFuzzPoint = { value: FUZZ.pointDistanceMm };
       shader.uniforms.uFuzzLayer = { value: FUZZ.layerHeightMm };
+      shader.uniforms.uFuzzSpan = { value: FUZZ.fieldSpan };
+      shader.uniforms.uWallFrom = { value: FUZZ.wallCosFrom };
+      shader.uniforms.uWallTo = { value: FUZZ.wallCosTo };
 
       shader.vertexShader = shader.vertexShader
         .replace(
           "#include <common>",
           `#include <common>
-           varying vec3 vObjectPos;`,
+           varying vec3 vObjectPos;
+           varying vec3 vObjectNormal;
+           varying float vFuzzMask;
+           // Baked by ogma.preview: 1 where the slicer textures this surface,
+           // 0 where it leaves it smooth. Declared here rather than switching
+           // the material to vertexColors, which would multiply it into the
+           // albedo and turn every smooth face black.
+           attribute vec4 color;`,
+        )
+        .replace(
+          "#include <beginnormal_vertex>",
+          `#include <beginnormal_vertex>
+           vObjectNormal = objectNormal;`,
         )
         .replace(
           "#include <begin_vertex>",
           `#include <begin_vertex>
-           vObjectPos = position;`,
+           vObjectPos = position;
+           vFuzzMask = color.r;`,
         );
 
       shader.fragmentShader = shader.fragmentShader
@@ -615,9 +658,14 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
           "#include <common>",
           `#include <common>
            varying vec3 vObjectPos;
+           varying vec3 vObjectNormal;
+           varying float vFuzzMask;
            uniform float uFuzz;
            uniform float uFuzzPoint;
            uniform float uFuzzLayer;
+           uniform float uFuzzSpan;
+           uniform float uWallFrom;
+           uniform float uWallTo;
 
            float hash13(vec3 p) {
              p = fract(p * 0.3183099 + vec3(0.71, 0.113, 0.419));
@@ -655,25 +703,43 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
         .replace(
           "#include <normal_fragment_begin>",
           `#include <normal_fragment_begin>
-           if (uFuzz > 0.0) {
-             // Finite-difference gradient of the field, in millimetres.
-             float e = 0.35;
+           // Wall only, and only where the slicer paints. Both gates, not one:
+           // the mask says *which surfaces* are textured (the paw pads and the
+           // name plate are not, nor is the seat ring), and the normal says
+           // whether this fragment is wall at all.
+           float wallness = 1.0 - smoothstep(
+             uWallFrom, uWallTo, abs(normalize(vObjectNormal).z));
+           float fuzzAmount = uFuzz * vFuzzMask * wallness;
+           if (fuzzAmount > 0.0) {
+             // Gradient of the height field, as a slope — mm of rise per mm
+             // travelled. Both scalings matter and both were missing:
+             //
+             //   / e          a difference over a step is not a slope until it
+             //                is divided by the step. Without it the tilt came
+             //                out ~1/e too shallow, 2 degrees where the numbers
+             //                say 12, which is why the toggle looked like it
+             //                was doing nothing.
+             //   / uFuzzSpan  fbm does not reach 0 or 1 — see FUZZ.fieldSpan.
+             //
+             // Together they make the shading follow fuzzy_skin_thickness
+             // honestly, so the preview moves when that setting does.
+             float e = ${FUZZ.gradientStepMm};
              vec3 p = vObjectPos;
              float f0 = fuzzField(p);
              vec3 g = vec3(
                fuzzField(p + vec3(e, 0.0, 0.0)) - f0,
                fuzzField(p + vec3(0.0, e, 0.0)) - f0,
-               fuzzField(p + vec3(0.0, 0.0, e * 0.5)) - f0);
+               fuzzField(p + vec3(0.0, 0.0, e)) - f0) * (fuzzAmount / (e * uFuzzSpan));
              // Project the gradient into the surface so the perturbation tilts
              // the normal rather than inflating it.
              vec3 t = g - normal * dot(g, normal);
-             normal = normalize(normal - t * uFuzz);
+             normal = normalize(normal - t);
            }`,
         );
     };
     // Any change to onBeforeCompile needs a distinct cache key or three reuses
     // the previously compiled program for this material type.
-    m.customProgramCacheKey = () => "ogma-fuzz-v1";
+    m.customProgramCacheKey = () => "ogma-fuzz-v3";
     return m;
   }
 
@@ -791,8 +857,15 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
         // environment to reflect.
         m.envMapIntensity = 0.55;
 
-        // Fuzzy skin is painted onto the *stand's* outer wall only; the letters
-        // print separately and smooth.
+        // Still per role, because roughness and sheen are per *material* and a
+        // material cannot vary across a mesh. The letters print smooth, so they
+        // must not take the rougher one.
+        //
+        // Where the texture actually lands is a finer question, and no longer
+        // asked here: the generator bakes the painter's own mask into the asset
+        // (see fuzzy_mask_for) and the shader reads it per fragment. This flag
+        // only says the customer asked for fuzzy skin. Treating "stand" as
+        // "all of the stand" is what textured the paw pads and the seat ring.
         const isFuzzy = fuzzy && role === "stand";
 
         // The visible texture is the normal perturbation below. Roughness and

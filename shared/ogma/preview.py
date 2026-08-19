@@ -29,8 +29,9 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Callable, Iterable, Sequence
 
+import numpy as np
 import trimesh
 
 log = logging.getLogger("ogma.preview")
@@ -55,7 +56,7 @@ log = logging.getLogger("ogma.preview")
 # 1: original
 # 2: decimation validated against volume/watertightness; budget 90k -> 200k
 # 3: letters seat on the wall (the stale-default face_r bug), budget -> 320k
-PREVIEW_FORMAT_VERSION = 3
+PREVIEW_FORMAT_VERSION = 4
 
 # A printed stand is 120k-510k triangles.
 #
@@ -93,6 +94,16 @@ class Part:
     role: str  # "stand", "letters", "bowl" — whatever the product's viewer knows
     name: str  # human-ish id, unique within the preview
     mesh: trimesh.Trimesh
+    #: Which faces the slicer will texture, as a function of the mesh.
+    #:
+    #: A callable rather than an array because the mesh handed to it is the
+    #: *decimated* one — see to_glb. Baking a per-face answer up front and
+    #: decimating afterwards would leave the two disagreeing, and the disagreement
+    #: would be worst exactly where the detail is, which is where anyone looks.
+    #:
+    #: None means "this part is never textured", which is the honest default: a
+    #: product that says nothing gets a smooth preview rather than a wrong one.
+    fuzzy_mask: Callable[[trimesh.Trimesh], np.ndarray] | None = None
 
     @property
     def node_name(self) -> str:
@@ -143,6 +154,58 @@ def _budgeted_face_counts(
         share = len(p.mesh.faces) / total
         counts[p.node_name] = max(MIN_FACES_PER_PART, int(budget * share))
     return counts
+
+
+def _bake_fuzzy_mask(
+    mesh: trimesh.Trimesh,
+    mask_for: Callable[[trimesh.Trimesh], np.ndarray] | None,
+    label: str,
+) -> trimesh.Trimesh:
+    """Write a per-face texture mask into the mesh as a vertex colour.
+
+    Carried as a vertex attribute rather than by splitting the part in two,
+    because the viewer rebuilds normals per mesh with a crease angle: two meshes
+    means two independent normal solves, and the join between them would shade as
+    a hard edge running right around every paw pad.
+
+    Per-vertex means the boundary lands on a vertex rather than an edge, so it
+    interpolates across the triangles that straddle it — a fade about one
+    triangle wide instead of a staircase. That is also closer to the truth, since
+    the slicer's own transition is a wall segment, not a facet.
+    """
+    faces = np.asarray(mesh.faces)
+    if mask_for is None:
+        painted = np.zeros(len(faces), dtype=bool)
+    else:
+        try:
+            painted = np.asarray(mask_for(mesh), dtype=bool)
+        except Exception as exc:  # noqa: BLE001
+            # A preview without the texture is worth far more than no preview.
+            # Say so, though: silence here looks exactly like "fuzzy does
+            # nothing", which is the bug this whole channel exists to fix.
+            log.warning("could not compute the fuzzy mask for %s: %s", label, exc)
+            painted = np.zeros(len(faces), dtype=bool)
+        if painted.shape != (len(faces),):
+            log.warning(
+                "fuzzy mask for %s has %s entries, expected %d — ignoring",
+                label, painted.shape, len(faces),
+            )
+            painted = np.zeros(len(faces), dtype=bool)
+
+    # Area-weighted, so a large smooth face is not outvoted by the slivers
+    # meeting it at a vertex.
+    weight = mesh.area_faces
+    totals = np.zeros(len(mesh.vertices))
+    hits = np.zeros(len(mesh.vertices))
+    for column in range(3):
+        np.add.at(totals, faces[:, column], weight * painted)
+        np.add.at(hits, faces[:, column], weight)
+    share = np.divide(totals, hits, out=np.zeros_like(totals), where=hits > 0)
+
+    level = np.clip(share * 255.0, 0, 255).astype(np.uint8)
+    colours = np.column_stack([level, level, level, np.full(len(level), 255, np.uint8)])
+    mesh.visual = trimesh.visual.ColorVisuals(mesh=mesh, vertex_colors=colours)
+    return mesh
 
 
 def to_glb(
@@ -204,6 +267,12 @@ def to_glb(
                 )
                 undecimated.append(part.node_name)
         after += len(mesh.faces)
+
+        # Baked for every part, including the ones with no mask. A part that
+        # simply lacks the attribute would still render correctly — WebGL hands
+        # an absent attribute (0,0,0,1), which reads as "smooth" — but that is a
+        # default two layers away in the spec, and this costs one byte a vertex.
+        mesh = _bake_fuzzy_mask(mesh, part.fuzzy_mask, part.node_name)
         # Exported without normals, with vertices welded. The viewer rebuilds
         # them with a crease angle (three's `toCreasedNormals`), which keeps
         # hard edges hard and curved surfaces smooth.

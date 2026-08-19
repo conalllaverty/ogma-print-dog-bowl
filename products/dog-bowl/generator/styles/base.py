@@ -66,6 +66,13 @@ class BowlStyle:
     # keyed parts. Drives the designer's construction toggle, so the UI
     # never tests a style id — same inversion as supports_fuzzy.
     supports_one_piece: bool = False
+    # Which faces of a given preview part the slicer will texture.
+    #
+    # Called as fuzzy_mask_for(mesh_filename, dims_root) and returns either a
+    # callable taking the (already decimated) mesh and giving a per-face bool, or
+    # None for a part that is never textured. Same inversion as supports_fuzzy:
+    # the preview asks the style instead of testing for "cooper".
+    fuzzy_mask_for: Callable[..., Callable | None] | None = None
 
     def meta(self) -> dict:
         return {

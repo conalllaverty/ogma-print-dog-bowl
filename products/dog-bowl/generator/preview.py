@@ -87,7 +87,14 @@ def build(
             have_bowl = have_bowl or role == "bowl"
             parts.append(
                 preview_lib.Part(
-                    role=role, name=_clean_name(path), mesh=trimesh.load_mesh(path)
+                    role=role, name=_clean_name(path), mesh=trimesh.load_mesh(path),
+                    # None for a style that textures nothing, which is every
+                    # style but the paw lattice today.
+                    fuzzy_mask=(
+                        bowl_style.fuzzy_mask_for(path.name, scratch)
+                        if bowl_style.fuzzy_mask_for
+                        else None
+                    ),
                 )
             )
 

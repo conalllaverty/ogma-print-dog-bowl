@@ -88,7 +88,34 @@ fi
 # No phone-home from a local dev server.
 export NEXT_TELEMETRY_DISABLED=1
 
-cleanup() { echo; echo "Stopping…"; kill 0 2>/dev/null || true; }
+# --------------------------------------------------------------------------
+# Ctrl+C must stop both servers, and nothing else.
+#
+# This used to be `kill 0`, which signals the whole process group — including
+# this script, whose own TERM trap then ran `kill 0` again. That is an infinite
+# loop: "Stopping…" forever, and never actually stopped. The signal storm also
+# re-entered uvicorn's reload handler while it was taking a lock inside
+# Event.set(), so the screen filled with threading.py tracebacks from
+# supervisors/basereload.py.
+#
+# Two things fix it. The trap clears itself before signalling, so what we send
+# cannot come back round. And `set -m` gives each background job its own
+# process group, so `kill -- -PID` reaches the servers' *children* too: npm
+# spawns `next dev`, uvicorn's reloader spawns the worker, and signalling only
+# the job leader orphans those onto the ports — which is what leaves a stale
+# :3000 that the next run then refuses to start against.
+# --------------------------------------------------------------------------
+set -m
+pids=()
+
+cleanup() {
+  trap - EXIT INT TERM
+  echo; echo "Stopping…"
+  for pid in ${pids[@]+"${pids[@]}"}; do
+    kill -- "-$pid" 2>/dev/null || true
+  done
+  wait 2>/dev/null || true
+}
 trap cleanup EXIT INT TERM
 
 echo "API  → http://127.0.0.1:$API_PORT/docs"
@@ -107,6 +134,7 @@ echo "API  → http://127.0.0.1:$API_PORT/docs"
     --reload-dir "$REPO/products" \
     --reload-dir "$REPO/shared" \
     --port "$API_PORT" ) &
+pids+=("$!")
 
 # Wait for the API before starting the web app, so the first page load isn't a
 # blank picker with a fetch error.
@@ -117,5 +145,6 @@ done
 
 echo "Web  → http://127.0.0.1:$WEB_PORT"
 ( cd "$WEB" && PIPELINE_API_URL="http://127.0.0.1:$API_PORT" npm run dev -- --port "$WEB_PORT" ) &
+pids+=("$!")
 
 wait

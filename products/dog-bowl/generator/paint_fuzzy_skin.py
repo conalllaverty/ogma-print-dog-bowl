@@ -29,6 +29,7 @@ from cooper_bowl_design import (
     NAME_RAIL_FLAT_Z0,
     NAME_RAIL_FLAT_Z1,
     PANEL_BOTTOM_Z,
+    PAW_RECESS_DEPTH,
     WALL_OUTER_R,
     paw_paint_silhouettes,
     unwrap_cylinder_u,
@@ -70,6 +71,7 @@ __all__ = [
     "CooperPaintMask",
     "COOPER_PAINTER",
     "allow_paint_on_panel",
+    "DISH_PAINTED_MAX",
     "assert_paint_ok",
     "on_name_rail_plaque",
     "paint_mask_for_mesh",
@@ -161,6 +163,43 @@ def allow_paint_on_panel(cfg_xml: str) -> str:
     return allow_paint_on_object(cfg_xml, PANEL_TOP_ID)
 
 
+#: Painted share of paw-dish facets above which the mask is in the wrong frame.
+#: A correctly registered mask leaves 0% (one-piece) to 3.8% (three-part, whose
+#: panel has radial detail just above the topmost pad row); handing the mask the
+#: wrong frame entirely — the bug that fuzzed 59.8% of a one-piece stand's pads —
+#: paints ~42%. This catches that class with ~5x margin and does NOT catch a
+#: sub-millimetre drift: the silhouettes are padded outwards, so a 1 mm shift
+#: still covers every dish facet. Nothing else covers that finer line either —
+#: golden_compare deliberately ignores the 3MF sha256s — so a drift small enough
+#: to pass here is a drift you will first see in the slicer.
+DISH_PAINTED_MAX = 0.08
+
+
+def _paw_dish(vertices: np.ndarray, faces: np.ndarray) -> np.ndarray:
+    """Facets on the flank of a paw recess, measured off the mesh alone.
+
+    Unlike the pad silhouettes this cannot be fooled by a wrong z_offset, which
+    is the point: every check recomputed from the same offset the mask used
+    agrees with itself no matter how wrong that offset is.
+
+    Both bounds earn their place. The radius bound is the full recess depth
+    rather than "inboard of the wall" because chamfers and tongue edges also sit
+    inboard. The normal bound drops the flat cut faces at the part's ends, which
+    are inboard too and differ between the two layouts — leaving them in made the
+    three-part and one-piece populations disagree by 848 facets.
+    """
+    tri = vertices[faces]
+    normals = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+    lengths = np.linalg.norm(normals, axis=1)
+    nz = np.abs(normals[:, 2]) / np.where(lengths > 0, lengths, 1.0)
+    radius = np.hypot(tri.mean(axis=1)[:, 0], tri.mean(axis=1)[:, 1])
+    return (
+        (radius >= R_PAINT_MIN)
+        & (radius < WALL_OUTER_R - PAW_RECESS_DEPTH + 0.15)
+        & (nz < 0.5)
+    )
+
+
 def assert_paint_ok(model_xml: str, cfg_xml: str, paint: np.ndarray, vertices, faces) -> None:
     assert_well_formed(model_xml, cfg_xml)
     if int(paint.sum()) <= 0:
@@ -171,12 +210,29 @@ def assert_paint_ok(model_xml: str, cfg_xml: str, paint: np.ndarray, vertices, f
     if not (FUZZY_AREA_MIN <= fuzzy_frac <= FUZZY_AREA_MAX):
         raise ValueError(f"outer fuzzy area fraction out of range: {fuzzy_frac:.3f}")
 
+    dish = _paw_dish(np.asarray(vertices), np.asarray(faces))
+    n_dish = int(dish.sum())
+    if n_dish:
+        dish_frac = float((paint & dish).sum()) / n_dish
+        if dish_frac > DISH_PAINTED_MAX:
+            raise ValueError(
+                f"{dish_frac:.1%} of paw-dish facets are painted (limit "
+                f"{DISH_PAINTED_MAX:.0%}) — the pad exclusions are in a different "
+                f"frame from the mesh; check the z_offset handed to the mask"
+            )
+
 
 class CooperPaintMask:
     """The `ogma.paint.FuzzyPainter` implementation for the Cooper paw panel."""
 
-    def mask(self, vertices: np.ndarray, faces: np.ndarray, root: Path) -> np.ndarray:
-        return paint_mask_for_mesh(vertices, faces, root)
+    def mask(
+        self,
+        vertices: np.ndarray,
+        faces: np.ndarray,
+        root: Path,
+        z_offset: float | None = None,
+    ) -> np.ndarray:
+        return paint_mask_for_mesh(vertices, faces, root, z_offset=z_offset)
 
     def verify(self, model_xml, cfg_xml, paint, vertices, faces) -> None:
         assert_paint_ok(model_xml, cfg_xml, paint, vertices, faces)

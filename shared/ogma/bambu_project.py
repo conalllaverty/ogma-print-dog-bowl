@@ -38,6 +38,42 @@ BUILD_POSITIONS: list[tuple[float, float, float]] = []
 # for the words "wave lower" or "honeycomb body", which cannot tell a one-piece
 # paw lattice from a three-part one — they differ in count, not in name.
 BODY_COUNT = 0
+# Which object is the paw wall, 1-based. Two for the three-part stand (base,
+# panel, top ring); one when the stand is a single body. The per-object print
+# profiles used to be chosen purely by position, so a one-piece stand inherited
+# the *base's* settings — fuzzy_skin "external", which fuzzes every external
+# wall and ignores painted triangles outright. 60,281 painted facets were being
+# discarded and the pads came out textured along with everything else.
+PANEL_INDEX = 2
+
+# Letters: fine layers for edges/curves; slower walls for outline quality.
+_LETTER_OVERRIDES = {
+    "layer_height": "0.10",
+    "wall_loops": "4",
+    "sparse_infill_density": "15%",
+    "sparse_infill_pattern": "gyroid",
+    "outer_wall_speed": "50",
+    "inner_wall_speed": "100",
+    "small_perimeter_speed": "50%",
+    "top_shell_layers": "6",
+    "bottom_shell_layers": "5",
+    "seam_position": "back",
+    "fuzzy_skin": "none",
+}
+
+# Loops on the paw wall.
+#
+# Three, not four. The drum wall is 4.0 mm and a paw recess takes 0.7 mm out of
+# it, leaving 3.30 mm — but four loops on each face need 0.42 + 3 x 0.45, twice
+# over, which is 3.54 mm. The perimeters cannot fit, so the slicer squashes them
+# and drops gap infill into the remainder, and that shows as lines running down
+# the flanks of every pad. Three loops need 2.64 mm and leave 0.66 mm of real
+# infill.
+#
+# Not much of a concession: at four loops the wall was 88% perimeter, which is
+# why there was no room. The letter sockets are unaffected — they sit in the
+# plaque, 8.4 mm thick.
+PAW_WALL_LOOPS = "3"
 
 CORE = "http://schemas.microsoft.com/3dmanufacturing/core/2015/02"
 PROD = "http://schemas.microsoft.com/3dmanufacturing/production/2015/06"
@@ -177,8 +213,9 @@ def configure_objects(
     one_piece: bool = False,
 ) -> None:
     """Build OBJECTS + BUILD_POSITIONS for the Cooper paw-lattice layout."""
-    global OBJECTS, BUILD_POSITIONS, MESH_DIR, BODY_COUNT
+    global OBJECTS, BUILD_POSITIONS, MESH_DIR, BODY_COUNT, PANEL_INDEX
     MESH_DIR = Path(mesh_dir)
+    PANEL_INDEX = 1 if one_piece else 2
     if one_piece:
         objects: list[tuple[str, Path, int]] = [
             (f"{name} stand", MESH_DIR / "cooper_one_piece.ply", 1),
@@ -442,9 +479,14 @@ def model_settings(meshes: list[trimesh.Trimesh]) -> bytes:
     lines = ['<?xml version="1.0" encoding="UTF-8"?>', "<config>"]
     for index, ((name, source, extruder), mesh) in enumerate(zip(OBJECTS, meshes), start=1):
         top_id = 99 + index
-        # Object overrides prioritise steady layer time + solid outer skin:
-        # 4 walls (hides infill telegraphing / protects letter sockets), gyroid.
-        if wave_mode or hex_mode:
+        # Object overrides prioritise steady layer time + solid outer skin.
+        #
+        # Selected by what the object *is*, not where it sits in the list. With
+        # one body the letters start at index 2, so a positional `index == 3`
+        # branch would hand the second letter the top seat ring's profile.
+        if index > BODY_COUNT:
+            overrides = _LETTER_OVERRIDES
+        elif wave_mode or hex_mode:
             body_object = index <= 3 if wave_mode else index == 1
             if body_object:
                 body_layer = "0.16" if hex_mode else "0.20"
@@ -488,6 +530,27 @@ def model_settings(meshes: list[trimesh.Trimesh]) -> bytes:
                     "seam_position": "back",
                     "fuzzy_skin": "none",
                 }
+        elif index == PANEL_INDEX:
+            overrides = {
+                "layer_height": "0.16",
+                "wall_loops": PAW_WALL_LOOPS,
+                "sparse_infill_density": "15%",
+                "sparse_infill_pattern": "gyroid",
+                "outer_wall_speed": "100",
+                "inner_wall_speed": "200",
+                "small_perimeter_speed": "100%",
+                "top_shell_layers": "5",
+                "bottom_surface_pattern": "monotonic",
+                "top_surface_pattern": "monotonicline",
+                "seam_position": "back",
+                # "none" = Studio "None (allow paint)". Painted triangles carry
+                # the fuzz, so the open wall textures and the pads and plaque do
+                # not. "external" would fuzz every outside surface and throw the
+                # painting away — which is what a one-piece stand was getting.
+                "fuzzy_skin": "none",
+                "fuzzy_skin_thickness": "0.3",
+                "fuzzy_skin_point_distance": "0.8",
+            }
         elif index == 1:
             overrides = {
                 "layer_height": "0.20",
@@ -501,26 +564,9 @@ def model_settings(meshes: list[trimesh.Trimesh]) -> bytes:
                 "bottom_surface_pattern": "monotonic",
                 "top_surface_pattern": "monotonicline",
                 "seam_position": "back",
+                # The base carries no paw pads and no paint, so it fuzzes
+                # uniformly.
                 "fuzzy_skin": "external",
-                "fuzzy_skin_thickness": "0.3",
-                "fuzzy_skin_point_distance": "0.8",
-            }
-        elif index == 2:
-            overrides = {
-                "layer_height": "0.16",
-                "wall_loops": "4",
-                "sparse_infill_density": "15%",
-                "sparse_infill_pattern": "gyroid",
-                "outer_wall_speed": "100",
-                "inner_wall_speed": "200",
-                "small_perimeter_speed": "100%",
-                "top_shell_layers": "5",
-                "bottom_surface_pattern": "monotonic",
-                "top_surface_pattern": "monotonicline",
-                "seam_position": "back",
-                # "none" = Studio "None (allow paint)". Painted triangles carry
-                # the fuzz; disabled_fuzzy would kill painting entirely.
-                "fuzzy_skin": "none",
                 "fuzzy_skin_thickness": "0.3",
                 "fuzzy_skin_point_distance": "0.8",
             }
@@ -540,20 +586,7 @@ def model_settings(meshes: list[trimesh.Trimesh]) -> bytes:
                 "fuzzy_skin": "none",
             }
         else:
-            # Letters: fine layers for edges/curves; slower walls for outline quality.
-            overrides = {
-                "layer_height": "0.10",
-                "wall_loops": "4",
-                "sparse_infill_density": "15%",
-                "sparse_infill_pattern": "gyroid",
-                "outer_wall_speed": "50",
-                "inner_wall_speed": "100",
-                "small_perimeter_speed": "50%",
-                "top_shell_layers": "6",
-                "bottom_shell_layers": "5",
-                "seam_position": "back",
-                "fuzzy_skin": "none",
-            }
+            overrides = _LETTER_OVERRIDES
         # Part ids must match component order / local mesh object ids.
         lines.extend(
             [
@@ -742,10 +775,13 @@ def build_project(
                 "fuzzy_enabled=True requires a painter "
                 "(pass paint_fuzzy_skin.COOPER_PAINTER for the Cooper panel)"
             )
+        # A one-piece stand is exported in assembly coordinates — its lowest
+        # point is the base, not the panel — so the painter must not guess.
         panel_paint = painter.mask(
             np.asarray(panel.vertices),
             np.asarray(panel.faces),
             dims_root,
+            z_offset=0.0 if one_piece else None,
         )
 
     with (
@@ -766,12 +802,19 @@ def build_project(
                 f"3D/Objects/object_{index}.model",
                 mesh_model(mesh, index, paint_fuzzy=paint),
             )
-        # When fuzzy is off, force panel object to fuzzy_skin none without paint attrs.
         settings_bytes = model_settings(meshes)
         if not fuzzy_enabled:
-            cfg = settings_bytes.decode()
-            # Panel is object id 101; ensure fuzzy stays none (already default for paint mode).
-            settings_bytes = cfg.encode()
+            # The paw wall is already "none" plus paint, and with fuzzy off
+            # nothing is painted — but the base is configured "external", which
+            # needs no paint to fuzz. Left alone it textured the base of every
+            # stand ordered *without* the texture.
+            #
+            # This block used to decode the config and re-encode it unchanged,
+            # so it read as handled and did nothing.
+            settings_bytes = settings_bytes.decode().replace(
+                '<metadata key="fuzzy_skin" value="external"/>',
+                '<metadata key="fuzzy_skin" value="none"/>',
+            ).encode()
         output.writestr("Metadata/model_settings.config", settings_bytes)
 
         settings = json.loads(template.read("Metadata/project_settings.config"))
