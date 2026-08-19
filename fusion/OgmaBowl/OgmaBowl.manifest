@@ -1,0 +1,13 @@
+{
+    "autodeskProduct": "Fusion",
+    "type": "addin",
+    "id": "",
+    "author": "Ogma Print",
+    "description": {
+        "": "Parametric Ogma dog-bowl stands - four styles, editable name, every dimension a User Parameter."
+    },
+    "version": "1.0.0",
+    "runOnStartup": true,
+    "supportedOS": "windows|mac",
+    "editEnabled": true
+}

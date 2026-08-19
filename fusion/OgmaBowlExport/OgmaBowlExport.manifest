@@ -1,0 +1,12 @@
+{
+    "autodeskProduct": "Fusion",
+    "type": "script",
+    "id": "",
+    "author": "Ogma Print",
+    "description": {
+        "": "Build every Ogma bowl style for one name and write .f3d, .3mf and .step to a folder."
+    },
+    "version": "1.0.0",
+    "supportedOS": "windows|mac",
+    "editEnabled": true
+}
