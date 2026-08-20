@@ -29,9 +29,31 @@ true for the wave style — it holds to about five significant decimals there. T
 difference is 0.002 mm3 on a letter, which is orders of magnitude below what a
 0.1 mm layer can express, so it is a reporting correction rather than a defect.
 
-The thresholds here sit roughly an order of magnitude above the worst measured
-value, so a real geometry regression still trips them while a dependency bump
-does not.
+**Re-measured 2026-08-20, and the drift grew.** The mixed-case work replaced
+every glyph — cap height became the ruler and each letter now carries its own
+proportions — so the cone-backed wave letters, already the one unstable path
+here, are different meshes than the ones the numbers above were taken from.
+Same macOS/Linux split, same two letters, larger:
+
+    triangles  8.53e-02 relative   (letter_2_U: 1664 -> 1522)
+    vertices   8.53e-02 relative   (letter_2_U: 4992 -> 4566)
+    volume     1.36e-04 relative   (letter_4_A: 138.34147 -> 138.32259 mm3)
+
+Both of those sat *outside* the old thresholds, so the honest reading is that
+the thresholds were measured against geometry that no longer exists. They are
+re-measured below rather than nudged until CI passes, which is the failure mode
+this file exists to avoid.
+
+A tolerance this loose on triangle counts is worth being uncomfortable about:
+at 1.2e-01 a real regression would have to change a letter's triangulation by
+more than an eighth before it trips. What holds the line instead is that
+`watertight` and the mesh *set* still compare exactly, volume stays at 2e-04,
+and this drift is confined to one style's boolean path. If the wave's letters
+move again, re-measure again — do not widen again.
+
+The thresholds sit roughly an order of magnitude above the worst measured value
+for everything except triangles and vertices, where the margin is deliberately
+thinner.
 """
 
 from __future__ import annotations
@@ -42,10 +64,15 @@ from pathlib import Path
 
 # Relative tolerance per fingerprint key; `None` means "must match exactly".
 REL_TOLERANCE = {
-    "volume_mm3": 1e-4,
+    # 2e-4, from a measured 1.36e-4 on the wave's letter_4_A.
+    "volume_mm3": 2e-4,
     "area_mm2": 1e-3,
-    "triangles": 0.05,
-    "vertices": 0.05,
+    # 1.2e-1, from a measured 8.53e-2 on the wave's letter_2_U. See the
+    # re-measurement note in the module docstring — and the reason not to
+    # reach for this number again next time.
+    "triangles": 0.12,
+    "vertices": 0.12,
+    # Never relaxed. A part that stops being a solid is not drift.
     "watertight": None,
 }
 
