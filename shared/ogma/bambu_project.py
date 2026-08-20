@@ -47,8 +47,27 @@ BODY_COUNT = 0
 PANEL_INDEX = 2
 
 # Letters: fine layers for edges/curves; slower walls for outline quality.
+#
+# Arachne, where the rest of the stand stays on classic. A glyph stroke is not a
+# whole number of 0.42 mm lines wide, and classic answers that by laying the
+# loops it can fit and dropping gap infill into what is left. On ROCCO's five
+# letters that was 2,401 mm of gap infill — 8.1% of the plate's extrusion, in
+# 164 blocks whose median segment is 0.067 mm. Arachne varies the bead width to
+# close the stroke instead: 31 mm, 0.11%, 13 blocks. It also takes the median
+# inner-wall segment from 0.155 to 0.502 mm, which the motion planner cares
+# about more than the slicer does, and the plate drops from 21m06 to 11m58.
+#
+# Scoped to the letters on purpose. The paw wall has no gap-fill problem to
+# solve — 930 mm, 0.04% — because PAW_WALL_LOOPS is 3 precisely so four squashed
+# loops never happen, and that reasoning was done against classic.
+#
+# Safe for the pocket fit: sliced both ways, the outer wall's face extent is
+# identical to 0.001 mm in X and Y. Arachne changes what happens inside the
+# perimeter, not where the perimeter goes, so the 0.10 mm clearance a side is
+# untouched.
 _LETTER_OVERRIDES = {
     "layer_height": "0.10",
+    "wall_generator": "arachne",
     "wall_loops": "4",
     "sparse_infill_density": "15%",
     "sparse_infill_pattern": "gyroid",
@@ -74,6 +93,60 @@ _LETTER_OVERRIDES = {
 # why there was no room. The letter sockets are unaffected — they sit in the
 # plaque, 8.4 mm thick.
 PAW_WALL_LOOPS = "3"
+
+
+# The paw wall: the panel on a three-part stand, the whole body on a one-piece.
+#
+# A module constant because tests/coupons slice a crop of this same object and
+# have to slice it the same way. letter_test.py used to hold its own copy, which
+# drifted to four loops, 100 mm/s and small_perimeter_speed 50% — a coupon built
+# differently from the part it stands in for.
+_PANEL_OVERRIDES = {
+    "layer_height": "0.16",
+    "wall_loops": PAW_WALL_LOOPS,
+    "sparse_infill_density": "15%",
+    "sparse_infill_pattern": "gyroid",
+    # 50, matching bridge_speed and therefore every overhang bucket
+    # (see _apply_overhang_speeds), so the whole outer wall of the
+    # paw panel runs one commanded feedrate. Matte PLA reads a speed
+    # change as a change in sheen, and the plaque is the only outer
+    # surface the fuzz does not cover, so any step in outer wall
+    # speed draws a horizontal line across the name.
+    #
+    # Two separate things were drawing lines, and 100 fixed neither.
+    # Measured off the sliced G-code of a ROCCO one-piece, plate 1:
+    # 3,874 mm of extrusion ran below 50 mm/s. 464 mm of that was
+    # tagged "Overhang wall" at exactly 10 — the letter pocket
+    # ceilings, which _apply_overhang_speeds now handles. The other
+    # ~3,400 mm was tagged plain "Outer wall" at 16-41 mm/s and is
+    # nowhere near a ledge.
+    #
+    # That second population is the fuzz, and it is an acceleration
+    # limit rather than a slicer setting. outer_wall_acceleration is
+    # 5000 mm/s2, so reaching 100 mm/s from rest needs
+    # 100^2 / (2 x 5000) = 1.00 mm — and the fuzz is baked into the
+    # mesh at fuzzy_skin_point_distance = 0.8 mm. The planner never
+    # gets there, so it spends every segment accelerating and lands
+    # wherever the turn leaves it. At 50 the run-up is 0.25 mm and
+    # every segment reaches target.
+    #
+    # Re-sliced at 50: zero millimetres below 50 mm/s anywhere on
+    # the plate. Costs 57 minutes on a 6h23 print.
+    "outer_wall_speed": "50",
+    "inner_wall_speed": "200",
+    "small_perimeter_speed": "100%",
+    "top_shell_layers": "5",
+    "bottom_surface_pattern": "monotonic",
+    "top_surface_pattern": "monotonicline",
+    "seam_position": "back",
+    # "none" = Studio "None (allow paint)". Painted triangles carry
+    # the fuzz, so the open wall textures and the pads and plaque do
+    # not. "external" would fuzz every outside surface and throw the
+    # painting away — which is what a one-piece stand was getting.
+    "fuzzy_skin": "none",
+    "fuzzy_skin_thickness": "0.3",
+    "fuzzy_skin_point_distance": "0.8",
+}
 
 CORE = "http://schemas.microsoft.com/3dmanufacturing/core/2015/02"
 PROD = "http://schemas.microsoft.com/3dmanufacturing/production/2015/06"
@@ -203,6 +276,57 @@ def _apply_filaments(
     for key, fallback in (("filament_ids", "GFA01"), ("filament_type", "PLA")):
         existing = list(settings.get(key) or [fallback])
         settings[key] = (existing + [existing[-1]] * count)[:count]
+
+
+def _apply_overhang_speeds(settings: dict) -> None:
+    """No overhang bucket prints slower than a bridge.
+
+    The deepest overhang on any of the four stands is a letter pocket ceiling.
+    The glyph is cut as a straight prism (letter_pocket_cutter), so the top edge
+    of every stroke is a LETTER_POCKET_DEPTH ledge with nothing under it — 2.7 mm
+    on the paw lattice, 2.2 on the other three, six 0.42 mm lines either way, and
+    100% of the outer wall unsupported on that layer. Bambu buckets it 4/4 and
+    the templates all ship 10 mm/s for that bucket and for a totally unsupported
+    one.
+
+    Against the paw wall's 100 mm/s that is a 10x cliff and against the drum
+    styles' 200 it is 20x, and the cliff is the defect rather than the droop:
+    those ledges are bridges anchored at both ends of the stroke and they span
+    2.7 mm. What shows on a printed stand is the flow lag either side of each
+    transition. On the paw lattice it shows *only* across the name plaque,
+    because the plaque is the one outer surface the fuzz does not cover
+    (paint_fuzzy_skin excludes it), and it runs the plaque's full width rather
+    than marking each letter: the glyphs sit ~14 mm apart on the arc while
+    cooling_perimeter_transition_distance is 10 mm a side, so the slow zones
+    merge.
+
+    Nothing else on a stand wants 10 mm/s. Measured off the face normals of a
+    ROCCO paw lattice, excluding the build-plate face: 192 mm2 of 4/4 overhang on
+    the plaque — the pocket ceilings — against 10.7 mm2 on the whole of the rest
+    of the stand. The other 15,698 mm2 of downward-facing surface is 1/4 and 2/4:
+    the seat ramp, the base flare, the paw pads.
+
+    So the floor is bridge_speed. An unsupported perimeter is a bridge, so it
+    gets the speed a bridge gets. The part fan is pinned at 100% either way
+    (fan_min_speed == fan_max_speed), so cooling does not change.
+
+    Raises only — a bucket already at or above bridge speed is left alone, and so
+    is a 0, which is Bambu for "no slowdown, use the outer wall speed". Both of
+    those are already faster than a bridge and there is no reason to slow them
+    down in the name of a fix for the opposite problem.
+    """
+    floor = float(settings["bridge_speed"][0])
+    for key in (
+        "overhang_1_4_speed",
+        "overhang_2_4_speed",
+        "overhang_3_4_speed",
+        "overhang_4_4_speed",
+        "overhang_totally_speed",
+    ):
+        current = float(settings[key][0])
+        if current == 0.0 or current >= floor:
+            continue
+        settings[key][0] = f"{floor:g}"
 
 
 def configure_objects(
@@ -517,40 +641,12 @@ def model_settings(meshes: list[trimesh.Trimesh]) -> bytes:
                         }
                     )
             else:
-                overrides = {
-                    "layer_height": "0.10",
-                    "wall_loops": "4",
-                    "sparse_infill_density": "15%",
-                    "sparse_infill_pattern": "gyroid",
-                    "outer_wall_speed": "50",
-                    "inner_wall_speed": "100",
-                    "small_perimeter_speed": "50%",
-                    "top_shell_layers": "6",
-                    "bottom_shell_layers": "5",
-                    "seam_position": "back",
-                    "fuzzy_skin": "none",
-                }
+                # Was a byte-identical copy of _LETTER_OVERRIDES, which meant a
+                # letter on the wave or the honeycomb quietly missed anything
+                # added to the constant.
+                overrides = _LETTER_OVERRIDES
         elif index == PANEL_INDEX:
-            overrides = {
-                "layer_height": "0.16",
-                "wall_loops": PAW_WALL_LOOPS,
-                "sparse_infill_density": "15%",
-                "sparse_infill_pattern": "gyroid",
-                "outer_wall_speed": "100",
-                "inner_wall_speed": "200",
-                "small_perimeter_speed": "100%",
-                "top_shell_layers": "5",
-                "bottom_surface_pattern": "monotonic",
-                "top_surface_pattern": "monotonicline",
-                "seam_position": "back",
-                # "none" = Studio "None (allow paint)". Painted triangles carry
-                # the fuzz, so the open wall textures and the pads and plaque do
-                # not. "external" would fuzz every outside surface and throw the
-                # painting away — which is what a one-piece stand was getting.
-                "fuzzy_skin": "none",
-                "fuzzy_skin_thickness": "0.3",
-                "fuzzy_skin_point_distance": "0.8",
-            }
+            overrides = _PANEL_OVERRIDES
         elif index == 1:
             overrides = {
                 "layer_height": "0.20",
@@ -825,10 +921,11 @@ def build_project(
         settings["outer_wall_speed"][0] = "150"
         settings["inner_wall_speed"][0] = "250"
         settings["bridge_speed"][0] = "50"
+        # 1/4 is the mildest bucket and the one the plaque bevels land in;
+        # 50 is deliberate there. Everything below bridge speed comes up to
+        # it — see _apply_overhang_speeds.
         settings["overhang_1_4_speed"][0] = "50"
-        settings["overhang_2_4_speed"][0] = "40"
-        settings["overhang_3_4_speed"][0] = "30"
-        settings["overhang_4_4_speed"][0] = "10"
+        _apply_overhang_speeds(settings)
         settings["small_perimeter_speed"][0] = "100%"
         settings["bottom_surface_pattern"] = "monotonic"
         settings["top_surface_pattern"] = "monotonicline"
@@ -978,6 +1075,7 @@ def build_wave_project(
         settings["sparse_infill_pattern"] = "gyroid"
         settings["enable_support"] = "0"
         settings["seam_position"] = "back"
+        _apply_overhang_speeds(settings)
         # Keep travel within printed regions where possible. A zero max detour
         # means unlimited detour length in Bambu Studio, not disabled detours.
         settings["reduce_crossing_wall"] = "1"
@@ -1089,6 +1187,7 @@ def build_hex_project(
         settings["sparse_infill_pattern"] = "gyroid"
         settings["enable_support"] = "0"
         settings["seam_position"] = "back"
+        _apply_overhang_speeds(settings)
         settings["fuzzy_skin"] = "none"
         colours, filament_ids = _filament_slots(
             stand_hex=stand_hex,

@@ -22,6 +22,7 @@ from pathlib import Path
 
 import numpy as np
 from shapely.geometry import Point
+from scipy.spatial import cKDTree
 from shapely.strtree import STRtree
 
 import cooper_bowl_design as design
@@ -61,9 +62,32 @@ from ogma.paint import (
 R_PAINT_MIN = 79.5
 PANEL_TOP_ID = "101"
 
+#: How close to NAME_RAIL_OUTER_R a facet must sit to count as the flat rail
+#: face rather than something cut into it. The face is at exactly that radius
+#: and the nearest surface below it is a pocket wall; measured on a ROCCO
+#: one-piece there is nothing at all between r 85.4 and 85.9, so this sits in
+#: open water and does not need to be tuned.
+RAIL_FACE_TOL = 0.10
+
+#: Smooth border left between the fuzzed rail face and every letter pocket.
+#:
+#: The plaque is fuzzed but the pockets are not, and the boundary between them
+#: is the glyph outline itself — the one edge on the part that has to stay
+#: crisp. Fuzz is placed every fuzzy_skin_point_distance (0.8 mm) and displaces
+#: the wall by up to half fuzzy_skin_thickness (0.15 mm), so a pocket edge
+#: inside that reach can lose 0.15 mm of an outline whose whole clearance is
+#: LETTER_POCKET_CLEARANCE, 0.10 mm a side. That is a letter that binds on its
+#: own rim, and a rim that reads ragged where it should read sharp.
+#:
+#: One point-distance plus a little, so the last displaced point is a full
+#: period clear of the edge and the perimeter is back on nominal before it turns
+#: into the pocket. Set it to 0.0 to fuzz right up to the glyphs.
+LETTER_POCKET_HALO = 1.0
+
 # Acceptance window for the painted fraction of the outer wall. Below this the
-# paws have eaten the wall (or the mask inverted); above it the pads and plaque
-# are being painted when they must stay smooth for the letter pockets.
+# paws have eaten the wall (or the mask inverted); above it the pads or the
+# letter pockets are being painted when they must stay smooth. The rail face
+# joining the painted side of that line moved this from 0.72 to 0.79.
 FUZZY_AREA_MIN = 0.55
 FUZZY_AREA_MAX = 0.85
 
@@ -75,8 +99,11 @@ __all__ = [
     "COOPER_PAINTER",
     "allow_paint_on_panel",
     "DISH_PAINTED_MAX",
+    "POCKET_PAINTED_MAX",
     "assert_paint_ok",
     "on_name_rail_plaque",
+    "letter_pocket_facets",
+    "rail_face_paint",
     "paint_mask_for_mesh",
     "paint_object_model_bytes",
     "paint_triangle_xml",
@@ -114,13 +141,64 @@ def on_name_rail_plaque(
     )
 
 
+def _rail_uz(centroids: np.ndarray) -> np.ndarray:
+    """Plaque-local (arc length, height) for measuring across the rail face.
+
+    Deliberately not `unwrap_cylinder_u`: that one's seam is placed at
+    PAW_PAINT_SEAM_DEG, which is -90 — straight through the plaque, chosen
+    because the plaque arc is the one stretch of wall with no pads to split.
+    Right through the middle of the surface this has to measure distances on.
+    Nothing goes wrong loudly; the letters either side of the seam simply come
+    out a full circumference apart and their halo never lands.
+
+    The rail spans well under half a turn, so a plain arc from the design front
+    is continuous over it and needs no seam at all.
+    """
+    x, y, z = centroids[:, 0], centroids[:, 1], centroids[:, 2]
+    return np.column_stack((design.NAME_RAIL_OUTER_R * np.arctan2(x, -y), z))
+
+
+def letter_pocket_facets(centroids: np.ndarray, on_rail: np.ndarray) -> np.ndarray:
+    """Rail facets cut below the flat face: pocket floors, walls and ceilings.
+
+    Also catches the chamfer round the panel's own edge, which is on the rail
+    and below full radius too. That is wanted rather than tolerated — a chamfer
+    is a sloped surface a millimetre wide, and fuzz on it reads as a chewed
+    border rather than a texture.
+    """
+    cr = np.hypot(centroids[:, 0], centroids[:, 1])
+    return on_rail & (cr < design.NAME_RAIL_OUTER_R - RAIL_FACE_TOL)
+
+
+def rail_face_paint(centroids: np.ndarray, on_rail: np.ndarray) -> np.ndarray:
+    """Which rail facets take fuzz: the flat face, less a border round each pocket.
+
+    The rail used to be excluded whole, because the letters seat in it and the
+    pockets have to stay crisp. Only the pockets have to stay crisp — the face
+    between them is wall like any other, and left smooth it was the one surface
+    on the stand with nothing to hide behind.
+    """
+    cut = letter_pocket_facets(centroids, on_rail)
+    face = on_rail & ~cut
+    if LETTER_POCKET_HALO <= 0.0 or not cut.any() or not face.any():
+        return face
+    uz = _rail_uz(centroids)
+    distance, _ = cKDTree(uz[cut]).query(uz[face])
+    keep = np.zeros(len(face), dtype=bool)
+    keep[np.flatnonzero(face)] = distance >= LETTER_POCKET_HALO
+    return keep
+
+
 def paint_mask_for_mesh(
     vertices: np.ndarray,
     faces: np.ndarray,
     root: Path,
     z_offset: float | None = None,
 ) -> np.ndarray:
-    """Which outer-wall facets get fuzzy skin: everything but the pads and plaque.
+    """Which outer-wall facets get fuzzy skin: everything but the pads and pockets.
+
+    The name rail is fuzzed across its flat face and left smooth where the
+    letters slot in — see `rail_face_paint`.
 
     The pad specs are in *assembly* coordinates and this is normally handed the
     *print*-orientation panel, so the two frames have to be reconciled. That is
@@ -157,8 +235,9 @@ def paint_mask_for_mesh(
             for u, z in zip(cu, cz)
         ]
     )
-    on_plaque = on_name_rail_plaque(centroids, rail_deg, z_offset=z_offset)
-    return (cr >= R_PAINT_MIN) & ~in_pad & ~on_plaque
+    on_rail = on_name_rail_plaque(centroids, rail_deg, z_offset=z_offset)
+    # Off the rail, unchanged. On it, only the flat face minus its pocket border.
+    return (cr >= R_PAINT_MIN) & ~in_pad & (~on_rail | rail_face_paint(centroids, on_rail))
 
 
 def allow_paint_on_panel(cfg_xml: str) -> str:
@@ -203,6 +282,74 @@ def _paw_dish(vertices: np.ndarray, faces: np.ndarray) -> np.ndarray:
     )
 
 
+#: A painted letter-pocket floor is never right, so the bar is zero rather than
+#: a fraction. It is also the sharpest frame check on the part: the rail box is
+#: placed from `z_offset`, and a mask handed the wrong frame leaves the pockets
+#: outside it and paints them, while `_letter_pocket_floor` — measured off the
+#: mesh alone — still knows where they are.
+POCKET_PAINTED_MAX = 0.0
+
+#: How far, across the unwrapped rail, a pocket floor may sit from rail-face
+#: material before it is something else at the same radius.
+#:
+#: A pocket is a hole in the face, so the face is never far away: measured
+#: across MAX, ROCCO and WILLIAMS the furthest any real floor facet sits from it
+#: is 2.25 mm. The chamfer under the plaque runs through the same radius band
+#: with the same outward normal and no face above it at all — the single facet
+#: this rejects sat 5.61 mm out, and rejecting it on radius alone would have
+#: meant a window too tight to hold the real floors.
+POCKET_FLOOR_REACH = 3.0
+
+
+def _letter_pocket_floor(vertices: np.ndarray, faces: np.ndarray) -> np.ndarray:
+    """The floors of the glyph pockets, measured off the mesh alone.
+
+    A pocket floor is a cylinder LETTER_POCKET_DEPTH inside the rail face, so it
+    is the only outward-facing surface on the whole stand at that radius: on a
+    ROCCO one-piece this is 18,534 facets, every one of them inside the rail arc
+    and inside the letter band, and nothing anywhere else on the part.
+
+    Deliberately independent of `rail_outer_deg` and `z_offset`, for the reason
+    `_paw_dish` is: a check recomputed from the same offset the mask used agrees
+    with it however wrong that offset is.
+    """
+    tri = np.asarray(vertices)[np.asarray(faces)]
+    centre = tri.mean(axis=1)
+    radius = np.hypot(centre[:, 0], centre[:, 1])
+    normals = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+    lengths = np.linalg.norm(normals, axis=1)
+    outward = (normals[:, 0] * centre[:, 0] + normals[:, 1] * centre[:, 1]) / (
+        np.where(lengths > 0, lengths, 1.0) * np.where(radius > 0, radius, 1.0)
+    )
+    # letter_pocket_cutter drops each floor by that glyph's own bulge, so the
+    # band spans the widest glyph (LETTER_MAX_GLYPH_BULGE) to a notional zero.
+    # Derived rather than measured: a fixed +/-0.5 mm window reached up to
+    # r 83.6 and swept in one facet of the chamfer above the rail flat.
+    deepest = (
+        design.NAME_RAIL_OUTER_R
+        - design.LETTER_MAX_GLYPH_BULGE
+        - design.LETTER_POCKET_DEPTH
+        - design.LETTER_POCKET_FLOOR_GAP
+    )
+    shallowest = (
+        design.NAME_RAIL_OUTER_R
+        - design.LETTER_POCKET_DEPTH
+        - design.LETTER_POCKET_FLOOR_GAP
+    )
+    candidate = (
+        (radius >= deepest - 0.05)
+        & (radius <= shallowest + 0.05)
+        & (outward > 0.9)
+    )
+    face = radius >= design.NAME_RAIL_OUTER_R - RAIL_FACE_TOL
+    if not candidate.any() or not face.any():
+        return np.zeros(len(candidate), dtype=bool)
+    uz = _rail_uz(centre)
+    distance, _ = cKDTree(uz[face]).query(uz[candidate])
+    candidate[np.flatnonzero(candidate)] = distance <= POCKET_FLOOR_REACH
+    return candidate
+
+
 def assert_paint_ok(model_xml: str, cfg_xml: str, paint: np.ndarray, vertices, faces) -> None:
     assert_well_formed(model_xml, cfg_xml)
     if int(paint.sum()) <= 0:
@@ -222,6 +369,17 @@ def assert_paint_ok(model_xml: str, cfg_xml: str, paint: np.ndarray, vertices, f
                 f"{dish_frac:.1%} of paw-dish facets are painted (limit "
                 f"{DISH_PAINTED_MAX:.0%}) — the pad exclusions are in a different "
                 f"frame from the mesh; check the z_offset handed to the mask"
+            )
+
+    pocket = _letter_pocket_floor(np.asarray(vertices), np.asarray(faces))
+    n_pocket = int(pocket.sum())
+    if n_pocket:
+        pocket_frac = float((paint & pocket).sum()) / n_pocket
+        if pocket_frac > POCKET_PAINTED_MAX:
+            raise ValueError(
+                f"{pocket_frac:.1%} of letter-pocket floor facets are painted — "
+                f"fuzz inside a pocket eats the {design.LETTER_POCKET_CLEARANCE} mm "
+                f"clearance the letter slides on; check the rail exclusion"
             )
 
 

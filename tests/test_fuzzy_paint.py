@@ -160,7 +160,7 @@ def assembly_panel(tmp_path_factory):
     return root, design.build_panel(design.build_letters())
 
 
-def test_preview_mask_leaves_the_pads_and_the_name_plate_smooth(assembly_panel):
+def test_preview_mask_leaves_the_pads_and_the_letter_pockets_smooth(assembly_panel):
     root, mesh = assembly_panel
     mask_for = cooper_style.fuzzy_mask_for("assembly_paw_panel.stl", root)
     assert mask_for is not None, "the paw wall is painted, so it must have a mask"
@@ -175,11 +175,91 @@ def test_preview_mask_leaves_the_pads_and_the_name_plate_smooth(assembly_panel):
     on_pads = area[painted & dish].sum() / max(area[dish].sum(), 1e-9)
     assert on_pads < 0.05, f"{on_pads:.1%} of the paw recesses would show texture"
 
-    # The name plate stands proud of the drum; letters are glued into it.
+    # The name plate itself is textured — it is wall like any other, and left
+    # smooth it was the one surface on the stand with nothing to hide behind.
     plate = radius.min(axis=1) > design.NAME_RAIL_OUTER_R - 0.5
-    if plate.any():
-        on_plate = area[painted & plate].sum() / area[plate].sum()
-        assert on_plate < 0.10, f"{on_plate:.1%} of the name plate would show texture"
+    assert plate.any(), "no name plate found — the radius filter has drifted"
+    on_plate = area[painted & plate].sum() / area[plate].sum()
+    assert on_plate > 0.40, f"only {on_plate:.1%} of the name plate would show texture"
+
+    # The pockets the letters glue into are not, and that is the half that
+    # matters: fuzz in there eats the clearance the letter slides on.
+    pockets = fuzzy._letter_pocket_floor(vertices, faces)
+    assert pockets.sum() > 1000, "no letter pockets found — the filter has drifted"
+    assert not (painted & pockets).any(), (
+        f"{int((painted & pockets).sum())} letter-pocket facets would show texture"
+    )
+
+
+def test_the_rail_face_is_fuzzed_and_its_pockets_are_not(panel):
+    """The name plate takes texture; the glyph pockets cut into it do not.
+
+    The rail used to be excluded whole — one box covering the flat face and
+    everything cut into it — because the letters seat there. Only the pockets
+    need to stay smooth.
+    """
+    root, vertices, faces = panel
+    paint = fuzzy.paint_mask_for_mesh(vertices, faces, root)
+    centroids = vertices[faces].mean(axis=1)
+    on_rail = fuzzy.on_name_rail_plaque(
+        centroids,
+        fuzzy.rail_outer_deg(root),
+        z_offset=design.PANEL_BOTTOM_Z - vertices[:, 2].min(),
+    )
+    cut = fuzzy.letter_pocket_facets(centroids, on_rail)
+    face = on_rail & ~cut
+    assert cut.sum() > 1000 and face.sum() > 1000, "the rail split found nothing"
+    assert not (paint & cut).any(), (
+        f"{int((paint & cut).sum())} facets cut into the rail are painted"
+    )
+    # By area, not facet count: the boolean that cuts the pockets fans dense
+    # slivers along every glyph outline, so most *facets* on the rail are edge
+    # detail inside the halo while most of the *surface* is open field. Counting
+    # facets reads 3-4% painted on a plate that is two-thirds textured.
+    area = trimesh.triangles.area(vertices[faces])
+    painted_area = area[paint & face].sum() / area[face].sum()
+    assert painted_area > 0.40, (
+        f"only {painted_area:.1%} of the rail face is painted — the halo has eaten it"
+    )
+
+
+def test_a_smooth_border_is_kept_around_every_letter(panel):
+    """No fuzz within LETTER_POCKET_HALO of a pocket edge.
+
+    The boundary between fuzzed plate and smooth pocket is the glyph outline,
+    which is the one edge on the part that has to stay sharp. Fuzz reaching it
+    rounds it, and 0.15 mm of rounding is more than the 0.10 mm a side the
+    letter has to slide on.
+    """
+    root, vertices, faces = panel
+    paint = fuzzy.paint_mask_for_mesh(vertices, faces, root)
+    centroids = vertices[faces].mean(axis=1)
+    on_rail = fuzzy.on_name_rail_plaque(
+        centroids,
+        fuzzy.rail_outer_deg(root),
+        z_offset=design.PANEL_BOTTOM_Z - vertices[:, 2].min(),
+    )
+    cut = fuzzy.letter_pocket_facets(centroids, on_rail)
+    face = on_rail & ~cut
+    uz = fuzzy._rail_uz(centroids)
+    from scipy.spatial import cKDTree
+
+    distance, _ = cKDTree(uz[cut]).query(uz[face & paint])
+    assert distance.min() >= fuzzy.LETTER_POCKET_HALO - 1e-9, (
+        f"painted rail facet {distance.min():.3f} mm from a pocket edge, "
+        f"inside the {fuzzy.LETTER_POCKET_HALO} mm border"
+    )
+    # Non-vacuous: the border has to actually be excluding something.
+    assert (face & ~paint).any(), "no facet was held back — is the halo zero?"
+
+
+def test_the_halo_is_at_least_one_fuzz_period():
+    """A border shorter than the fuzz spacing does not put the wall back on
+    nominal before the edge, which is the whole point of having one."""
+    point_distance = float(
+        bambu_project._PANEL_OVERRIDES["fuzzy_skin_point_distance"]
+    )
+    assert fuzzy.LETTER_POCKET_HALO >= point_distance
 
 
 def test_preview_mask_follows_the_3mf_for_every_part(assembly_panel):

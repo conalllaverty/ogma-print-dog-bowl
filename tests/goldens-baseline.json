@@ -470,8 +470,8 @@
           "sha256": "3440fa3a35d561b7"
         },
         "3D/Objects/object_2.model": {
-          "bytes": 13115520,
-          "sha256": "c2697fad84a50bf5"
+          "bytes": 13136688,
+          "sha256": "374cec7d587f841c"
         },
         "3D/Objects/object_3.model": {
           "bytes": 656401,
@@ -510,8 +510,8 @@
           "sha256": "b22b4b14fba30815"
         },
         "Metadata/model_settings.config": {
-          "bytes": 16973,
-          "sha256": "48860645f3a58df8"
+          "bytes": 17290,
+          "sha256": "337284ae7b729280"
         },
         "Metadata/pick_1.png": {
           "bytes": 3229,
@@ -579,7 +579,7 @@
         },
         "Metadata/project_settings.config": {
           "bytes": 56723,
-          "sha256": "634395de01b37245"
+          "sha256": "0e3ddabb7d49c66d"
         },
         "Metadata/slice_info.config": {
           "bytes": 205,
@@ -963,8 +963,8 @@
           "sha256": "3440fa3a35d561b7"
         },
         "3D/Objects/object_2.model": {
-          "bytes": 10530786,
-          "sha256": "e1ca376ce5353e53"
+          "bytes": 10547481,
+          "sha256": "cc5d90e061759424"
         },
         "3D/Objects/object_3.model": {
           "bytes": 656401,
@@ -991,8 +991,8 @@
           "sha256": "b22b4b14fba30815"
         },
         "Metadata/model_settings.config": {
-          "bytes": 12160,
-          "sha256": "9cfe738bdd6b6eab"
+          "bytes": 12318,
+          "sha256": "989d2905d3b22847"
         },
         "Metadata/pick_1.png": {
           "bytes": 3229,
@@ -1060,7 +1060,7 @@
         },
         "Metadata/project_settings.config": {
           "bytes": 56723,
-          "sha256": "634395de01b37245"
+          "sha256": "0e3ddabb7d49c66d"
         },
         "Metadata/slice_info.config": {
           "bytes": 205,
@@ -1652,8 +1652,8 @@
           "sha256": "4a42656a9c81acff"
         },
         "3D/Objects/object_2.model": {
-          "bytes": 11017041,
-          "sha256": "3ff90ac801f872eb"
+          "bytes": 11029410,
+          "sha256": "5deeea7b8003d87e"
         },
         "3D/Objects/object_3.model": {
           "bytes": 656401,
@@ -1692,8 +1692,8 @@
           "sha256": "b22b4b14fba30815"
         },
         "Metadata/model_settings.config": {
-          "bytes": 20185,
-          "sha256": "9a875d6dc693b200"
+          "bytes": 20608,
+          "sha256": "aeb47a1d9c3242bc"
         },
         "Metadata/pick_1.png": {
           "bytes": 3229,
@@ -1761,7 +1761,7 @@
         },
         "Metadata/project_settings.config": {
           "bytes": 56723,
-          "sha256": "634395de01b37245"
+          "sha256": "0e3ddabb7d49c66d"
         },
         "Metadata/slice_info.config": {
           "bytes": 205,
@@ -2053,8 +2053,8 @@
           "sha256": "b22b4b14fba30815"
         },
         "Metadata/model_settings.config": {
-          "bytes": 7685,
-          "sha256": "219a0448aba1f7f6"
+          "bytes": 7844,
+          "sha256": "de61631ee2e01324"
         },
         "Metadata/pick_1.png": {
           "bytes": 3429,
@@ -2082,7 +2082,7 @@
         },
         "Metadata/project_settings.config": {
           "bytes": 56674,
-          "sha256": "2e0ba7d1a4ab5423"
+          "sha256": "05a2e2069d01b193"
         },
         "Metadata/slice_info.config": {
           "bytes": 205,
@@ -2374,8 +2374,8 @@
           "sha256": "b22b4b14fba30815"
         },
         "Metadata/model_settings.config": {
-          "bytes": 7561,
-          "sha256": "c5641bcf4b1f734c"
+          "bytes": 7720,
+          "sha256": "bdff575187e08a45"
         },
         "Metadata/pick_1.png": {
           "bytes": 3429,
@@ -2403,7 +2403,7 @@
         },
         "Metadata/project_settings.config": {
           "bytes": 56674,
-          "sha256": "2e0ba7d1a4ab5423"
+          "sha256": "05a2e2069d01b193"
         },
         "Metadata/slice_info.config": {
           "bytes": 205,
@@ -2834,8 +2834,8 @@
           "sha256": "b22b4b14fba30815"
         },
         "Metadata/model_settings.config": {
-          "bytes": 14022,
-          "sha256": "549c471747ae6aa9"
+          "bytes": 14234,
+          "sha256": "5dfda24e0c5ff87a"
         },
         "Metadata/pick_1.png": {
           "bytes": 3229,
@@ -2887,7 +2887,7 @@
         },
         "Metadata/project_settings.config": {
           "bytes": 56780,
-          "sha256": "9aefc3d4d261e7a6"
+          "sha256": "11dde8a38ca6261d"
         },
         "Metadata/slice_info.config": {
           "bytes": 205,

@@ -128,6 +128,7 @@ def build() -> Path:
         settings["fuzzy_skin_point_distance"] = "0.8"
         settings["fuzzy_skin_first_layer"] = "0"
         settings["wall_loops"] = "4"
+        bambu._apply_overhang_speeds(settings)
         settings["filament_colour"] = ["#757575", "#757575"]
         out.writestr(
             "Metadata/project_settings.config",

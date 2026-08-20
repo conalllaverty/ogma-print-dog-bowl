@@ -143,30 +143,14 @@ def build_letter_test_project(
         ):
             top_id = 99 + index
             if index == 1:
-                overrides = {
-                    "layer_height": "0.16",
-                    "wall_loops": "4",
-                    "sparse_infill_density": "15%",
-                    "sparse_infill_pattern": "gyroid",
-                    "outer_wall_speed": "100",
-                    "inner_wall_speed": "200",
-                    "seam_position": "back",
-                    "fuzzy_skin": "none",
-                }
+                # Object 1 is a crop of the paw panel, so it is sliced with the
+                # panel's own settings rather than a copy of them. The copy had
+                # drifted to four loops where the panel takes PAW_WALL_LOOPS,
+                # 100 mm/s where it takes 50, and it silently inherited
+                # small_perimeter_speed 50% where the panel pins 100%.
+                overrides = bambu._PANEL_OVERRIDES
             else:
-                overrides = {
-                    "layer_height": "0.10",
-                    "wall_loops": "4",
-                    "sparse_infill_density": "15%",
-                    "sparse_infill_pattern": "gyroid",
-                    "outer_wall_speed": "50",
-                    "inner_wall_speed": "100",
-                    "small_perimeter_speed": "50%",
-                    "top_shell_layers": "6",
-                    "bottom_shell_layers": "5",
-                    "seam_position": "back",
-                    "fuzzy_skin": "none",
-                }
+                overrides = bambu._LETTER_OVERRIDES
             lines.extend(
                 [
                     f'  <object id="{top_id}">',
@@ -231,6 +215,8 @@ def build_letter_test_project(
         settings["enable_support"] = "0"
         settings["seam_position"] = "back"
         settings["fuzzy_skin"] = "none"
+        settings["overhang_1_4_speed"][0] = "50"
+        bambu._apply_overhang_speeds(settings)
         settings["filament_colour"] = [stand_hex, letter_hex]
         settings["default_filament_colour"] = ["", ""]
         settings["filament_settings_id"] = [

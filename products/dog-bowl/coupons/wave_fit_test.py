@@ -244,6 +244,7 @@ def build_fit_project(
         settings["enable_support"] = "0"
         settings["seam_position"] = "back"
         settings["fuzzy_skin"] = "none"
+        bambu._apply_overhang_speeds(settings)
         settings["filament_colour"] = [stand_hex]
         settings["default_filament_colour"] = [""]
         settings["filament_settings_id"] = [
