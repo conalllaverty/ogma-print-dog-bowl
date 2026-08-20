@@ -1,21 +1,23 @@
 # The buying flow — dog bowl designer in Ogma Print Core
 
-**Written:** 2026-08-20 · **Revised:** 2026-08-20 after reading `ogma-print-core` @ `12f61cc` (`dev`)
-**Bowl repo:** `flush-letters-and-one-piece` @ `9d7eba0`
+**Written:** 2026-08-20 · **Revised twice:** against `ogma-print-core` @ `12f61cc`
+(`dev`), then again after reading its two Stripe checkout routes properly.
+**Bowl repo:** `flush-letters-and-one-piece` @ `827383a`
 
 The customer's journey from landing on the site to holding the bowl, screen by
 screen, and what has to be built behind it.
 
-**This is the second draft.** The first assumed we were building a shop. We are
-not — `ogma-print-core` already is one, and most of what the first draft
-proposed to build already exists there and works. Three corrections, all of
-which make the job smaller:
+**This draft assumes we are not building a shop.** `ogma-print-core` already is
+one, and most of what the first draft proposed to build already exists there.
+Four corrections so far, every one of them making the job smaller — including
+one to this document's own second draft:
 
 | First draft said | Actually |
 |---|---|
 | "Don't build a basket — one stand, one order" | Core has a cart. Multiple bowls per order is a solved problem, not a feature to design |
 | A **Fit** step where the customer measures their bowl | **We supply the bowl.** The step is deleted from the customer flow and becomes an admin override on the order |
 | Sell the file first, the object second | Superseded. Supplying the bowl answers `G6`, and core is built for physical fulfilment — shipping, addresses, tracking, plate batching |
+| "Core requires an account to order" — the *second* draft's error, reasoning from a non-nullable column instead of reading the code | Guest checkout is already implemented in both Stripe routes. It is currently unreachable, which is a different and much cheaper problem — see §2 |
 
 Numbers below are measured: slice times from `products/dog-bowl/G1-slice-results.md`,
 cache and lock behaviour from `studio/api/`, packing limits from `name_fit.py`,
@@ -233,20 +235,57 @@ about 1.6:1 show an inline note, not an error:
 
 ### Steps 5–7 — Cart, checkout, account
 
-**Not redesigned. These are core's, and they work.** Two things worth flagging
-because they affect the bowl's copy:
+**Not redesigned. These are core's.** But "they work" was too generous, and the
+account question in particular needs correcting.
 
-1. **Core requires an account to order.** `Order.userId` is non-nullable, while
-   `Design.userId` is nullable with an `AnonymousSession` fallback. So the real
-   flow is *design anonymously → register or log in at checkout → design
-   converts to the account*. That is a legitimate model and the conversion path
-   already exists — but it is **not** guest checkout, and the first draft of this
-   document wrongly assumed it would be. If guest checkout is wanted, that is a
-   change to core, not to the bowl.
-2. **The designer is currently admin-gated.** Three recent commits on `dev` lock
-   it behind login and admin (`b81871a`, `48f5480`, `8387905`). Whatever gating
-   the bowl designer launches under should be a deliberate decision, not
-   inherited by accident.
+### Guest checkout already exists — and is currently unreachable
+
+An earlier draft of this document said core requires an account to order,
+reasoning from `Order.userId` being non-nullable. That was wrong. **Both**
+checkout routes already implement guest checkout the pragmatic way — a shadow
+`User` keyed on the email, `passwordHash: ""`, `emailVerified: false`
+(`api/stripe/checkout` and `api/stripe/cart-checkout`). `Order.userId` stays
+non-nullable and every query, FK and admin screen keeps working. That is the
+right design and it is already built.
+
+It is also, today, a dead path with three faults in it. Mandatory registration on
+a low-friction gift purchase is worth 15–20% of conversions, so these are launch
+blockers rather than polish:
+
+1. **The cart page has no email field, so cart checkout returns 400.** The route
+   comments describe falling back to a deterministic guest email "since the
+   current cart page does not have an email field yet" — but the code below the
+   comment returns `{ error: "Guest email is required to check out a cart." }`.
+   Comment and code disagree, and the code wins. One input on the cart page
+   closes this.
+2. **The real shipping address is never written back.** `Order.shippingAddressId`
+   is NOT NULL, so checkout inserts a stub — `line1: "(collected at Stripe
+   checkout)"`, city and county `"(pending)"` — intending the webhook to
+   overwrite it with what Stripe collected. The route's own comment says it
+   does not: *"The webhook currently doesn't do that — it's a Phase 2c
+   follow-up."* Every guest order therefore reaches fulfilment addressed to a
+   placeholder. On a digital product that is invisible; on a bowl in a box it is
+   the whole thing.
+3. **A guest cannot become an account holder.** `api/auth/register` returns 409
+   "An account with this email already exists" for any matching email, shadow
+   users included. So a customer who checks out as a guest and later tries to
+   register is told they have an account they never made, cannot log in
+   (`bcrypt.compare` against `""` fails, correctly), and is given no route
+   onward. Password reset does work and would set a real hash — but nothing
+   tells them to use it. The fix is small: detect the empty hash and treat
+   registration as *claiming* the existing shadow account rather than a
+   collision.
+
+One thing that is genuinely fine: `passwordHash: ""` is not an auth bypass.
+Login goes through `bcrypt.compare`, and an empty string is not a valid bcrypt
+hash, so it fails closed for every input. Worth stating because it looks alarming
+and is the first thing anyone will ask.
+
+### The designer is currently admin-gated
+
+Three recent commits on `dev` lock it behind login and admin (`b81871a`,
+`48f5480`, `8387905`). Whatever gating the bowl designer launches under should be
+a deliberate decision, not inherited by accident.
 
 ---
 
@@ -404,6 +443,28 @@ Each phase ends with something shippable. Phase 0 is not optional.
   endpoints as everything else.
 - **Decision point:** does the bowl generator move into core's `backend/`, or
   stay a separate FastAPI service that core proxies to? See §8.
+- **Contract tests across the seam, in the same phase that creates the seam.**
+  A separate service is the right call, and the price of it is that the two
+  repos can now drift silently: core's proxy is a pass-through, so a renamed
+  field surfaces as a 422 in production rather than a red build. Two cheap
+  checks, one on each side, and they catch opposite failures:
+
+  1. **"We changed it" — bowl repo.** FastAPI already produces an OpenAPI
+     document. Snapshot the operations core consumes into a committed
+     `contract/` file and fail pytest when the live app diverges. Drift then
+     shows up as a diff in review, where a deliberate change is a deliberate
+     commit and an accidental one is caught before merge.
+  2. **"They expect something we don't serve" — consumer-driven.** Core commits
+     the exact request bodies its proxy sends as fixtures; the bowl repo replays
+     them against the real app with `TestClient` and asserts the responses still
+     satisfy what core destructures. This is the half that catches core evolving
+     past the bowl, which the schema snapshot alone cannot see.
+
+  Worth noting why core's existing pattern does not transfer: its
+  `seed-data-sync` CI job byte-diffs `backend/app/data/*.json` against
+  `storefront/prisma/data/*.json`, which works precisely because both copies sit
+  in one repo. Across two repos there is nothing to diff, so the contract has to
+  be an artefact one side publishes and the other pins.
 
 ### Phase 2 — The designer, four steps (~1–1.5 weeks)
 
@@ -451,10 +512,15 @@ one. A calm refactor now; an incident later.
    merging gives one deployable and one place for shared concerns like the
    filament palette. **Recommendation: separate service first**, merge later if
    the seam turns out to be noisy — the palettes already agree byte for byte,
-   which is the thing that would have forced a merge.
-2. **Guest checkout, or accounts?** Core requires a user on `Order` today (§2).
-   Requiring registration to buy a €X personalised gift costs conversions;
-   changing it is core-side work.
+   which is the thing that would have forced a merge. Conditional on the
+   contract tests in Phase 1: a seam without them is not cheaper than a merge,
+   it is the same cost paid later and in production.
+2. ~~**Guest checkout, or accounts?**~~ **Settled: guest checkout, and it is
+   already built** — see §2. What is left is not a decision but three defects on
+   the path: no email field on the cart page, no shipping-address write-back in
+   the webhook, and registration refusing a guest their own email. All three are
+   core-side, and the second one ships bowls to a placeholder address, so they
+   gate launch rather than follow it.
 3. **Bowl supplier and unit cost** — the last unknown in the price floor.
 4. **Who fulfils, and at what volume?** One printer at 2–3 stands a day is the
    ceiling, before batching. It sets how loudly to launch.
@@ -465,8 +531,9 @@ one. A calm refactor now; an incident later.
 
 ## 9. What I would not build
 
-- **Guest checkout, unless it is cheap.** Core has a real anonymous-session →
-  account conversion path. Use it before rebuilding checkout.
+- **A second checkout.** Guest checkout is already implemented in both of core's
+  Stripe routes (§2). Fix the three defects on that path; do not write a new one
+  beside it.
 - **A second admin.** Core's admin is better than what the first draft proposed.
   Add panels to it; do not start another.
 - **A bowl-specific filament list.** Read core's allow-lists. The palettes are
