@@ -75,7 +75,33 @@ _select_gl_backend()
 if not hasattr(np, "infty"):  # pragma: no cover - environment shim
     np.infty = np.inf  # type: ignore[attr-defined]
 
-import pyrender  # noqa: E402
+# Optional, and the module has to import without it.
+#
+# pyrender is installed separately with --no-deps (requirements-render.txt), so
+# it is absent anywhere that installs only requirements.txt — which includes CI.
+# Imported unconditionally, that absence propagated all the way up: ogma.render
+# -> renders.py (module level, line 25) -> pipeline.py -> every golden case, and
+# CI reported "FAILED TO BUILD — No module named 'pyrender'" for all six of them
+# plus 6 of 25 smoke imports. It had been red on every commit for as long as the
+# run history goes back, including documentation-only ones.
+#
+# The damage was not the red tick. renders.build() is deliberately non-fatal —
+# "the 3MF is the deliverable" — so rendering was always meant to be optional,
+# and the intent was right; only the import disagreed. What the mismatch cost is
+# that the *geometry* safety net went with it: for months CI could not build a
+# single golden case, so the one check standing between a refactor and silently
+# different meshes was passing vacuously on a machine that never ran it.
+#
+# Rendering still needs pyrender. Importing this module does not.
+try:
+    import pyrender  # noqa: E402
+
+    AVAILABLE = True
+except ImportError as _exc:  # pragma: no cover - depends on the environment
+    pyrender = None  # type: ignore[assignment]
+    AVAILABLE = False
+    log.info("pyrender unavailable (%s); stills will be skipped", _exc)
+
 import trimesh  # noqa: E402
 from PIL import Image  # noqa: E402
 
@@ -428,7 +454,15 @@ def render(
     Never raises for rendering reasons: a job that has produced a printable 3MF
     must not fail because a machine has no GL. The caller gets a shorter list
     (possibly empty) and a warning in the log.
+
+    "No pyrender installed" is one of those reasons, and the promise above was
+    not being kept for it — the module simply failed to import. Now it imports
+    and this returns nothing, which is what every caller already handles.
     """
+    if not AVAILABLE:
+        log.warning("pyrender is not installed; no stills rendered")
+        return []
+
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
