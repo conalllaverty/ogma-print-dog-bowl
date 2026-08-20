@@ -120,18 +120,49 @@ NAME_RAIL_OUTER_R = 86.0
 # How deep the glyph pockets are cut. Also the letter's real thickness, since
 # LETTER_PROUD is zero and the pocket has to swallow the letter whole.
 #
-# 2.2 mm, up from 1.2. Shared by all four styles, so they stay consistent.
+# 2.7 mm asked for, but it is a ceiling rather than the answer: what the pocket
+# can take is decided by what is left behind its floor, and that differs by
+# style. build_letters() resolves it — see resolve_letter_pocket_depth.
 #
 # The trade is insertion, not strength: the pocket is a straight glyph prism
 # between two cylinders with no draft, so a letter slides in on
-# LETTER_POCKET_CLEARANCE alone — 0.10 mm a side, now over 2.2 mm of travel
+# LETTER_POCKET_CLEARANCE alone — 0.10 mm a side, now over 2.7 mm of travel
 # rather than 1.2. Nothing about the seating changes (the back is cylindrical
 # and the glue gap is still LETTER_POCKET_FLOOR_GAP), but a snug fit gets snugger
-# with depth, and this has not been print-tested at either depth yet. The
+# with depth, and this has not been print-tested at any depth yet. The
 # letter_test coupon exists for exactly this.
-LETTER_POCKET_DEPTH = 2.2
+LETTER_POCKET_DEPTH_MAX = 2.7
+LETTER_POCKET_DEPTH = LETTER_POCKET_DEPTH_MAX  # resolved per style; see below
 LETTER_POCKET_CLEARANCE = 0.10  # tighter outline so less grey halo shows
 LETTER_POCKET_FLOOR_GAP = 0.06  # tiny glue gap under the curved letter back
+#: Material that must survive behind a pocket floor.
+#:
+#: 1.0 mm is not a target, it is what the honeycomb, fluted drum and split wave
+#: already print: their letters are cut straight into a 4.0 mm structural wall
+#: and at 2.2 mm deep exactly 1.00 mm remains. Making that the floor is what
+#: keeps this change from quietly thinning them — at 2.7 mm they would be left
+#: with 0.50 mm, which is one 0.42 mm extrusion line and no infill, in the wall
+#: that holds the bowl.
+LETTER_POCKET_MIN_WEB = 1.0
+#: Deepest any glyph is seated by its own curvature (see glyph_bulge).
+#:
+#: Measured across all six faces and A-Z: Robust Slab's 'W' at R81.6, 0.735 mm.
+#: Lowercase cannot beat it — bulge grows with width and no lowercase glyph is
+#: as wide as a capital W.
+#:
+#: A constant rather than the name's own worst glyph, so pocket depth is a
+#: property of the stand and not of who the dog is — deriving it per name would
+#: make MAX and WILLIAMS different thicknesses for no reason anyone could see.
+#:
+#: Not rounded up for safety, which would be the obvious thing to do: at 0.75
+#: the drum styles resolve to 2.1 rather than the 2.2 they print today, so the
+#: padding would quietly take material off three of the four stands. What guards
+#: the wall here is LETTER_POCKET_MIN_WEB, and 0.015 mm of extra margin on top
+#: of a 1.0 mm floor buys nothing.
+LETTER_MAX_GLYPH_BULGE = 0.735
+#: Radius the pocket floor must stay outside. Styles that are not backed by the
+#: paw lattice's wall set their own — see wave_bowl_design._configure_wave_letters.
+LETTER_POCKET_BACKING_R = WALL_INNER_R
 # Bowl dimensions are read through `design.` on purpose, never imported by
 # value. They are now set per job from the customer's bowl diameter
 # (see cooper_bowl_design.configure_bowl), and `from ... import BOWL_SEAT_D`
@@ -513,6 +544,12 @@ _LETTER_GEOMETRY_DEFAULTS = {
     # lowered plaque behind for whatever the server built next.
     "NAME_RAIL_FLAT_Z0": NAME_RAIL_FLAT_Z0,
     "NAME_RAIL_FLAT_Z1": NAME_RAIL_FLAT_Z1,
+    # Both resolved per style — the depth by build_letters(), the backing radius
+    # by whichever style is not backed by this one's wall. A stale backing radius
+    # is the worst of the two: it would let a drum style cut to the plaque's
+    # depth and leave 0.5 mm of wall.
+    "LETTER_POCKET_DEPTH": LETTER_POCKET_DEPTH,
+    "LETTER_POCKET_BACKING_R": LETTER_POCKET_BACKING_R,
 }
 
 
@@ -935,11 +972,53 @@ def letter_pocket_cutter(polygon, arc_center: float) -> trimesh.Trimesh:
     return boolean_difference(body, [core])
 
 
+def resolve_letter_pocket_depth() -> float:
+    """How deep this style's pockets can go, in whole 0.10 mm layers.
+
+    LETTER_POCKET_DEPTH_MAX is what we want; this is what the wall behind the
+    letter will give. The paw lattice puts its name on a plaque standing 4.4 mm
+    proud of the drum, so its pockets are cut into material that is there purely
+    to be cut — 4.9 mm still behind the floor at the full depth. The honeycomb,
+    fluted drum and split wave have no plaque: the pocket goes straight into the
+    4.0 mm structural wall, and 2.2 mm is already as deep as it can go while
+    leaving LETTER_POCKET_MIN_WEB.
+
+    So the letters end up 2.7 mm thick on the paw lattice and 2.2 mm on the
+    other three. Invisible either way — they are flush, and no customer holds
+    two stands against each other — where a uniform 2.7 would have left the
+    styles that sell on their wall pattern with a wall you can see light through.
+
+    Rounded down to 0.10 mm because that is the layer height the letters print
+    at: a depth that is not a whole number of layers just moves the top surface
+    into the middle of one.
+    """
+    room = (
+        LETTER_FACE_R - LETTER_PROUD  # the rail, whatever this style set it to
+        - LETTER_MAX_GLYPH_BULGE
+        - LETTER_POCKET_FLOOR_GAP
+        - LETTER_POCKET_BACKING_R
+        - LETTER_POCKET_MIN_WEB
+    )
+    # The epsilon is not decoration: the drum styles land on 2.2000000000000002
+    # and a bare floor() would hand them 2.1.
+    depth = math.floor(min(LETTER_POCKET_DEPTH_MAX, room) * 10.0 + 1e-9) / 10.0
+    if depth < 1.0:
+        raise ValueError(
+            f"no room for a letter pocket: rail R{LETTER_FACE_R - LETTER_PROUD:.1f} "
+            f"over backing R{LETTER_POCKET_BACKING_R:.1f} leaves {room:.2f} mm"
+        )
+    return depth
+
+
 def build_letters(name: str | None = None):
     global NAME_RAIL_FLAT_DEG, NAME_RAIL_OUTER_DEG, NAME
-    global NAME_RAIL_FLAT_Z0, NAME_RAIL_FLAT_Z1
+    global NAME_RAIL_FLAT_Z0, NAME_RAIL_FLAT_Z1, LETTER_POCKET_DEPTH
     if name is not None:
         NAME = normalize_name(name)
+    # Before the first glyph: curved_letter_mesh extrudes to this depth and
+    # seats the back on a cylinder derived from it, so resolving it afterwards
+    # would build every letter for a pocket that no longer exists.
+    LETTER_POCKET_DEPTH = resolve_letter_pocket_depth()
     letter_data = []
     widths: list[float] = []
     half_angles: list[float] = []

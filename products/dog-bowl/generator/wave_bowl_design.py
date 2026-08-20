@@ -72,6 +72,11 @@ def _configure_wave_letters() -> None:
     wall_r = _ro(center_z)
     design.NAME_RAIL_OUTER_R = wall_r
     design.LETTER_FACE_R = wall_r + design.LETTER_PROUD
+    # The wave's letters go into the tapered upper shell, not the paw lattice's
+    # cylinder, so the radius its pocket floors must stay outside is its own —
+    # and it moves with the taper. Left at the default the pocket would be
+    # measured against a wall 2.6 mm further in than the one actually behind it.
+    design.LETTER_POCKET_BACKING_R = wall_r - p.min_upper_wall
 
 
 def _wave_cone_core(radial_offset: float, p=WAVE) -> trimesh.Trimesh:

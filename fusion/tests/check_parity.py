@@ -130,6 +130,13 @@ def main() -> int:
         try:
             scraped[key] = float(value)
         except ValueError:
+            # One level of indirection, so `A = B` where B is already known
+            # still gets compared. Without it a constant that grows a companion
+            # ceiling — LETTER_POCKET_DEPTH = LETTER_POCKET_DEPTH_MAX — silently
+            # drops out of the parity report, and a blind spot reads exactly
+            # like agreement.
+            if value in scraped:
+                scraped[key] = scraped[value]
             continue
 
     cooper_map = {
