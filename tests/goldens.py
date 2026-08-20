@@ -102,10 +102,10 @@ def run_case(style: str, name: str, font: str, outroot: Path) -> dict:
     rec: dict = {}
     dims = job / "dimensions_and_validation.json"
     if dims.exists():
-        rec["dimensions"] = json.loads(dims.read_text())
+        rec["dimensions"] = json.loads(dims.read_text(encoding="utf-8"))
     jj = job / "job.json"
     if jj.exists():
-        rec["job"] = stable(json.loads(jj.read_text()))
+        rec["job"] = stable(json.loads(jj.read_text(encoding="utf-8")))
 
     rec["meshes"] = {
         p.name: mesh_fingerprint(p) for p in sorted((job / "meshes").glob("*.stl"))
@@ -129,7 +129,7 @@ def main() -> int:
             nm = len(result[key]["meshes"])
             vol = sum(m["volume_mm3"] for m in result[key]["meshes"].values())
             print(f"    ok — {nm} meshes, total volume {vol:,.1f} mm3", flush=True)
-    Path(sys.argv[1]).write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+    Path(sys.argv[1]).write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"wrote {sys.argv[1]}")
     return 0
 

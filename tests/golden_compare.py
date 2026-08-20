@@ -207,8 +207,8 @@ def main() -> int:
     if len(sys.argv) < 3:
         print("usage: golden_compare.py BASELINE.json CURRENT.json", file=sys.stderr)
         return 2
-    baseline = json.loads(Path(sys.argv[1]).read_text())
-    current = json.loads(Path(sys.argv[2]).read_text())
+    baseline = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+    current = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
 
     diffs = compare(baseline, current)
     if not diffs:

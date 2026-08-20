@@ -1542,7 +1542,7 @@ def write_dimension_svg(path: Path):
   <text x="820" y="400">Curved letter backs (rail match)</text>
 </g>
 </svg>"""
-    path.write_text(svg)
+    path.write_text(svg, encoding="utf-8")
 
 
 def main(one_piece: bool = False):
@@ -1698,7 +1698,7 @@ def main(one_piece: bool = False):
             "name_rail_outer_deg": NAME_RAIL_OUTER_DEG,
         },
     }
-    (OUT / "dimensions_and_validation.json").write_text(json.dumps(report, indent=2))
+    (OUT / "dimensions_and_validation.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(json.dumps(report, indent=2))
 
 

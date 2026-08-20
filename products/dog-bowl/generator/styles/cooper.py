@@ -23,7 +23,7 @@ def generate_meshes(
                             bowl_rim_od_mm=bowl_rim_od_mm,
                             bowl_body_od_mm=bowl_body_od_mm)
     design.main(one_piece=one_piece)
-    dims = json.loads((job_dir / "dimensions_and_validation.json").read_text())
+    dims = json.loads((job_dir / "dimensions_and_validation.json").read_text(encoding="utf-8"))
     return float(dims["letters"]["name_rail_outer_deg"])
 
 

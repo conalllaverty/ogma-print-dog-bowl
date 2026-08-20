@@ -298,6 +298,6 @@ def generate_fluted_meshes(out_dir: Path, name: str, font_style: str = "bold", b
         },
     }
     (out_dir / "dimensions_and_validation.json").write_text(
-        json.dumps(report, indent=2) + "\n"
+        json.dumps(report, indent=2) + "\n", encoding="utf-8"
     )
     return report

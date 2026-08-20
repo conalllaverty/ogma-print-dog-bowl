@@ -147,7 +147,7 @@ def test_the_committed_baseline_matches_itself():
     import json
 
     path = REPO / "tests" / "goldens-baseline.json"
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     # Against the case list itself, not a number written here as well. A count
     # in two files is a count that goes stale the first time a case is added,
     # and it fails as "the baseline is corrupt" — which is the opposite of what

@@ -182,7 +182,7 @@ def generate(
         "created_at": created.isoformat(timespec="seconds"),
         "rail_outer_deg": rail_outer,
     }
-    (job_dir / "job.json").write_text(json.dumps(meta, indent=2) + "\n")
+    (job_dir / "job.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
 
     return GenerateResult(
         name=cleaned,

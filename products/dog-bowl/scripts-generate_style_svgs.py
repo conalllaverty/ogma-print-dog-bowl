@@ -264,7 +264,7 @@ def main() -> None:
     }
     for filename, svg in sheets.items():
         path = OUT / filename
-        path.write_text(svg)
+        path.write_text(svg, encoding="utf-8")
         print(path.relative_to(ROOT))
 
 

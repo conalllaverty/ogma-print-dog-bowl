@@ -118,7 +118,7 @@ def rail_outer_deg(root: Path) -> float:
     ]
     for dims in candidates:
         if dims.is_file():
-            data = json.loads(dims.read_text())
+            data = json.loads(dims.read_text(encoding="utf-8"))
             return float(data["letters"]["name_rail_outer_deg"])
     return float(design.NAME_RAIL_OUTER_DEG)
 

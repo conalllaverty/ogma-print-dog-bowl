@@ -79,7 +79,7 @@ def main() -> int:
     print(f"\n{ok} ok, {len(bad)} failed, {len(skipped)} skipped, of {len(mods)}")
 
     if len(sys.argv) > 1:
-        Path(sys.argv[1]).write_text(json.dumps(results, indent=2, sort_keys=True) + "\n")
+        Path(sys.argv[1]).write_text(json.dumps(results, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return 1 if bad else 0
 
 

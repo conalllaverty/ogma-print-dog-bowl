@@ -287,7 +287,7 @@ def generate_letter_test(
         },
     }
     dims_path = job_dir / "dimensions_and_validation.json"
-    dims_path.write_text(json.dumps(dims, indent=2) + "\n")
+    dims_path.write_text(json.dumps(dims, indent=2) + "\n", encoding="utf-8")
 
     output = job_dir / f"{cleaned}_Letter_Test_P2S.3mf"
     build_letter_test_project(
@@ -308,7 +308,7 @@ def generate_letter_test(
         "threemf": output.name,
         "kind": "letter_test",
     }
-    (job_dir / "job.json").write_text(json.dumps(meta, indent=2) + "\n")
+    (job_dir / "job.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
     print(output)
     return GenerateResult(
         name=cleaned,

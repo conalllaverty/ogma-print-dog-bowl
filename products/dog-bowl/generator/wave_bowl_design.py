@@ -553,5 +553,5 @@ def generate_wave_meshes(out_dir: Path, name: str, font_style: str = "bold", bow
         },
     }
     dims_path = out_dir / "dimensions_and_validation.json"
-    dims_path.write_text(json.dumps(report, indent=2) + "\n")
+    dims_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     return report

@@ -281,7 +281,7 @@ def generate_fit_test(job_dir: Path, stand_filament_id: str = DEFAULT_STAND) -> 
     lower.export(mesh_dir / "wave_lower_collar_coupon.stl")
     upper.export(mesh_dir / "wave_upper_sleeve_coupon.stl")
     (job_dir / "dimensions_and_acceptance.json").write_text(
-        json.dumps(report, indent=2) + "\n"
+        json.dumps(report, indent=2) + "\n", encoding="utf-8"
     )
 
     stand = resolve_filament(stand_filament_id, load_palette())

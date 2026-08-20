@@ -163,7 +163,7 @@ def generate_wave_letter_test(
         ),
     }
     report_path = job_dir / "dimensions_and_acceptance.json"
-    report_path.write_text(json.dumps(report, indent=2) + "\n")
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
     output = job_dir / f"{design.NAME}_Wave_Letter_Fit_Test_P2S.3mf"
     build_letter_test_project(
@@ -189,7 +189,7 @@ def generate_wave_letter_test(
             },
             indent=2,
         )
-        + "\n"
+        + "\n", encoding="utf-8"
     )
     print(output)
     return output

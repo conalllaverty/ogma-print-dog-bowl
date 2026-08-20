@@ -42,7 +42,7 @@ def project_settings_writers() -> list[Path]:
         for f in sorted(root.rglob("*.py")):
             if "node_modules" in f.parts or ".venv" in f.parts:
                 continue
-            if "Metadata/project_settings.config" in f.read_text():
+            if "Metadata/project_settings.config" in f.read_text(encoding="utf-8"):
                 out.append(f)
     return out
 BUCKETS = (
@@ -102,7 +102,7 @@ def test_every_builder_that_writes_project_settings_applies_them():
     assert len(sources) >= 4, f"expected to find the writers, found {sources}"
     missing = []
     for src in sources:
-        for node in ast.parse(src.read_text()).body:
+        for node in ast.parse(src.read_text(encoding="utf-8")).body:
             if not isinstance(node, ast.FunctionDef):
                 continue
             body = ast.dump(node)
