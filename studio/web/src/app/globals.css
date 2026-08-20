@@ -405,6 +405,29 @@ select {
   cursor: grabbing;
 }
 
+/* The offline renderer's `_grade`, minus the bloom — see Viewer.tsx.
+   1.02/1.08 are its gamma-lift and contrast expressed as filters: it does
+   x^0.97 then 0.5 + (x - 0.5) * 1.08 on display-referred pixels, and so does
+   this. Kept small deliberately; the same note in render.py records that a
+   heavier S-curve turned a lit product into a silhouette. */
+.viewer-canvas.graded canvas {
+  filter: contrast(1.06);
+}
+
+/* Vignette. 20% at the corners falling as r^2.2, matching `_grade`'s
+   `1 - 0.20 * radius**2.2`. Non-interactive, so orbit dragging passes through
+   to the canvas underneath. */
+.viewer-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 72% 72% at 50% 50%,
+    rgba(0, 0, 0, 0) 40%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+}
+
 /* Quadrant captions sit over the canvas rather than inside the GL scene —
    text rendered in WebGL at this size never looks right. */
 .quad-labels {

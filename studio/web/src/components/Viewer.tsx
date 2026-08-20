@@ -57,9 +57,15 @@ type Props = {
  * #c9ccd1 is roughly what a steel bowl *photographs* as under bright light,
  * which already includes the lighting. Using it as a base colour double-counts
  * the exposure, and the bowl's flat floor then renders as a white disc with no
- * form. Same value and reasoning as BOWL_HEX in the offline renderer.
+ * form.
+ *
+ * Darker than the offline renderer's BOWL_HEX, and deliberately so. The two run
+ * different engines, and identical PBR numbers do not produce identical images:
+ * three lights this through an IBL the stills do not have, so for a metal —
+ * whose base colour *is* its specular colour — the same hex comes out brighter
+ * here. Matching the picture matters more than matching the constant.
  */
-const BOWL_COLOUR = "#9aa1a9";
+const BOWL_COLOUR = "#848b93";
 
 /**
  * Above this angle, an edge is a real edge and shades sharp; below it, the
@@ -245,7 +251,26 @@ export default function Viewer({
 
   return (
     <div className="viewer" ref={host}>
-      <div className="viewer-canvas" ref={canvasHost} />
+      <div
+        className={`viewer-canvas${mode === "solid" ? " graded" : ""}`}
+        ref={canvasHost}
+      />
+
+      {/*
+        The last two steps of the offline renderer's `_grade`, which is most of
+        why a still reads as photographed and the live view did not: a small lift
+        and contrast about mid grey, then a vignette to hold the eye on the
+        product. Done in CSS rather than as a WebGL pass on purpose — both
+        operate on display-referred pixels after tone mapping, which is exactly
+        where `_grade` operates, and a render-target pass would have to reproduce
+        three's colour management by hand to get to the same place.
+
+        Solid mode only. The vignette belongs on a hero shot; across four
+        technical elevations it would just darken the corner of each one.
+      */}
+      {mode === "solid" && url && !loading && (
+        <div className="viewer-vignette" aria-hidden />
+      )}
 
       {mode === "quad" && url && !loading && (
         <div className="quad-labels" aria-hidden>
@@ -328,10 +353,15 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
   // and AgX apply — AgX in particular washed Caramel out to a pale grey at
   // this exposure, which is the opposite of what a filament picker is for.
   renderer.toneMapping = THREE.NeutralToneMapping;
-  // Below 1.0 deliberately. The three lights below sum to more than a single
-  // key, and an over-exposed matte surface loses precisely the shading
-  // gradient that the wall pattern is made of.
-  renderer.toneMappingExposure = 0.9;
+  // Below 1.0 deliberately. The lights below sum to more than a single key, and
+  // an over-exposed matte surface loses precisely the shading gradient that the
+  // wall pattern is made of.
+  //
+  // 0.68, down from 0.9, as part of buying back headroom — see the note on the
+  // key light. Measured on the paw stand in nardo gray: the stand's mid-tone
+  // went from 125 to 99 against the offline still's 83, and the bowl interior
+  // stopped clipping a third of its pixels.
+  renderer.toneMappingExposure = 0.68;
   mount.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
@@ -357,11 +387,21 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
   // A three-point setup, which is what a product shot actually is: a key to
   // model the form, a fill to keep the shadow side readable, and a rim to
   // separate the object from the background.
-  // Intensities pulled back from an earlier pass that summed to a blown-out
-  // image: the honeycomb rendered as near-white and the grooves vanished.
   // A pattern is read from the difference between a lit face and a shaded one,
   // so headroom above the key matters more than brightness.
-  const key = new THREE.DirectionalLight(0xfff4e6, 1.45);
+  //
+  // The rig was rebalanced against the offline stills rather than by eye, after
+  // the live view was reported as looking worse than they do. Captured from the
+  // running viewer and measured on the same object, the stand read mean 125 with
+  // a standard deviation of 13.0; the still read mean 83 with 18.9. Darker *and*
+  // wider — the viewer was not too dim or too bright, it was compressed into a
+  // narrow band, which is what "flat" and "washed out" actually are.
+  //
+  // So the key goes up (1.45 -> 1.75) while everything that lifts the shadows
+  // comes down: fill 0.32 -> 0.22, hemisphere 0.18 -> 0.10, the matte
+  // environment 0.55 -> 0.38, exposure 0.9 -> 0.68. More contrast, deeper
+  // shadows, and headroom at the top for the grade to work in.
+  const key = new THREE.DirectionalLight(0xfff4e6, 1.75);
   key.position.set(180, -260, 240);
   key.castShadow = true;
   // 2048 with a tightened frustum: the shadow was the softest, blockiest thing
@@ -379,7 +419,7 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
 
   // Fill is deliberately weak. Its job is to keep the shadow side readable,
   // not to flatten it — lift it and the relief goes with it.
-  const fill = new THREE.DirectionalLight(0xdce6ff, 0.32);
+  const fill = new THREE.DirectionalLight(0xdce6ff, 0.22);
   fill.position.set(-220, 160, 120);
   scene.add(fill);
 
@@ -390,7 +430,7 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
   rim.position.set(-140, 240, 300);
   scene.add(rim);
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x2a2119, 0.18));
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x2a2119, 0.10));
 
   // Shadow catcher. On layer 1, which only the perspective camera looks at: from
   // the top camera this plane is a black slab lying across the model, and in an
@@ -833,29 +873,48 @@ function createStage(mount: HTMLElement, onRoles?: (roles: Set<string>) => void)
         // environment instead of mirroring it, plus anisotropy so the
         // highlight smears the way a spun bowl's does.
         //
-        // Roughness raised from 0.28. The bowl's floor is flat, so at a tight
-        // specular lobe the whole of it meets the highlight condition at once
-        // and reads as a blown white disc rather than as a surface. Spreading
-        // the lobe is what gives it a gradient, and therefore a shape.
-        m.metalness = 0.82;
-        m.roughness = 0.46;
+        // Roughness raised from 0.28, then from 0.46. The bowl's floor is flat,
+        // so at a tight specular lobe the whole of it meets the highlight
+        // condition at once and reads as a blown white disc rather than as a
+        // surface. Spreading the lobe is what gives it a gradient, and
+        // therefore a shape.
+        //
+        // 0.46 was not enough, and the reason it looked like it was is that
+        // nothing measured it. Captured from the running viewer, 4.02% of the
+        // frame was clipped at or above 250 — a white pool exactly where the
+        // floor is — against 0.00% in the offline still of the same object.
+        // These are now the still's numbers (ogma/render.py::_material), which
+        // its comment already claimed they were: 0.60 / 0.70. They were not,
+        // and a comment asserting two files agree is worth nothing unless
+        // something checks — see tests/test_material_parity.py, which now does.
+        m.metalness = 0.60;
+        m.roughness = 0.90;
         m.sheen = 0.0;
         m.anisotropy = 0.55;
         m.anisotropyRotation = Math.PI / 2;
-        m.envMapIntensity = 1.5;
+        // 1.5 was the other half of the blowout: the environment is a bright
+        // neutral softbox, and amplifying it half again put the reflected panel
+        // over the clipping point on its own. At 1.0 the bowl still reads as
+        // metal — the environment is what makes it metal — without the pool.
+        m.envMapIntensity = 0.8;
         m.specularIntensity = 1.0;
       } else {
         m.metalness = 0.0;
         m.anisotropy = 0.0;
         m.specularIntensity = 0.32;
-        // 0.55, down from 1.0. RoomEnvironment is a bright *neutral* softbox, so
+        // 0.38, down from 0.55 and originally 1.0. RoomEnvironment is a bright
+        // *neutral* softbox, so
         // at full strength it adds white to every surface and the filament's own
         // hue washes out with it. Measured on Dark Red: the palette hex is 0.67
         // saturation, Bambu's own photo of the material is 0.65, and this viewer
         // was rendering it at 0.52 — visibly pink rather than deep red. The bowl
-        // keeps a high value below, because a metal has nothing *but* the
+        // keeps a higher value below, because a metal has nothing *but* the
         // environment to reflect.
-        m.envMapIntensity = 0.55;
+        //
+        // The last step down to 0.38 was about shadows rather than hue: an
+        // ambient softbox lifts the dark side of every form, and lifting the
+        // dark side is exactly what flattens a relief.
+        m.envMapIntensity = 0.38;
 
         // Still per role, because roughness and sheen are per *material* and a
         // material cannot vary across a mesh. The letters print smooth, so they

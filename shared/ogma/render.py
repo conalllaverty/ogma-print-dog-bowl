@@ -268,8 +268,20 @@ def _grade(rgb: np.ndarray) -> np.ndarray:
 def _material(part: Part) -> pyrender.MetallicRoughnessMaterial:
     """Matte PLA, or brushed stainless for the bowl.
 
-    The numbers are the same ones studio/web/src/components/Viewer.tsx uses, so
-    the still and the live preview describe one object rather than two.
+    These numbers were once described here as "the same ones
+    studio/web/src/components/Viewer.tsx uses, so the still and the live preview
+    describe one object rather than two". They were not the same, and nothing
+    checked: the viewer's bowl was running metalness 0.82 / roughness 0.46
+    against the 0.60 / 0.70 below, and 41.6% of its bowl interior clipped to
+    white while this renderer's clipped 0.0%.
+
+    They are still not the same, and now deliberately. pyrender lights this scene
+    with four analytic lights and no environment; three.js adds an image-based
+    probe on top of a comparable rig. For a metal — whose base colour *is* its
+    specular colour — the same constants therefore land brighter over there, and
+    the viewer needs a rougher, darker bowl to arrive at the same picture. Two
+    engines agreeing on a number is not the goal; two engines agreeing on an
+    image is.
     """
     if part.role == "bowl":
         # Brushed stainless, and deliberately far rougher / less metallic than
