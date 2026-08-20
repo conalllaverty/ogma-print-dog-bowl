@@ -441,11 +441,11 @@ Each phase ends with something shippable. Phase 0 is not optional.
 - `method: "dog-bowl"` added to the backend's discriminated union, so the bowl
   builds through the same `generate` / `result` / `preview.glb` / `download.3mf`
   endpoints as everything else.
-- **Decision point:** does the bowl generator move into core's `backend/`, or
-  stay a separate FastAPI service that core proxies to? See §8.
-- **Contract tests across the seam, in the same phase that creates the seam.**
-  A separate service is the right call, and the price of it is that the two
-  repos can now drift silently: core's proxy is a pass-through, so a renamed
+- **Move the generator into core first.** See §8 — this reverses an earlier
+  recommendation in this document, on evidence it did not have.
+- **If the move is deferred and the seam is kept even briefly: contract tests,
+  in the same phase that creates the seam.** The price of two repositories is
+  that they can drift silently: core's proxy is a pass-through, so a renamed
   field surfaces as a 422 in production rather than a red build. Two cheap
   checks, one on each side, and they catch opposite failures:
 
@@ -506,15 +506,9 @@ one. A calm refactor now; an incident later.
 
 ## 8. Decisions needed
 
-1. **Where does the bowl generator live?** In core's `backend/` as another
-   `method`, or as a separate service core proxies to. Separate keeps this
-   repo's test harness, goldens and CI intact and is far less disruptive;
-   merging gives one deployable and one place for shared concerns like the
-   filament palette. **Recommendation: separate service first**, merge later if
-   the seam turns out to be noisy — the palettes already agree byte for byte,
-   which is the thing that would have forced a merge. Conditional on the
-   contract tests in Phase 1: a seam without them is not cheaper than a merge,
-   it is the same cost paid later and in production.
+1. **Where does the bowl live? — settled: move it into core.** An earlier draft
+   said "separate service first, merge later if the seam turns out to be noisy".
+   That was reasoning about two repositories without measuring them. See §9.
 2. ~~**Guest checkout, or accounts?**~~ **Settled: guest checkout, and it is
    already built** — see §2. What is left is not a decision but three defects on
    the path: no email field on the cart page, no shipping-address write-back in
@@ -529,7 +523,87 @@ one. A calm refactor now; an incident later.
 
 ---
 
-## 9. What I would not build
+## 9. Repository structure
+
+**Recommendation: move the bowl into `ogma-print-core` and retire the old
+repository to what it actually is — an archive.** This reverses §8's earlier
+answer. The earlier answer weighed "two repos" against "one repo" without
+measuring either, and the measurements do not support it.
+
+### What is actually being moved
+
+| | Tracked files | Size |
+|---|---:|---:|
+| **The dog bowl** — `products/` + `shared/` + `studio/` + `tests/` | **88** | **7.9 MB** |
+| `_other-products/` — lamps, spinners, clickers, already archived | 643 | 248 MB |
+| `fusion/` — the Fusion 360 add-in, bowl-specific | 26 | 220 KB |
+
+97% of that repository's weight is archived products with no relationship to the
+bowl. The thing under discussion is **88 files**, and a boundary between two
+codebases is a poor use of a boundary when one side of it is ninety files.
+
+### Why merging wins here
+
+- **The dependencies are nearly a subset.** Core's backend already installs
+  fastapi, uvicorn, numpy, trimesh, fast-simplification, Pillow, shapely,
+  manifold3d, mapbox-earcut, scipy and python-dotenv. The bowl adds
+  pydantic-settings and the pyrender stack, and nothing conflicts.
+- **Core is already a monorepo.** `backend/` + `storefront/` is the shape; a
+  second product is not a new pattern, it is the existing one used twice.
+- **The seam has recurring costs the merge pays once.** Contract tests on every
+  change, two deploys, two CI systems, a duplicated filament palette, and a
+  second 3MF writer living beside core's `lib3mf` assembler. Core's
+  `PlateBatch` also wants per-piece metadata from the bowl on every order —
+  a chatty integration to run over HTTP between repositories.
+- **Doing it later means doing it twice.** Build the seam in Phase 1 and the
+  integration is written against an HTTP boundary that is then deleted. Moving
+  ~90 files first is cheaper than building something you intend to remove.
+
+### The shape after the move
+
+```
+ogma-print-core/
+  backend/
+    app/            unchanged — maps, routes, plates
+    ogma/           ← shared/ogma (the toolkit: preview, render, paint, 3MF)
+    products/
+      dog-bowl/     ← products/dog-bowl (generator, styles, coupons)
+  storefront/       unchanged — the shop, now with a bowl designer
+  fusion/           ← the add-in, bowl-specific tooling
+```
+
+Deleted, because core already does the job: `studio/api` (core's backend serves
+the endpoints) and `studio/web` (core's storefront is the customer UI).
+
+Left behind: `_other-products/`. The old repository then holds nothing but
+archived products, which makes its name wrong — `ogma-print-dog-bowl` containing
+everything *except* the dog bowl. Rename it to match its contents.
+
+### Three things that would make this go badly
+
+1. **Treating the move as a refactor.** Move the files, keep the tests green,
+   change nothing else. Core has its own 3MF writer, its own preview path and its
+   own mesh services; the bowl has `bambu_project.py`, `ogma/preview.py` and
+   `ProductRegistry`. Unifying those is a separate decision, taken later, on its
+   own evidence. A move that also rewrites the 3MF writer is not a move.
+2. **Losing the golden harness.** `tests/goldens.py` builds six cases and
+   compares them against a committed baseline with measured tolerances — it is
+   the only thing standing between a refactor and silently different geometry.
+   It has to run in core's CI on day one of the move, not "soon".
+3. **One fat image.** The bowl would inherit osmnx, rasterio and opencv on an
+   image that needs none of them. Core presumably already has a view on this for
+   its own backend; if not, the move is the moment to split the image rather
+   than the moment to discover the problem.
+
+### When separate repositories would have been right
+
+If the bowl needed its own deploy cadence, had its own team, or its dependencies
+genuinely conflicted with core's. None of those is true. Two repositories are a
+cost paid every day for a boundary nobody needs.
+
+---
+
+## 10. What I would not build
 
 - **A second checkout.** Guest checkout is already implemented in both of core's
   Stripe routes (§2). Fix the three defects on that path; do not write a new one
